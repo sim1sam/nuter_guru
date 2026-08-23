@@ -6,28 +6,28 @@
 
 @push('styles')
 <style>
-.contact-hero {
+.contact-page .contact-hero {
     background: linear-gradient(135deg, var(--primary-color, #8B7BA8) 0%, var(--accent-color, #A594C4) 50%, var(--dark-purple, #6B4E9D) 100%);
     padding: 80px 0;
     text-align: center;
     color: white;
 }
 
-.contact-hero h1 {
+.contact-page .contact-hero h1 {
     color: white;
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-.contact-hero .lead {
+.contact-page .contact-hero .lead {
     color: rgba(255,255,255,0.9);
     text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
-.contact-section {
+.contact-page .contact-section {
     padding: 60px 0;
 }
 
-.contact-info {
+.contact-page .contact-info-card {
     background: white;
     padding: 2rem;
     border-radius: 10px;
@@ -37,40 +37,44 @@
     transition: transform 0.3s ease;
 }
 
-.contact-info:hover {
+.contact-page .contact-info-card:hover {
     transform: translateY(-5px);
 }
 
-.contact-icon {
+.contact-page .contact-icon {
     font-size: 3rem;
     color: var(--primary-color);
     margin-bottom: 1rem;
 }
 
-.contact-title {
+.contact-page .contact-title {
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 1rem;
-    color: var(--secondary-color);
+    color: #000;
 }
 
-.contact-details {
-    color: #666;
+.contact-page .contact-details {
+    color: #000;
     line-height: 1.6;
 }
 
-.contact-form {
+.contact-page .contact-details a {
+    color: #000;
+}
+
+.contact-page .contact-form {
     background: white;
     padding: 2rem;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-.form-group {
+.contact-page .contact-form .form-group {
     margin-bottom: 1.5rem;
 }
 
-.form-control {
+.contact-page .contact-form .form-control {
     border: 2px solid #e9ecef;
     border-radius: 8px;
     padding: 12px 15px;
@@ -78,12 +82,12 @@
     transition: border-color 0.3s ease;
 }
 
-.form-control:focus {
+.contact-page .contact-form .form-control:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
 }
 
-.btn-contact {
+.contact-page .btn-contact {
     background: var(--primary-color);
     color: white;
     padding: 12px 30px;
@@ -95,30 +99,30 @@
     width: 100%;
 }
 
-.btn-contact:hover {
+.contact-page .btn-contact:hover {
     background: var(--secondary-color);
     color: white;
     transform: translateY(-2px);
 }
 
-.map-section {
+.contact-page .map-section {
     background: #f8f9fa;
     padding: 60px 0;
 }
 
-.map-container {
+.contact-page .map-container {
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-.map-container iframe {
+.contact-page .map-container iframe {
     width: 100%;
     height: 400px;
     border: none;
 }
 
-.contact-banner {
+.contact-page .contact-banner {
     width: 100%;
     height: 300px;
     object-fit: cover;
@@ -126,12 +130,12 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-.description-section {
+.contact-page .description-section {
     background: white;
     padding: 60px 0;
 }
 
-.description-content {
+.contact-page .description-content {
     font-size: 1.1rem;
     line-height: 1.8;
     color: #555;
@@ -141,17 +145,17 @@
 @endpush
 
 @section('content')
-<!-- Hero Section -->
+<div class="contact-page">
 <section class="contact-hero">
     <div class="container">
         <div class="row">
-            <div class="col-lg-8 mx-auto">
+            <div class="col-lg-8 mx-auto text-center">
                 @if($contactPage && $contactPage->title)
                     <h1 class="display-4 font-weight-bold mb-4">{{ $contactPage->title }}</h1>
                 @else
                     <h1 class="display-4 font-weight-bold mb-4">Contact Us</h1>
                 @endif
-                <p class="lead">We'd love to hear from you. Get in touch with us for any questions or support.</p>
+                <p class="lead mb-0">We'd love to hear from you. Get in touch with us for any questions or support.</p>
             </div>
         </div>
     </div>
@@ -198,7 +202,7 @@
         <div class="row">
             @if($contactPage->email)
             <div class="col-lg-4 col-md-6">
-                <div class="contact-info">
+                <div class="contact-info-card">
                     <div class="contact-icon">
                         <i class="fas fa-envelope"></i>
                     </div>
@@ -212,7 +216,7 @@
             
             @if($contactPage->phone)
             <div class="col-lg-4 col-md-6">
-                <div class="contact-info">
+                <div class="contact-info-card">
                     <div class="contact-icon">
                         <i class="fas fa-phone"></i>
                     </div>
@@ -226,7 +230,7 @@
             
             @if($contactPage->address)
             <div class="col-lg-4 col-md-6">
-                <div class="contact-info">
+                <div class="contact-info-card">
                     <div class="contact-icon">
                         <i class="fas fa-map-marker-alt"></i>
                     </div>
@@ -377,6 +381,7 @@
 </section>
 @endif
 
+</div>
 @endsection
 
 @push('scripts')
@@ -407,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Remove invalid class on input
-    const formInputs = document.querySelectorAll('.form-control');
+    const formInputs = document.querySelectorAll('.contact-page .contact-form .form-control');
     formInputs.forEach(function(input) {
         input.addEventListener('input', function() {
             this.classList.remove('is-invalid');
