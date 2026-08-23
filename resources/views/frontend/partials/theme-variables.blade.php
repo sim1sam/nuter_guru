@@ -29,6 +29,13 @@
         --navbar-bg-color: {{ $theme['navbar_bg_color'] }};
         --navbar-menu-rgb: {{ $theme['navbar_menu_rgb'] }};
         --footer-color: {{ $footerColor }};
+        --brand-brown: {{ $theme['brand_brown'] }};
+        --accent-green: {{ $theme['accent_green'] }};
+        --organic-green: {{ $theme['accent_green'] }};
+        --organic-green-soft: {{ $theme['green_soft'] }};
+        --organic-terracotta: {{ $theme['primary'] }};
+        --organic-orange: {{ $theme['accent'] }};
+        --organic-brown: {{ $theme['brand_brown'] }};
         --transition: all 0.3s ease;
     }
 </style>

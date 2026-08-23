@@ -10,18 +10,27 @@ class ThemeHelper
     {
         $setting = $setting ?: Setting::first();
 
-        $primary = self::normalizeHex($setting->theme_one ?? null, '#B05B36');
-        $secondary = self::normalizeHex($setting->theme_two ?? null, '#F3F8F2');
+        $primary = self::normalizeHex($setting->theme_one ?? null, '#F58220');
+        $brandBrown = self::normalizeHex($setting->brand_brown ?? null, '#5C3317');
+        $accentGreen = self::normalizeHex(
+            $setting->accent_color ?? $setting->statistics_color ?? null,
+            '#6AB344'
+        );
+        $secondary = self::normalizeHex($setting->theme_two ?? null, '#F8F4F0');
         $background = self::normalizeHex($setting->background_color ?? null, '#FFFFFF');
-        $statisticsBg = self::normalizeHex($setting->statistics_color ?? null, '#2D6A4F');
+        $statisticsBg = self::normalizeHex($setting->statistics_color ?? null, $accentGreen);
         $statisticsFont = self::normalizeHex($setting->statistics_font_color ?? null, '#ffffff');
         $navbarMenu = self::normalizeHex($setting->navbar_menu_color ?? null, '#333333');
-        $navbarMenuActive = self::normalizeHex($setting->navbar_menu_active_color ?? null, '#2D6A4F');
+        $navbarMenuActive = self::normalizeHex(
+            $setting->navbar_menu_active_color ?? null,
+            $accentGreen
+        );
         $navbarBg = self::normalizeHex($setting->navbar_bg_color ?? null, '#FFFFFF');
         $navbarMenuRgb = self::hexToRgbString($navbarMenuActive);
 
-        $accent = self::adjustHex($primary, 18);
-        $textDark = self::mixHex($primary, '#2D2A3A', 0.72);
+        $accent = self::adjustHex($primary, 12);
+        $greenSoft = self::mixHex($accentGreen, '#FFFFFF', 0.88);
+        $textDark = self::mixHex($brandBrown, '#2D2A3A', 0.35);
         $textLight = self::mixHex($primary, '#8B8B9A', 0.55);
         $bgElegant = self::adjustHex($background, -4);
         $borderColor = self::mixHex($background, $primary, 0.22);
@@ -31,6 +40,9 @@ class ThemeHelper
 
         return [
             'primary' => $primary,
+            'brand_brown' => $brandBrown,
+            'accent_green' => $accentGreen,
+            'green_soft' => $greenSoft,
             'secondary' => $secondary,
             'background' => $background,
             'accent' => $accent,

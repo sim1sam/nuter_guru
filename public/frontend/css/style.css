@@ -2,20 +2,20 @@
 
 /* Root Variables — overridden by admin theme settings in layout */
 :root {
-    --primary-color: #B05B36;
-    --secondary-color: #F3F8F2;
-    --accent-color: #D1642D;
+    --primary-color: #F58220;
+    --secondary-color: #F8F4F0;
+    --accent-color: #FF9A3C;
     --background-color: #FFFFFF;
-    --text-dark: #2C2C2C;
+    --text-dark: #5C3317;
     --text-light: #6B6B6B;
-    --bg-light: #F3F8F2;
-    --bg-elegant: #E8F3E8;
+    --bg-light: #F8F4F0;
+    --bg-elegant: #F3F8F2;
     --border-color: #E5E5E5;
-    --primary-rgb: 176, 91, 54;
+    --primary-rgb: 245, 130, 32;
     --shadow: 0 2px 15px rgba(var(--primary-rgb), 0.12);
     --transition: all 0.3s ease;
     --gradient-bg: #ffffff;
-    --statistics-color: #2D6A4F;
+    --statistics-color: #6AB344;
     --statistics-font-color: #ffffff;
     --footer-color: #1A1A1A;
 }

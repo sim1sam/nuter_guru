@@ -667,13 +667,25 @@
                                                             @csrf
                                                             @method('PUT')
                                                             <div class="form-group">
-                                                                <label for="">{{__('Primary color')}}</label>
+                                                                <label for="">{{__('Primary color (Orange)')}}</label>
                                                                 <input type="color" class="form-control" name="theme_one" value="{{ $setting->theme_one }}">
-                                                                <small class="text-muted">{{ __('Used for buttons, links, active menu, and accents across the site.') }}</small>
+                                                                <small class="text-muted">{{ __('Main brand color — buttons, cart badge, search button, and primary actions.') }}</small>
                                                             </div>
 
                                                             <div class="form-group">
-                                                                <label for="">{{__('Secondary color')}}</label>
+                                                                <label for="">{{__('Brand brown color')}}</label>
+                                                                <input type="color" class="form-control" name="brand_brown" value="{{ $setting->brand_brown ?? '#5C3317' }}">
+                                                                <small class="text-muted">{{ __('Secondary brand color from logo — headings, prices, and brown accents.') }}</small>
+                                                            </div>
+
+                                                            <div class="form-group">
+                                                                <label for="">{{__('Accent green color')}}</label>
+                                                                <input type="color" class="form-control" name="accent_color" value="{{ $setting->accent_color ?? '#6AB344' }}">
+                                                                <small class="text-muted">{{ __('Leaf green from logo — active menu, section underlines, and success accents.') }}</small>
+                                                            </div>
+
+                                                            <div class="form-group">
+                                                                <label for="">{{__('Soft background color')}}</label>
                                                                 <input type="color" class="form-control" name="theme_two" value="{{ $setting->theme_two }}">
                                                                 <small class="text-muted">{{ __('Used for page backgrounds and soft UI surfaces.') }}</small>
                                                             </div>

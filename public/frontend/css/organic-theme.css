@@ -2,14 +2,9 @@
    Matches Pure Dryfruit-style organic ecommerce look */
 
 :root {
-    --organic-green: #2D6A4F;
-    --organic-green-soft: #E8F3E8;
-    --organic-sage: #F3F8F2;
-    --organic-terracotta: #B05B36;
-    --organic-orange: #D1642D;
-    --organic-brown: #8B4513;
+    --organic-sage: var(--secondary-color, #F8F4F0);
     --organic-dark: #1A1A1A;
-    --organic-text: #2C2C2C;
+    --organic-text: var(--text-dark, #2C2C2C);
     --organic-muted: #6B6B6B;
     --organic-border: #E5E5E5;
     --organic-radius: 4px;
@@ -41,8 +36,8 @@ h1, h2, h3, h4, h5, h6 {
 /* Buttons */
 .btn-primary,
 .btn.btn-primary {
-    background-color: var(--organic-terracotta) !important;
-    border-color: var(--organic-terracotta) !important;
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
     border-radius: var(--organic-radius) !important;
     font-weight: 600;
     letter-spacing: 0.02em;
@@ -52,19 +47,19 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-primary:hover,
 .btn.btn-primary:hover {
-    background-color: var(--organic-orange) !important;
-    border-color: var(--organic-orange) !important;
+    background-color: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
     transform: none !important;
 }
 
 .btn-outline-primary {
-    color: var(--organic-terracotta) !important;
-    border-color: var(--organic-terracotta) !important;
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
     border-radius: var(--organic-radius) !important;
 }
 
 .btn-outline-primary:hover {
-    background: var(--organic-terracotta) !important;
+    background: var(--primary-color) !important;
     color: #fff !important;
 }
 
@@ -83,7 +78,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .organic-header__top {
-    padding: 14px 0;
+    padding: 16px 0;
 }
 
 .organic-logo {
@@ -98,7 +93,7 @@ h1, h2, h3, h4, h5, h6 {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--organic-green);
+    background: var(--accent-green);
     color: #fff;
     font-weight: 700;
     font-size: 0.95rem;
@@ -108,15 +103,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .organic-logo__name {
-    color: var(--organic-terracotta);
+    color: var(--brand-brown);
     font-weight: 800;
     font-size: 1.45rem;
     letter-spacing: -0.02em;
 }
 
 .organic-logo img.logo-img {
-    max-height: 52px;
+    max-height: 78px;
+    max-width: 320px;
     width: auto;
+    background: transparent !important;
+    display: block;
 }
 
 .organic-search {
@@ -150,7 +148,7 @@ h1, h2, h3, h4, h5, h6 {
 .organic-search__btn {
     width: 48px;
     border: none;
-    background: var(--organic-terracotta);
+    background: var(--primary-color);
     color: #fff;
     display: inline-flex;
     align-items: center;
@@ -159,7 +157,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .organic-search__btn:hover {
-    background: var(--organic-orange);
+    background: var(--accent-color);
     color: #fff;
 }
 
@@ -185,7 +183,7 @@ h1, h2, h3, h4, h5, h6 {
     min-width: 18px;
     height: 18px;
     font-size: 0.65rem;
-    background: var(--organic-terracotta) !important;
+    background: var(--primary-color) !important;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
@@ -226,7 +224,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .organic-nav__list .nav-link:hover,
 .organic-nav__list .nav-link.active {
-    color: var(--organic-green) !important;
+    color: var(--accent-green) !important;
 }
 
 .organic-nav__list .dropdown-menu {
@@ -281,7 +279,7 @@ body:has(.organic-header) {
 }
 
 .product-badge--sale {
-    background: var(--organic-terracotta) !important;
+    background: var(--primary-color) !important;
 }
 
 .product-quick-actions {
@@ -315,7 +313,7 @@ body:has(.organic-header) {
 }
 
 .product-title a:hover {
-    color: var(--organic-green) !important;
+    color: var(--accent-green) !important;
 }
 
 .product-rating {
@@ -334,7 +332,7 @@ body:has(.organic-header) {
 }
 
 .product-price .current-price {
-    color: var(--organic-orange) !important;
+    color: var(--accent-color) !important;
     font-size: 1rem !important;
     font-weight: 700 !important;
 }
@@ -353,8 +351,8 @@ body:has(.organic-header) {
 .product-cart-wrap a.btn {
     width: 100% !important;
     border-radius: 2px !important;
-    background: var(--organic-terracotta) !important;
-    border-color: var(--organic-terracotta) !important;
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
     color: #fff !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
@@ -367,7 +365,7 @@ body:has(.organic-header) {
     width: 100% !important;
     height: auto !important;
     border-radius: 2px !important;
-    background: var(--organic-terracotta) !important;
+    background: var(--primary-color) !important;
     color: #fff !important;
     padding: 0.65rem !important;
 }
@@ -577,7 +575,7 @@ body:has(.organic-header) {
     right: 0;
     bottom: 0;
     height: 3px;
-    background: var(--organic-green, #2D6A4F);
+    background: var(--accent-green);
     z-index: 2;
 }
 
@@ -627,8 +625,8 @@ body:has(.organic-header) {
 
 .organic-filter-pills .pill.is-active,
 .organic-filter-pills .pill:hover {
-    background: var(--organic-terracotta);
-    border-color: var(--organic-terracotta);
+    background: var(--primary-color);
+    border-color: var(--primary-color);
     color: #fff;
 }
 
@@ -705,7 +703,7 @@ body:has(.organic-header) {
 }
 
 .home-hero__title {
-    color: var(--organic-green) !important;
+    color: var(--accent-green) !important;
     font-weight: 800 !important;
     font-size: clamp(1.5rem, 3vw, 2.25rem) !important;
     margin-bottom: 0.4rem !important;
@@ -787,8 +785,8 @@ body:has(.organic-header) {
 
 .home-hero .btn,
 .hero-buttons .btn {
-    background: var(--organic-green) !important;
-    border-color: var(--organic-green) !important;
+    background: var(--accent-green) !important;
+    border-color: var(--accent-green) !important;
     border-radius: 4px !important;
     color: #fff !important;
     text-transform: uppercase;
@@ -813,7 +811,7 @@ body:has(.organic-header) {
 
 .trust-features .feature-icon,
 .features-bar i {
-    color: var(--organic-terracotta) !important;
+    color: var(--primary-color) !important;
 }
 
 /* ========== PRODUCT DETAIL ========== */
@@ -872,7 +870,7 @@ body:has(.organic-header) {
 
 .pd-thumb.active,
 .pd-thumb:hover {
-    border-color: var(--organic-terracotta) !important;
+    border-color: var(--primary-color) !important;
     transform: none !important;
 }
 
@@ -910,7 +908,7 @@ body:has(.organic-header) {
 
 .pd-price-block .current-price,
 #detailCurrentPrice {
-    color: var(--organic-orange) !important;
+    color: var(--accent-color) !important;
     font-size: 1.6rem !important;
     font-weight: 700 !important;
 }
@@ -959,7 +957,7 @@ body:has(.organic-header) {
 }
 
 .pd-qty-control button:hover {
-    background: var(--organic-terracotta) !important;
+    background: var(--primary-color) !important;
     color: #fff !important;
 }
 
@@ -992,13 +990,13 @@ body:has(.organic-header) {
 .pd-btn--cart {
     flex: 1 1 auto;
     min-width: 0 !important;
-    background: var(--organic-terracotta) !important;
-    border-color: var(--organic-terracotta) !important;
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
     color: #fff !important;
 }
 
 .pd-btn--cart:hover {
-    background: var(--organic-orange) !important;
+    background: var(--accent-color) !important;
     color: #fff !important;
     transform: none !important;
 }
@@ -1024,7 +1022,7 @@ body:has(.organic-header) {
     padding: 0 !important;
     background: #fff !important;
     border: 1px solid var(--organic-border) !important;
-    color: var(--organic-terracotta) !important;
+    color: var(--primary-color) !important;
 }
 
 .pd-direct-order {
@@ -1162,14 +1160,14 @@ body:has(.organic-header) {
 }
 
 .pd-tabs-nav .nav-link:hover {
-    color: var(--organic-terracotta) !important;
-    border-color: var(--organic-terracotta) !important;
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
     background: #fff !important;
 }
 
 .pd-tabs-nav .nav-link.active {
-    background: var(--organic-terracotta) !important;
-    border-color: var(--organic-terracotta) !important;
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
     color: #ffffff !important;
 }
 
@@ -1262,14 +1260,14 @@ body:has(.organic-header) {
 }
 
 .checkout-progress .is-active {
-    color: var(--organic-green);
-    border-bottom: 2px solid var(--organic-green);
+    color: var(--accent-green);
+    border-bottom: 2px solid var(--accent-green);
 }
 
 .order-summary-total,
 .checkout-total,
 .text-primary.checkout-amount {
-    color: var(--organic-orange) !important;
+    color: var(--accent-color) !important;
 }
 
 /* ========== FOOTER ========== */
@@ -1289,7 +1287,7 @@ body:has(.organic-header) {
 }
 
 .footer a.text-muted:hover {
-    color: var(--organic-orange) !important;
+    color: var(--accent-color) !important;
 }
 
 .footer .social-links a {
@@ -1298,7 +1296,7 @@ body:has(.organic-header) {
     height: 36px;
     align-items: center;
     justify-content: center;
-    background: var(--organic-terracotta);
+    background: var(--primary-color);
     border-radius: 50%;
     color: #fff !important;
     margin-right: 8px;
@@ -1313,8 +1311,8 @@ body:has(.organic-header) {
 /* Cart drawer accents */
 .cart-drawer .btn-checkout,
 .offcanvas .btn-primary {
-    background: var(--organic-terracotta) !important;
-    border-color: var(--organic-terracotta) !important;
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
 }
 
 /* Misc jewelry cleanup */

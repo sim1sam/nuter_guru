@@ -252,8 +252,8 @@
         .logo-img {
             width: auto;
             height: auto;
-            max-height: 48px;
-            max-width: 220px;
+            max-height: 78px;
+            max-width: 320px;
             display: block;
             object-fit: contain;
         }
@@ -359,7 +359,8 @@
             }
             
             .logo-img {
-                max-width: 120px; /* reduce logo size on mobile */
+                max-width: 200px;
+                max-height: 64px;
                 height: auto;
                 display: block !important;
             }
@@ -514,7 +515,8 @@
             }
             
             .logo-img {
-                max-width: 120px;
+                max-width: 200px;
+                max-height: 64px;
             }
             
             .logo-text {
@@ -1043,7 +1045,7 @@
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="footer-widget">
                         <a href="{{ route('home') }}" class="d-inline-block">
-                            <img src="{{ asset($setting->logo) }}" alt="{{ $seoSetting->seo_title ?? 'Logo' }}" class="img-fluid" style="max-height: 48px;">
+                            <img src="{{ asset($setting->logo) }}" alt="{{ $seoSetting->seo_title ?? 'Logo' }}" class="img-fluid" style="max-height: 72px;">
                         </a>
                         
                         <p class="text-muted">{{ $footer->description ?? 'Premium organic dry fruits, nuts, spices and healthy foods — fresh, pure, and delivered to your door.' }}</p>
