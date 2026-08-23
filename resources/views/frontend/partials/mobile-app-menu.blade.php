@@ -10,8 +10,15 @@
     <div class="offcanvas-body mobile-app-menu__body">
         <form action="{{ route('products') }}" method="GET" class="mobile-app-menu__search">
             <i class="fas fa-search"></i>
-            <input type="text" name="search" placeholder="Search products..." value="{{ request('search') }}">
+            <input type="text"
+                   name="search"
+                   class="js-product-search"
+                   placeholder="Search products..."
+                   value="{{ request('search') }}"
+                   autocomplete="off"
+                   aria-autocomplete="list">
             <button type="submit" class="visually-hidden">Search</button>
+            <div class="search-suggestions js-search-suggestions search-suggestions--menu" hidden></div>
         </form>
 
         <div class="mobile-app-menu__grid">

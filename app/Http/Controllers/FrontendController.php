@@ -450,6 +450,60 @@ class FrontendController extends Controller
             'products' => $recommendedProducts
         ]);
     }
+
+    public function searchProducts(Request $request)
+    {
+        $query = trim((string) $request->get('q', ''));
+
+        if (mb_strlen($query) < 2) {
+            return response()->json([
+                'success' => true,
+                'products' => [],
+            ]);
+        }
+
+        $setting = Setting::select('currency_icon')->first();
+        $currency = $setting->currency_icon ?? '৳';
+        $like = '%' . $query . '%';
+        $prefix = $query . '%';
+
+        $products = Product::query()
+            ->where('status', 1)
+            ->where('approve_by_admin', 1)
+            ->where(function ($q) use ($like) {
+                $q->where('name', 'LIKE', $like)
+                    ->orWhere('short_description', 'LIKE', $like)
+                    ->orWhere('tags', 'LIKE', $like)
+                    ->orWhere('sku', 'LIKE', $like);
+            })
+            ->select('id', 'name', 'slug', 'thumb_image', 'price', 'offer_price')
+            ->orderByRaw('CASE WHEN name LIKE ? THEN 0 ELSE 1 END', [$prefix])
+            ->orderBy('name')
+            ->limit(8)
+            ->get()
+            ->map(function (Product $product) use ($currency) {
+                $hasSale = $product->offer_price && $product->offer_price < $product->price;
+                $displayPrice = $hasSale ? $product->offer_price : $product->price;
+
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'url' => route('product-detail', ['slug' => $product->slug]),
+                    'image' => $product->thumb_image
+                        ? asset($product->thumb_image)
+                        : asset('frontend/images/default-product.svg'),
+                    'price' => number_format((float) $displayPrice, 2),
+                    'currency' => $currency,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'products' => $products,
+        ]);
+    }
     
     public function category($slug)
     {

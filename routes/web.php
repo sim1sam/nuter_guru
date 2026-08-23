@@ -202,7 +202,8 @@ Route::post('/logout', [App\Http\Controllers\Frontend\LoginController::class, 'l
 
 // Frontend Cart and Checkout Routes (accessible to both authenticated and guest users)
 Route::get('/cart', [App\Http\Controllers\FrontendController::class, 'cart'])->name('cart');
-Route::get('/api/recommended-products', [App\Http\Controllers\FrontendController::class, 'getRecommendedProducts'])->name('recommended.products');
+    Route::get('/api/recommended-products', [App\Http\Controllers\FrontendController::class, 'getRecommendedProducts'])->name('recommended.products');
+    Route::get('/api/search-products', [App\Http\Controllers\FrontendController::class, 'searchProducts'])->name('products.search');
 Route::get('/checkout', [App\Http\Controllers\FrontendController::class, 'checkout'])->name('checkout');
 Route::get('/order-success', [App\Http\Controllers\FrontendController::class, 'orderSuccess'])->name('order.success');
 Route::get('/order-details/{order_id}', [App\Http\Controllers\FrontendController::class, 'orderDetails'])->name('order.details')->middleware('auth');

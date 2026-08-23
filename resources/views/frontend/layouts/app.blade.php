@@ -903,11 +903,11 @@
     @include('frontend.partials.gtm_body')
     <!-- Header -->
     <header class="header">
-        <div class="organic-header">
+        <div class="organic-header" id="organicHeader">
             <div class="organic-header__top">
                 <div class="container">
                     <div class="row align-items-center g-3">
-                        <div class="col-auto col-lg-3">
+                        <div class="col col-lg-3">
                             <a class="organic-logo" href="{{ route('home') }}">
                                 @if($setting && $setting->logo)
                                     <img src="{{ asset($setting->logo) }}" alt="{{ config('app.name', 'Nuter Guru') }}" class="img-fluid logo-img">
@@ -918,24 +918,37 @@
                             </a>
                         </div>
 
-                        <div class="col col-lg-6">
-                            <div class="organic-search">
+                        <div class="col-12 col-lg-6 organic-search-col">
+                            <div class="organic-search" id="organicSearchBar">
                                 <form action="{{ route('products') }}" method="GET" class="organic-search__form">
                                     <input type="text"
                                            name="search"
-                                           class="form-control organic-search__input"
+                                           class="form-control organic-search__input js-product-search"
                                            placeholder="{{ __('Search products...') }}"
-                                           value="{{ request('search') }}">
+                                           value="{{ request('search') }}"
+                                           autocomplete="off"
+                                           aria-autocomplete="list"
+                                           aria-controls="organicSearchSuggestions">
                                     <button type="submit" class="organic-search__btn" aria-label="{{ __('Search') }}">
                                         <i class="fas fa-search"></i>
                                     </button>
                                 </form>
+                                <div class="search-suggestions js-search-suggestions" id="organicSearchSuggestions" hidden></div>
                             </div>
                         </div>
 
-                        <div class="col-auto col-lg-3">
-                            <div class="d-flex align-items-center justify-content-end gap-2 gap-md-3">
-                                <a href="{{ route('cart') }}" class="organic-cart wsus__cart_icon" aria-label="{{ __('Cart') }}">
+                        <div class="col-auto col-lg-3 ms-auto ms-lg-0">
+                            <div class="d-flex align-items-center justify-content-end gap-2 gap-md-3 organic-header__actions">
+                                <button type="button"
+                                        class="organic-search-toggle d-lg-none"
+                                        id="organicSearchToggle"
+                                        aria-label="{{ __('Search') }}"
+                                        aria-expanded="false"
+                                        aria-controls="organicSearchBar">
+                                    <i class="fas fa-search"></i>
+                                </button>
+
+                                <a href="{{ route('cart') }}" class="organic-cart wsus__cart_icon d-none d-lg-inline-flex" aria-label="{{ __('Cart') }}">
                                     <span class="organic-cart__icon">
                                         <i class="fas fa-shopping-bag"></i>
                                         <span class="cart-count badge d-none">0</span>
@@ -1150,6 +1163,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Custom JS -->
+    <script>window.__searchProductsUrl = @json(route('products.search'));</script>
     <script src="{{ asset('frontend/js/app.js') }}?v={{ filemtime(public_path('frontend/js/app.js')) }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

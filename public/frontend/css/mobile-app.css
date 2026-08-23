@@ -15,6 +15,16 @@
         padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px) + 12px) !important;
     }
 
+    /* Organic header is in document flow (sticky), not fixed — no body offset */
+    body.mobile-app-mode:has(.organic-header) {
+        padding-top: 0 !important;
+    }
+
+    body.mobile-app-mode:has(.organic-header) .main-content {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
     body.mobile-app-mode .top-bar {
         display: none !important;
     }
@@ -57,6 +67,16 @@
 
     body.mobile-app-mode .home-section-head .section-subtitle {
         font-size: 0.88rem;
+    }
+
+    body.mobile-app-mode:has(.organic-header) .home-hero__slide {
+        min-height: 260px;
+        max-height: 260px;
+        height: 260px !important;
+    }
+
+    body.mobile-app-mode:has(.organic-header) .home-hero__container {
+        padding-bottom: 0;
     }
 
     body.mobile-app-mode .home-hero__slide {

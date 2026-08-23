@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initImageZoom();
     initQuantityControls();
     initSmoothScrolling();
+    initMobileSearchToggle();
 });
 
 // Scroll Animations
@@ -363,72 +364,179 @@ function updateWishlistCount() {
 
 // Search Functionality
 function initSearchFunctionality() {
-    const searchInput = document.querySelector('input[name="search"]');
-    const searchSuggestions = document.querySelector('.search-suggestions');
-    
-    if (searchInput) {
+    const searchUrl = window.__searchProductsUrl || '/api/search-products';
+    const inputs = document.querySelectorAll('.js-product-search');
+
+    if (!inputs.length) {
+        return;
+    }
+
+    inputs.forEach(function (searchInput) {
+        const wrap = searchInput.closest('.organic-search') || searchInput.closest('.mobile-app-menu__search');
+        const searchSuggestions = wrap ? wrap.querySelector('.js-search-suggestions') : null;
+
+        if (!searchSuggestions) {
+            return;
+        }
+
         let searchTimeout;
-        
-        searchInput.addEventListener('input', function() {
+        let activeController = null;
+
+        const hideSuggestions = () => {
+            searchSuggestions.innerHTML = '';
+            searchSuggestions.hidden = true;
+            searchSuggestions.classList.remove('is-visible');
+        };
+
+        const showSuggestions = () => {
+            searchSuggestions.hidden = false;
+            searchSuggestions.classList.add('is-visible');
+        };
+
+        searchInput.addEventListener('input', function () {
             clearTimeout(searchTimeout);
             const query = this.value.trim();
-            
-            if (query.length >= 2) {
-                searchTimeout = setTimeout(() => {
-                    fetchSearchSuggestions(query);
-                }, 300);
-            } else if (searchSuggestions) {
-                searchSuggestions.style.display = 'none';
+
+            if (activeController) {
+                activeController.abort();
+                activeController = null;
+            }
+
+            if (query.length < 2) {
+                hideSuggestions();
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                activeController = new AbortController();
+                fetchSearchSuggestions(
+                    query,
+                    searchUrl,
+                    searchSuggestions,
+                    showSuggestions,
+                    hideSuggestions,
+                    activeController
+                );
+            }, 280);
+        });
+
+        searchInput.addEventListener('focus', function () {
+            const query = this.value.trim();
+            if (query.length >= 2 && searchSuggestions.innerHTML.trim() !== '') {
+                showSuggestions();
             }
         });
-        
-        // Hide suggestions when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!searchInput.contains(e.target) && searchSuggestions) {
-                searchSuggestions.style.display = 'none';
+
+        document.addEventListener('click', function (e) {
+            if (!wrap.contains(e.target)) {
+                hideSuggestions();
             }
         });
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function fetchSearchSuggestions(query, searchUrl, container, showSuggestions, hideSuggestions, controller) {
+    container.innerHTML = '<div class="search-suggestions__loading">Searching...</div>';
+    showSuggestions();
+
+    fetch(searchUrl + '?q=' + encodeURIComponent(query), {
+        headers: { 'Accept': 'application/json' },
+        signal: controller ? controller.signal : undefined,
+    })
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error('Search failed');
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            displaySearchSuggestions(data.products || [], container, showSuggestions, hideSuggestions);
+        })
+        .catch(function (error) {
+            if (error.name === 'AbortError') {
+                return;
+            }
+            hideSuggestions();
+        });
+}
+
+function displaySearchSuggestions(products, container, showSuggestions, hideSuggestions) {
+    if (!container) {
+        return;
     }
+
+    if (!products.length) {
+        container.innerHTML = '<div class="search-suggestions__empty">No products found</div>';
+        showSuggestions();
+        return;
+    }
+
+    const html = products.map(function (product) {
+        return (
+            '<a href="' + escapeHtml(product.url) + '" class="search-suggestions__item" role="option">' +
+                '<img src="' + escapeHtml(product.image) + '" alt="" class="search-suggestions__thumb" loading="lazy" onerror="this.src=\'/frontend/images/default-product.svg\'">' +
+                '<span class="search-suggestions__body">' +
+                    '<span class="search-suggestions__name">' + escapeHtml(product.name) + '</span>' +
+                    '<span class="search-suggestions__price">' + escapeHtml(product.currency) + escapeHtml(product.price) + '</span>' +
+                '</span>' +
+            '</a>'
+        );
+    }).join('');
+
+    container.innerHTML = html;
+    showSuggestions();
 }
 
-// Fetch search suggestions
-function fetchSearchSuggestions(query) {
-    // This would typically make an AJAX request to your backend
-    // For now, we'll simulate with local data
-    const suggestions = [
-        'Diamond Ring',
-        'Gold Necklace',
-        'Silver Earrings',
-        'Pearl Bracelet',
-        'Emerald Pendant'
-    ].filter(item => item.toLowerCase().includes(query.toLowerCase()));
-    
-    displaySearchSuggestions(suggestions);
-}
+function initMobileSearchToggle() {
+    const header = document.getElementById('organicHeader');
+    const toggle = document.getElementById('organicSearchToggle');
+    const searchInput = document.querySelector('.organic-search__input');
 
-// Display search suggestions
-function displaySearchSuggestions(suggestions) {
-    const searchSuggestions = document.querySelector('.search-suggestions');
-    
-    if (!searchSuggestions) return;
-    
-    if (suggestions.length > 0) {
-        const html = suggestions.map(suggestion => 
-            `<div class="suggestion-item">${suggestion}</div>`
-        ).join('');
-        
-        searchSuggestions.innerHTML = html;
-        searchSuggestions.style.display = 'block';
-        
-        // Add click handlers to suggestions
-        searchSuggestions.querySelectorAll('.suggestion-item').forEach(item => {
-            item.addEventListener('click', function() {
-                document.querySelector('input[name="search"]').value = this.textContent;
-                searchSuggestions.style.display = 'none';
-            });
-        });
-    } else {
-        searchSuggestions.style.display = 'none';
+    if (!header || !toggle) {
+        return;
+    }
+
+    const setOpen = (open) => {
+        header.classList.toggle('is-search-open', open);
+        toggle.classList.toggle('is-active', open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+        if (open && searchInput) {
+            window.requestAnimationFrame(() => searchInput.focus());
+        }
+    };
+
+    toggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setOpen(!header.classList.contains('is-search-open'));
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!header.classList.contains('is-search-open')) {
+            return;
+        }
+
+        if (e.target.closest('.organic-search-col') || e.target.closest('#organicSearchToggle')) {
+            return;
+        }
+
+        setOpen(false);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            setOpen(false);
+        }
+    });
+
+    if (searchInput && searchInput.value.trim() !== '' && window.matchMedia('(max-width: 991.98px)').matches) {
+        setOpen(true);
     }
 }
 
