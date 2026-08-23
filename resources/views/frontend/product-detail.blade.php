@@ -171,9 +171,16 @@
                             </button>
                         </div>
 
-                        <div class="pd-watching">
+                        <div class="pd-watching"
+                             id="pdWatching"
+                             data-product-id="{{ $product->id }}"
+                             data-visitor-id="{{ $watcherId }}"
+                             data-heartbeat-url="{{ route('product.watching', $product->id) }}">
                             <i class="fas fa-eye"></i>
-                            <span>{{ rand(8, 24) }} {{ __('People watching this product now!') }}</span>
+                            <span>
+                                <strong id="pdWatchingCount">{{ $watchingCount }}</strong>
+                                <span id="pdWatchingLabel">{{ $watchingCount === 1 ? __('Person watching this product now!') : __('People watching this product now!') }}</span>
+                            </span>
                         </div>
                     </div>
                     @else
@@ -340,6 +347,66 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const currencyIcon = @json($setting->currency_icon);
+    const watchingEl = document.getElementById('pdWatching');
+    const watchingCountEl = document.getElementById('pdWatchingCount');
+    const watchingLabelEl = document.getElementById('pdWatchingLabel');
+
+    function updateWatchingLabel(count) {
+        if (!watchingLabelEl) {
+            return;
+        }
+
+        watchingLabelEl.textContent = count === 1
+            ? @json(__('Person watching this product now!'))
+            : @json(__('People watching this product now!'));
+    }
+
+    function refreshWatchingCount() {
+        if (!watchingEl || !watchingCountEl) {
+            return;
+        }
+
+        const heartbeatUrl = watchingEl.dataset.heartbeatUrl;
+        const visitorId = watchingEl.dataset.visitorId;
+
+        if (!heartbeatUrl) {
+            return;
+        }
+
+        fetch(heartbeatUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ visitor_id: visitorId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && typeof data.count !== 'undefined') {
+                watchingCountEl.textContent = data.count;
+                updateWatchingLabel(parseInt(data.count, 10));
+
+                if (data.visitor_id) {
+                    watchingEl.dataset.visitorId = data.visitor_id;
+                }
+            }
+        })
+        .catch(() => {});
+    }
+
+    if (watchingEl) {
+        refreshWatchingCount();
+        setInterval(refreshWatchingCount, 45000);
+
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) {
+                refreshWatchingCount();
+            }
+        });
+    }
+
     const mainImage = document.getElementById('mainProductImage');
     const thumbnails = document.querySelectorAll('.pd-thumb');
     const detailCurrentPrice = document.getElementById('detailCurrentPrice');

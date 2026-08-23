@@ -46,6 +46,30 @@
         --organic-terracotta: {{ $theme['primary'] }};
         --organic-orange: {{ $theme['accent'] }};
         --organic-brown: {{ $theme['brand_brown'] }};
+        --selection-color: {{ $theme['primary'] }};
+        --selection-color-rgb: {{ $theme['primary_rgb'] }};
+        --bs-primary: {{ $theme['primary'] }};
+        --bs-primary-rgb: {{ $theme['primary_rgb'] }};
+        --bs-form-check-input-checked-bg-color: {{ $theme['primary'] }};
+        --bs-form-check-input-checked-border-color: {{ $theme['primary'] }};
+        --bs-form-check-input-focus-border: {{ $theme['primary'] }};
+        --bs-form-check-input-focus-box-shadow: 0 0 0 0.25rem rgba({{ $theme['primary_rgb'] }}, 0.25);
+        --bs-form-switch-bg: {{ $theme['primary'] }};
         --transition: all 0.3s ease;
+    }
+
+    .form-check-input:checked {
+        background-color: var(--selection-color, var(--primary-color)) !important;
+        border-color: var(--selection-color, var(--primary-color)) !important;
+    }
+
+    .form-check-input:focus {
+        border-color: var(--selection-color, var(--primary-color)) !important;
+        box-shadow: 0 0 0 0.25rem rgba(var(--selection-color-rgb, var(--primary-rgb)), 0.25) !important;
+    }
+
+    .form-switch .form-check-input:checked {
+        background-color: var(--selection-color, var(--primary-color)) !important;
+        border-color: var(--selection-color, var(--primary-color)) !important;
     }
 </style>

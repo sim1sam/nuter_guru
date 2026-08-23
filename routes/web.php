@@ -161,6 +161,7 @@ Route::group(['middleware' => ['maintainance']], function () {
     Route::get('/', [App\Http\Controllers\FrontendController::class, 'index'])->name('home');
     Route::get('/products', [App\Http\Controllers\FrontendController::class, 'products'])->name('products');
     Route::get('/product/{slug}', [App\Http\Controllers\FrontendController::class, 'productDetail'])->name('product-detail');
+    Route::post('/product/{id}/watching', [App\Http\Controllers\FrontendController::class, 'productWatcherHeartbeat'])->name('product.watching');
     Route::get('/category/{slug}', [App\Http\Controllers\FrontendController::class, 'category'])->name('category');
     Route::get('/brand/{slug}', [App\Http\Controllers\FrontendController::class, 'brand'])->name('brand');
     Route::get('/about', [App\Http\Controllers\FrontendController::class, 'about'])->name('about');

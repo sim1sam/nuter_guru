@@ -13,6 +13,7 @@ use App\Models\Setting;
 use App\Models\Order;
 use App\Models\BannerImage;
 use App\Models\HomePageOneVisibility;
+use App\Helpers\ProductWatcherHelper;
 use App\Models\PopularCategory;
 use App\Models\FeaturedCategory;
 use App\Models\FlashSale;
@@ -398,8 +399,35 @@ class FrontendController extends Controller
         
         // Get setting for currency
         $setting = Setting::first();
-        
-        return view('frontend.product-detail', compact('product', 'relatedProducts', 'seoSetting', 'setting'));
+
+        $watcherId = ProductWatcherHelper::register($product->id);
+        $watchingCount = ProductWatcherHelper::count($product->id);
+
+        return view('frontend.product-detail', compact('product', 'relatedProducts', 'seoSetting', 'setting', 'watchingCount', 'watcherId'));
+    }
+
+    public function productWatcherHeartbeat(Request $request, $id)
+    {
+        $productId = (int) $id;
+        $product = Product::where('id', $productId)
+            ->where('status', 1)
+            ->where('approve_by_admin', 1)
+            ->first();
+
+        if (! $product) {
+            return response()->json(['success' => false, 'message' => 'Product not found'], 404);
+        }
+
+        $visitorId = ProductWatcherHelper::register(
+            $productId,
+            $request->input('visitor_id')
+        );
+
+        return response()->json([
+            'success' => true,
+            'count' => ProductWatcherHelper::count($productId),
+            'visitor_id' => $visitorId,
+        ]);
     }
     
     public function getRecommendedProducts()

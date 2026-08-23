@@ -10,6 +10,32 @@
     --organic-radius: 4px;
 }
 
+/* Text & UI selection — uses admin theme_one via --selection-color / --primary-color */
+::selection {
+    background-color: rgba(var(--selection-color-rgb, var(--primary-rgb)), 0.35);
+    color: var(--text-dark, var(--organic-text));
+}
+
+::-moz-selection {
+    background-color: rgba(var(--selection-color-rgb, var(--primary-rgb)), 0.35);
+    color: var(--text-dark, var(--organic-text));
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+    caret-color: var(--selection-color, var(--primary-color));
+}
+
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+select,
+.form-select,
+.form-check-input {
+    accent-color: var(--selection-color, var(--primary-color));
+}
+
 /* Base */
 body {
     font-family: "Hind Siliguri", "Noto Sans Bengali", "Segoe UI", sans-serif !important;
