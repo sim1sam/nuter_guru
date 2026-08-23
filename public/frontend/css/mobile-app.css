@@ -219,6 +219,10 @@
         width: 50px;
         height: 50px;
     }
+
+    body.mobile-menu-open {
+        overflow: hidden;
+    }
 }
 
 /* Mobile shop toolbar (filters + sort) */
@@ -284,21 +288,30 @@
     }
 }
 
-/* Mobile filter bottom sheet */
+/* Mobile filter bottom sheet + menu overlay stacking */
 @media (max-width: 991.98px) {
     .offcanvas-backdrop {
-        z-index: 9995 !important;
+        z-index: 10040 !important;
+        background-color: #000;
+    }
+
+    .offcanvas-backdrop.show {
+        opacity: 0.5;
     }
 
     .mobile-filter-sheet.offcanvas,
     .mobile-app-menu.offcanvas {
-        z-index: 10000 !important;
+        z-index: 10050 !important;
         --bs-offcanvas-height: 85vh;
         height: 85vh !important;
         max-height: 85vh;
         display: flex;
         flex-direction: column;
         overflow: hidden;
+    }
+
+    .cart-drawer.offcanvas {
+        z-index: 10050 !important;
     }
 
     .mobile-filter-sheet__handle {
@@ -688,15 +701,6 @@
 
     .mobile-tab__badge.d-none {
         display: none !important;
-    }
-
-    /* Offcanvas panels (cart drawer, mobile menu) above bottom nav */
-    .offcanvas {
-        z-index: 10050 !important;
-    }
-
-    .offcanvas-backdrop {
-        z-index: 10040 !important;
     }
 }
 

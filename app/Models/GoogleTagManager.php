@@ -10,7 +10,15 @@ class GoogleTagManager extends Model
 
     public static function current(): ?self
     {
-        return static::first();
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('google_tag_managers')) {
+                return null;
+            }
+
+            return static::first();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     public function isActive(): bool

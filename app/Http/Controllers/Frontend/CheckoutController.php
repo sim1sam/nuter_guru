@@ -23,6 +23,7 @@ use App\Models\CountryState;
 use App\Models\City;
 use App\Models\EmailTemplate;
 use App\Helpers\GuestModeHelper;
+use App\Helpers\MailHelper;
 use App\Mail\OrderSuccessfully;
 use Illuminate\Support\Facades\Mail;
 use App\Models\StripePayment;
@@ -393,7 +394,12 @@ class CheckoutController extends Controller
     public function placeOrder(Request $request)
     {
         if (! GuestModeHelper::guestCartAllowed()) {
-            return GuestModeHelper::loginRequiredResponse('Please login to place an order.');
+            if ($request->expectsJson()) {
+                return GuestModeHelper::loginRequiredResponse('Please login to place an order.');
+            }
+
+            return redirect()->route('login', ['redirect' => route('checkout')])
+                ->with('error', 'Please login to place an order.');
         }
 
         // Validate request data
@@ -460,7 +466,15 @@ class CheckoutController extends Controller
             );
             
             if ($validatedData['payment_method'] === 'cash_on_delivery') {
-                $this->sendWebOrderSuccessEmail($orderResult['order'], $orderResult['order_details']);
+                try {
+                    $this->sendWebOrderSuccessEmail($orderResult['order'], $orderResult['order_details']);
+                } catch (\Throwable $emailError) {
+                    \Log::warning('Order confirmation email failed: ' . $emailError->getMessage(), [
+                        'order_id' => $orderResult['order']->order_id ?? null,
+                        'user_id' => Auth::id(),
+                    ]);
+                }
+
                 return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])
                     ->with('success', 'Order placed successfully!');
             } else {
@@ -468,7 +482,7 @@ class CheckoutController extends Controller
                 return $this->getPaymentRedirectUrl($orderResult['order'], $validatedData['payment_method'], $request);
             }
              
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Order placement failed: ' . $e->getMessage(), [
                 'user_id' => Auth::id(),
                 'request_data' => $request->except(['_token']),

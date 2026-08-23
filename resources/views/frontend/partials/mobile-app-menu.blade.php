@@ -1,4 +1,9 @@
-<div class="offcanvas offcanvas-bottom mobile-app-menu d-lg-none" tabindex="-1" id="mobileMenu" aria-labelledby="mobileMenuLabel">
+<div class="offcanvas offcanvas-bottom mobile-app-menu d-lg-none"
+     tabindex="-1"
+     id="mobileMenu"
+     aria-labelledby="mobileMenuLabel"
+     data-bs-backdrop="true"
+     data-bs-scroll="false">
     <div class="mobile-app-menu__handle" aria-hidden="true"></div>
     <div class="offcanvas-header mobile-app-menu__header">
         <div>
@@ -89,20 +94,34 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const offcanvasEl = document.getElementById('mobileMenu');
-    const toggleBtn = document.querySelector('.mobile-menu-btn');
-    if (offcanvasEl && toggleBtn) {
-        const hamburger = toggleBtn.querySelector('.navbar-toggler-icon');
-        const closeIcon = toggleBtn.querySelector('.close-icon');
-        offcanvasEl.addEventListener('shown.bs.offcanvas', function () {
+    const toggleBtns = document.querySelectorAll('[data-bs-target="#mobileMenu"]');
+    if (!offcanvasEl) {
+        return;
+    }
+
+    offcanvasEl.addEventListener('show.bs.offcanvas', function () {
+        document.body.classList.add('mobile-menu-open');
+    });
+
+    offcanvasEl.addEventListener('shown.bs.offcanvas', function () {
+        toggleBtns.forEach(function (toggleBtn) {
             toggleBtn.setAttribute('aria-expanded', 'true');
+            const hamburger = toggleBtn.querySelector('.navbar-toggler-icon');
+            const closeIcon = toggleBtn.querySelector('.close-icon');
             if (hamburger) hamburger.classList.add('d-none');
             if (closeIcon) closeIcon.classList.remove('d-none');
         });
-        offcanvasEl.addEventListener('hidden.bs.offcanvas', function () {
+    });
+
+    offcanvasEl.addEventListener('hidden.bs.offcanvas', function () {
+        document.body.classList.remove('mobile-menu-open');
+        toggleBtns.forEach(function (toggleBtn) {
             toggleBtn.setAttribute('aria-expanded', 'false');
+            const hamburger = toggleBtn.querySelector('.navbar-toggler-icon');
+            const closeIcon = toggleBtn.querySelector('.close-icon');
             if (hamburger) hamburger.classList.remove('d-none');
             if (closeIcon) closeIcon.classList.add('d-none');
         });
-    }
+    });
 });
 </script>
