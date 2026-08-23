@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', $product->name . ' - Jewellery Collection')
+@section('title', $product->name . ' - ' . config('app.name', 'Nuter Guru'))
 
 @section('content')
 @php
@@ -37,7 +37,7 @@
 
 <div class="pd-page">
     <div class="container my-5">
-        <div class="row pd-layout">
+        <div class="row pd-layout g-4 align-items-start">
             <div class="col-12 col-lg-6 pd-layout__media">
                 <div class="pd-gallery-card">
                     <div class="pd-main-image-wrap">
@@ -132,36 +132,57 @@
                     @endif
 
                     @if($availableStock > 0)
-                    <div class="pd-purchase-row">
+                    <div class="pd-buy-box">
                         <div class="pd-qty-wrap">
-                            <span class="pd-section-label">Quantity</span>
+                            <span class="pd-section-label">{{ __('Quantity') }}</span>
                             <div class="pd-qty-control">
-                                <button type="button" id="decreaseQty" aria-label="Decrease quantity"><i class="fas fa-minus"></i></button>
-                                <input type="number" id="productQuantity" value="1" min="1" max="{{ $availableStock }}" aria-label="Quantity">
-                                <button type="button" id="increaseQty" aria-label="Increase quantity"><i class="fas fa-plus"></i></button>
+                                <button type="button" id="decreaseQty" aria-label="{{ __('Decrease quantity') }}"><i class="fas fa-minus"></i></button>
+                                <input type="number" id="productQuantity" value="1" min="1" max="{{ $availableStock }}" aria-label="{{ __('Quantity') }}">
+                                <button type="button" id="increaseQty" aria-label="{{ __('Increase quantity') }}"><i class="fas fa-plus"></i></button>
                             </div>
-                            <small class="pd-stock-note">{{ $availableStock }} in stock</small>
+                            <small class="pd-stock-note">{{ $availableStock }} {{ __('in stock') }}</small>
                         </div>
+
+                        @php
+                            $whatsappNumber = preg_replace('/\D+/', '', $setting->topbar_phone ?? '');
+                            $waText = rawurlencode(__('Hello, I want to order:') . ' ' . $product->name);
+                        @endphp
 
                         <div class="pd-actions">
                             <button type="button" class="pd-btn pd-btn--cart" id="addToCart" data-product-id="{{ $product->id }}">
-                                <i class="fas fa-shopping-cart"></i> Add to Cart
+                                {{ __('ADD TO CART') }}
                             </button>
-                            <button type="button" class="pd-btn pd-btn--buy" id="buyNow" data-product-id="{{ $product->id }}">
-                                <i class="fas fa-bolt"></i> Buy Now
-                            </button>
-                            <button type="button" class="pd-btn pd-btn--wishlist" id="addToWishlist" data-product-id="{{ $product->id }}" title="Add to Wishlist">
+                            @if($whatsappNumber)
+                                <a class="pd-btn btn-whatsapp-order"
+                                   href="https://wa.me/{{ $whatsappNumber }}?text={{ $waText }}"
+                                   target="_blank"
+                                   rel="noopener">
+                                    <i class="fab fa-whatsapp me-1"></i> {{ __('Order on WhatsApp') }}
+                                </a>
+                            @endif
+                            <button type="button" class="pd-btn pd-btn--wishlist" id="addToWishlist" data-product-id="{{ $product->id }}" title="{{ __('Add to Wishlist') }}">
                                 <i class="far fa-heart"></i>
                             </button>
+                        </div>
+
+                        <div class="pd-direct-order">
+                            <button type="button" class="pd-btn pd-btn--buy w-100" id="buyNow" data-product-id="{{ $product->id }}">
+                                {{ __('BUY NOW') }}
+                            </button>
+                        </div>
+
+                        <div class="pd-watching">
+                            <i class="fas fa-eye"></i>
+                            <span>{{ rand(8, 24) }} {{ __('People watching this product now!') }}</span>
                         </div>
                     </div>
                     @else
                     <div class="pd-out-of-stock">
-                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Out of Stock</h5>
-                        <p>This product is currently unavailable.</p>
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>{{ __('Out of Stock') }}</h5>
+                        <p>{{ __('This product is currently unavailable.') }}</p>
                     </div>
                     <div class="pd-actions">
-                        <button type="button" class="pd-btn pd-btn--wishlist" id="addToWishlist" data-product-id="{{ $product->id }}" title="Add to Wishlist">
+                        <button type="button" class="pd-btn pd-btn--wishlist" id="addToWishlist" data-product-id="{{ $product->id }}" title="{{ __('Add to Wishlist') }}">
                             <i class="far fa-heart"></i>
                         </button>
                     </div>
@@ -169,21 +190,23 @@
 
                     <div class="pd-meta-grid">
                         <div class="pd-meta-item">
-                            <strong>SKU</strong>
-                            {{ $product->sku ?? 'N/A' }}
+                            <strong>{{ __('SKU') }}</strong>
+                            <span>{{ $product->sku ?? 'N/A' }}</span>
                         </div>
                         <div class="pd-meta-item">
-                            <strong>Weight</strong>
-                            {{ $product->weight ? $product->weight . 'g' : 'N/A' }}
+                            <strong>{{ __('Weight') }}</strong>
+                            <span>{{ $product->weight ? $product->weight . 'g' : 'N/A' }}</span>
                         </div>
                         @if(count($tags))
                         <div class="pd-meta-item pd-tags">
-                            <strong>Tags</strong>
-                            @foreach($tags as $tag)
-                                @if(!empty($tag))
-                                    <span class="pd-tag">{{ $tag }}</span>
-                                @endif
-                            @endforeach
+                            <strong>{{ __('Tags') }}</strong>
+                            <span class="pd-tags-list">
+                                @foreach($tags as $tag)
+                                    @if(!empty($tag))
+                                        <span class="pd-tag">{{ $tag }}</span>
+                                    @endif
+                                @endforeach
+                            </span>
                         </div>
                         @endif
                     </div>
@@ -195,17 +218,17 @@
             <ul class="nav pd-tabs-nav" id="productTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="description-tab" data-bs-toggle="tab"
-                            data-bs-target="#description" type="button" role="tab">Description</button>
+                            data-bs-target="#description" type="button" role="tab">{{ __('DESCRIPTION') }}</button>
                 </li>
                 @if($product->specifications->count() > 0)
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="specifications-tab" data-bs-toggle="tab"
-                            data-bs-target="#specifications" type="button" role="tab">Specifications</button>
+                            data-bs-target="#specifications" type="button" role="tab">{{ __('SPECIFICATIONS') }}</button>
                 </li>
                 @endif
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="reviews-tab" data-bs-toggle="tab"
-                            data-bs-target="#reviews" type="button" role="tab">Reviews ({{ $reviewCount }})</button>
+                            data-bs-target="#reviews" type="button" role="tab">{{ __('REVIEWS') }} ({{ $reviewCount }})</button>
                 </li>
             </ul>
 
@@ -279,7 +302,9 @@
 
         @if($relatedProducts->count() > 0)
         <section class="pd-related">
-            <h2 class="pd-related-title">Related Products</h2>
+            <div class="home-section-head">
+                <h2 class="section-title">{{ __('RELATED PRODUCTS') }}</h2>
+            </div>
             <div class="row products-grid-row" id="relatedProductsGrid">
                 @foreach($relatedProducts as $relatedProduct)
                 <div class="col-6 col-lg-3 col-md-4 col-sm-6 mb-4 product-item">

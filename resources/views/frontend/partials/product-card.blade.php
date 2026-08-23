@@ -4,7 +4,7 @@
     $showBrand = $showBrand ?? false;
     $tagBadge = $tagBadge ?? null;
     $extraClass = $extraClass ?? '';
-    $cartStyle = $cartStyle ?? 'compact';
+    $cartStyle = $cartStyle ?? 'full';
 
     $rating = (float) ($product->averageRating ?? ($product->relationLoaded('reviews') ? ($product->reviews->avg('rating') ?? 0) : 0));
     $fullStars = floor($rating);

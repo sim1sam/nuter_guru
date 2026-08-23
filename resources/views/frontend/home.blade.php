@@ -7,7 +7,7 @@
 
 @push('styles')
 <style>
-/* Modern Jewelry Website Styles */
+/* Modern Organic Food Website Styles */
 
 /* Slider Section Fixes */
 .slider-section {
@@ -1046,8 +1046,43 @@
 @section('content')
 @include('frontend.partials.home-hero-slider', ['sliders' => $sliders ?? collect()])
 
-<!-- Services Section moved to bottom -->
+<!-- Our Categories (below slider) -->
+<section class="home-categories-section">
+    <div class="container">
+        <div class="home-section-head">
+            <h2 class="section-title fade-in">{{ __('OUR CATEGORIES') }}</h2>
+        </div>
 
+        <div class="home-category-grid home-category-grid--six">
+            @forelse(($categories ?? collect())->take(6) as $category)
+                @include('frontend.partials.home-category-card', ['category' => $category])
+            @empty
+                @php
+                    $fallbackCategories = [
+                        ['name' => 'Dry Fruits', 'slug' => 'dry-fruits', 'image' => 'frontend/images/category-placeholder.jpg'],
+                        ['name' => 'Nuts', 'slug' => 'nuts', 'image' => 'frontend/images/category-placeholder.jpg'],
+                        ['name' => 'Spices', 'slug' => 'spices', 'image' => 'frontend/images/category-placeholder.jpg'],
+                        ['name' => 'Seeds', 'slug' => 'seeds', 'image' => 'frontend/images/category-placeholder.jpg'],
+                        ['name' => 'Honey', 'slug' => 'honey', 'image' => 'frontend/images/category-placeholder.jpg'],
+                        ['name' => 'Herbal', 'slug' => 'herbal', 'image' => 'frontend/images/category-placeholder.jpg'],
+                    ];
+                @endphp
+                @foreach($fallbackCategories as $fallback)
+                    @php
+                        $category = (object) [
+                            'name' => $fallback['name'],
+                            'slug' => $fallback['slug'],
+                            'image' => $fallback['image'],
+                        ];
+                    @endphp
+                    @include('frontend.partials.home-category-card', ['category' => $category])
+                @endforeach
+            @endforelse
+        </div>
+    </div>
+</section>
+
+@if($setting && ($setting->show_homepage_banners ?? 0))
 <!-- Banner Section -->
 <section class="home-promo-section">
     <div class="container">
@@ -1077,7 +1112,7 @@
                 @include('frontend.partials.home-promo-card', [
                     'image' => asset('frontend/images/banner-1.jpg'),
                     'title' => __('New Arrivals'),
-                    'subtitle' => __('Latest jewellery collection'),
+                    'subtitle' => __('Latest organic dry fruits'),
                     'url' => route('products', ['filter' => 'new']),
                 ])
                 @include('frontend.partials.home-promo-card', [
@@ -1095,257 +1130,105 @@
                 @include('frontend.partials.home-promo-card', [
                     'image' => asset('frontend/images/banner-4.jpg'),
                     'title' => __('Premium Collection'),
-                    'subtitle' => __('Luxury jewellery pieces'),
+                    'subtitle' => __('Premium organic selections'),
                     'url' => route('products'),
                 ])
             @endif
         </div>
     </div>
 </section>
-
-<!-- Our Products -->
-<section class="section-padding bg-light">
-    <div class="container">
-        <div class="row">
-            <div class="col-12">
-                <h2 class="section-title fade-in"> Bestsellers</h2>
-                <p class="section-subtitle fade-in">Discover our carefully selected top-rated jewellery pieces</p>
-            </div>
-        </div>
-        <div class="row g-4">
-            @if(isset($products) && $products->count() > 0)
-                @foreach($products->take(4) as $product)
-                <div class="col-6 col-lg-3 col-md-6 fade-in">
-                    @include('frontend.partials.product-card', ['product' => $product, 'showCategory' => false])
-                </div>
-                @endforeach
-            @endif
-        </div>
-        <div class="row mt-5">
-            <div class="col-12 text-center">
-                <a href="{{ route('products') }}?filter=top" class="btn btn-primary">View All Bestsellers</a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Our Collections (Categories) -->
-<section class="home-categories-section">
-    <div class="container">
-        <div class="home-section-head">
-            <h2 class="section-title fade-in">{{ __('Featured Collections') }}</h2>
-            <p class="section-subtitle fade-in">{{ __('Explore our carefully curated jewellery collections') }}</p>
-        </div>
-
-        @php
-            $homeCategories = collect();
-
-            if (isset($featuredCategories) && $featuredCategories->count() > 0) {
-                $homeCategories = $featuredCategories
-                    ->map(fn ($featuredCategory) => $featuredCategory->category)
-                    ->filter();
-            }
-
-            if ($homeCategories->isEmpty() && isset($categories) && $categories->count() > 0) {
-                $homeCategories = $categories;
-            }
-        @endphp
-
-        <div class="home-category-grid">
-            @forelse($homeCategories->take(8) as $category)
-                @include('frontend.partials.home-category-card', ['category' => $category])
-            @empty
-                @php
-                    $fallbackCategories = [
-                        ['name' => 'Rings', 'slug' => 'rings', 'image' => 'frontend/images/rings.jpg'],
-                        ['name' => 'Necklaces', 'slug' => 'necklaces', 'image' => 'frontend/images/necklaces.jpg'],
-                        ['name' => 'Earrings', 'slug' => 'earrings', 'image' => 'frontend/images/earrings.jpg'],
-                        ['name' => 'Bracelets', 'slug' => 'bracelets', 'image' => 'frontend/images/bracelets.jpg'],
-                    ];
-                @endphp
-                @foreach($fallbackCategories as $fallback)
-                    @php
-                        $category = (object) [
-                            'name' => $fallback['name'],
-                            'slug' => $fallback['slug'],
-                            'image' => $fallback['image'],
-                        ];
-                    @endphp
-                    @include('frontend.partials.home-category-card', ['category' => $category])
-                @endforeach
-            @endforelse
-        </div>
-    </div>
-</section>
-
-
+@endif
 
 <!-- Featured Products -->
-{{-- <section class="featured-products section-padding">
+<section class="featured-products section-padding bg-light">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="section-title mb-3" style="color: #333; font-weight: 600;">Featured Products</h2>
-            <p class="section-subtitle text-muted" style="font-size: 1.1rem;">Discover our exquisite collection of handcrafted jewelry</p>
+        <div class="home-section-head">
+            <h2 class="section-title fade-in">{{ __('FEATURED PRODUCTS') }}</h2>
         </div>
-        <div class="row g-4">
-            @if(isset($featuredProducts) && $featuredProducts->count() > 0)
-                @foreach($featuredProducts->take(4) as $product)
-                <div class="col-lg-3 col-md-6">
-                    <div class="product-card fade-in" data-category="{{ $product->category->slug ?? '' }}" data-price="{{ $product->offer_price ?? $product->price }}" data-name="{{ $product->name }}">
-                        <div class="product-image">
-                            <a href="{{ route('product-detail', ['slug' => $product->slug]) }}">
-                                <img src="{{ $product->thumb_image ? asset($product->thumb_image) : asset('frontend/images/default-product.svg') }}" alt="{{ $product->name }}" class="img-fluid" onerror="this.src='{{ asset('frontend/images/default-product.svg') }}'">
-                            </a>
-                        
-                            <div class="product-overlay">
-                                <a href="{{ route('product-detail', ['slug' => $product->slug]) }}" class="btn btn-light btn-sm me-2">View Details</a>
-                                @include('frontend.partials.product-add-to-cart', ['product' => $product, 'btnClass' => 'btn btn-light btn-sm add-to-cart'])
-                            </div>
-                            @if($product->offer_price && $product->offer_price < $product->price)
-                                <span class="badge bg-danger position-absolute top-0 start-0 m-2">Sale</span>
-                            @endif
-                            @if($product->is_featured)
-                                <span class="badge bg-primary position-absolute top-0 end-0 m-2">Featured</span>
-                            @endif
-                        </div>
-                        <div class="product-info">
-                            <h5 class="product-title">{{ $product->name }}</h5>
-                            <div class="product-price">
-                                @if($product->offer_price && $product->offer_price < $product->price)
-                                    {{ $setting->currency_icon }}{{ number_format($product->offer_price, 2) }}
-                                    <span class="original-price">{{ $setting->currency_icon }}{{ number_format($product->price, 2) }}</span>
-                                @else
-                                    {{ $setting->currency_icon }}{{ number_format($product->price, 2) }}
-                                @endif
-                            </div>
-                            <div class="product-rating mt-2">
-                                @for($i = 1; $i <= 5; $i++)
-                                    @if($i <= ($product->averageRating ?? 5))
-                                        <i class="fas fa-star text-warning"></i>
-                                    @else
-                                        <i class="far fa-star text-warning"></i>
-                                    @endif
-                                @endfor
-                                <span class="ms-1 text-muted">({{ $product->reviews_count ?? 0 }})</span>
-                            </div>
-                        </div>
-                    </div>
+        <div class="row g-3 home-product-row home-product-row--six">
+            @forelse(($featuredProducts ?? collect())->take(6) as $product)
+                <div class="col-6 col-md-4 col-lg-2 home-product-col fade-in">
+                    @include('frontend.partials.product-card', [
+                        'product' => $product,
+                        'showCategory' => false,
+                        'tagBadge' => 'featured',
+                    ])
                 </div>
-                @endforeach
-            @endif
+            @empty
+                <div class="col-12 text-center text-muted">{{ __('No featured products available.') }}</div>
+            @endforelse
         </div>
-        <div class="row mt-5">
+        <div class="row mt-4">
             <div class="col-12 text-center">
-                <a href="{{ route('products') }}?filter=featured" class="btn btn-primary">View All Featured Products</a>
+                <a href="{{ route('products') }}?filter=featured" class="btn btn-primary">{{ __('View All Featured Products') }}</a>
             </div>
         </div>
     </div>
-</section> --}}
+</section>
 
 <!-- New Arrival Products -->
-<section class="new-arrival-products section-padding bg-light">
+<section class="new-arrival-products section-padding">
     <div class="container">
-        <div class="row">
-            <div class="col-12">
-                <h2 class="section-title fade-in">New Arrivals</h2>
-                <p class="section-subtitle fade-in">Discover our latest collection of stunning jewellery pieces</p>
-            </div>
+        <div class="home-section-head">
+            <h2 class="section-title fade-in">{{ __('NEW ARRIVALS') }}</h2>
         </div>
-        <div class="row g-4">
-            @if(isset($newArrivalProducts) && $newArrivalProducts->count() > 0)
-                @foreach($newArrivalProducts->take(4) as $product)
-                <div class="col-6 col-lg-3 col-md-6 fade-in">
+        <div class="row g-3 home-product-row home-product-row--six">
+            @forelse(($newArrivalProducts ?? collect())->take(6) as $product)
+                <div class="col-6 col-md-4 col-lg-2 home-product-col fade-in">
                     @include('frontend.partials.product-card', [
                         'product' => $product,
                         'showCategory' => false,
                         'tagBadge' => 'new',
                     ])
                 </div>
-                @endforeach
-            @endif
+            @empty
+                <div class="col-12 text-center text-muted">{{ __('No new arrivals available.') }}</div>
+            @endforelse
         </div>
-        <div class="row mt-5">
+        <div class="row mt-4">
             <div class="col-12 text-center">
-                <a href="{{ route('products') }}?filter=new" class="btn btn-primary">View All New Arrivals</a>
+                <a href="{{ route('products') }}?filter=new" class="btn btn-primary">{{ __('View All New Arrivals') }}</a>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Best Products -->
-{{-- <section class="best-products section-padding">
+<!-- Best Selling Products -->
+<section class="best-products section-padding bg-light">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="section-title mb-3" style="color: #333; font-weight: 600;">Best Products</h2>
-            <p class="section-subtitle text-muted" style="font-size: 1.1rem;">Discover our carefully selected best products that customers love most</p>
+        <div class="home-section-head">
+            <h2 class="section-title fade-in">{{ __('BEST SELLING') }}</h2>
         </div>
-        <div class="row g-4">
-            @if(isset($bestProducts) && $bestProducts->count() > 0)
-                @foreach($bestProducts->take(4) as $product)
-                <div class="col-lg-3 col-md-6">
-                    <div class="product-card fade-in" data-category="{{ $product->category->slug ?? '' }}" data-price="{{ $product->offer_price ?? $product->price }}" data-name="{{ $product->name }}">
-                        <div class="product-image">
-                            <img src="{{ $product->thumb_image ? asset($product->thumb_image) : asset('frontend/images/default-product.svg') }}" alt="{{ $product->name }}" class="img-fluid" onerror="this.src='{{ asset('frontend/images/default-product.svg') }}';">>
-                        
-                            <div class="product-overlay">
-                                <a href="{{ route('product-detail', $product->slug) }}" class="btn btn-primary me-2">View Details</a>
-                            </div>
-                            @if($product->offer_price && $product->offer_price < $product->price)
-                                <span class="badge bg-danger position-absolute top-0 start-0 m-2">Sale</span>
-                            @endif
-                            @if($product->is_best)
-                                <span class="badge bg-warning position-absolute top-0 end-0 m-2">Best</span>
-                            @endif
-                        </div>
-                        <div class="product-info">
-                            <h5 class="product-title">{{ $product->name }}</h5>
-                            <div class="product-price">
-                                @if($product->offer_price && $product->offer_price < $product->price)
-                                    {{ $setting->currency_icon }}{{ number_format($product->offer_price, 2) }}
-                                    <span class="original-price">{{ $setting->currency_icon }}{{ number_format($product->price, 2) }}</span>
-                                @else
-                                    {{ $setting->currency_icon }}{{ number_format($product->price, 2) }}
-                                @endif
-                            </div>
-                            <div class="product-rating mt-2">
-                                @php
-                                    $avgRating = $product->averageRating ?? 5;
-                                    $fullRating = round($avgRating);
-                                @endphp
-                                @for($i = 1; $i <= 5; $i++)
-                                    @if($i <= $fullRating)
-                                        <i class="fas fa-star text-warning"></i>
-                                    @else
-                                        <i class="far fa-star text-warning"></i>
-                                    @endif
-                                @endfor
-                                <span class="ms-1 text-muted">({{ $product->reviews_count ?? count($product->reviews) }})</span>
-                            </div>
-                        </div>
-                    </div>
+        <div class="row g-3 home-product-row home-product-row--six">
+            @forelse(($bestProducts ?? collect())->take(6) as $product)
+                <div class="col-6 col-md-4 col-lg-2 home-product-col fade-in">
+                    @include('frontend.partials.product-card', [
+                        'product' => $product,
+                        'showCategory' => false,
+                        'tagBadge' => 'best',
+                    ])
                 </div>
-                @endforeach
-            @endif
+            @empty
+                <div class="col-12 text-center text-muted">{{ __('No best selling products available.') }}</div>
+            @endforelse
         </div>
-        <div class="row mt-5">
+        <div class="row mt-4">
             <div class="col-12 text-center">
-                <a href="{{ route('products') }}?filter=best" class="btn btn-primary">View All Best Products</a>
+                <a href="{{ route('products') }}?filter=best" class="btn btn-primary">{{ __('View All Best Selling') }}</a>
             </div>
         </div>
     </div>
-</section> --}}
-<!--============================
-    BEST PRODUCTS END
-==============================-->
+</section>
 
 @if(isset($flashSale) && $flashSale && isset($flashSaleProducts) && $flashSaleProducts->count() > 0)
 <!-- Flash Sale Section -->
 <section class="flash-sale-section section-padding bg-light">
     <div class="container">
+        <div class="home-section-head">
+            <h2 class="section-title fade-in">{{ __('FLASH SALE') }}</h2>
+        </div>
         <div class="row">
             <div class="col-12 text-center">
-                <h2 class="section-title fade-in">Flash Sale</h2>
-                <p class="section-subtitle fade-in">Limited time offer - Don't miss out!</p>
                 @if($flashSale->end_time)
                 <div class="countdown-timer mb-4" data-end-date="{{ $flashSale->end_time }}">
                     <div class="countdown-item">
@@ -1406,7 +1289,7 @@
             <div class="col-lg-3 col-md-6">
                 <div class="stat-item fade-in">
                     <span class="stat-number">500+</span>
-                    <div class="stat-label">Jewellery Pieces</div>
+                    <div class="stat-label">{{ __('Organic Products') }}</div>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6">
@@ -1428,11 +1311,8 @@
 <!-- Testimonials Section -->
 <section class="testimonials-section py-5" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);">
     <div class="container">
-        <div class="row">
-            <div class="col-12">
-                <h2 class="section-title fade-in">Reviews</h2>
-                <p class="section-subtitle fade-in">What our customers say about our jewellery collection</p>
-            </div>
+        <div class="home-section-head">
+            <h2 class="section-title fade-in">{{ __('CUSTOMER REVIEW') }}</h2>
         </div>
         
         <!-- Testimonial Carousel (Manual only, no auto slide) -->
@@ -1502,7 +1382,7 @@
                                                 <i class="fas fa-star"></i>
                                                 <i class="fas fa-star"></i>
                                             </div>
-                                            <p class="testimonial-text-slider">"Absolutely stunning Jewellery! The quality exceeded my expectations and the customer service was exceptional."</p>
+                                            <p class="testimonial-text-slider">"{{ __('Absolutely fresh and premium quality dry fruits! Packaging was hygienic and delivery was fast.') }}"</p>
                                         </div>
                                     </div>
                                     
@@ -1540,7 +1420,7 @@
                                                 </div>
                                                 <div class="testimonial-info-slider">
                                                     <h5 class="testimonial-name-slider">Emma Davis</h5>
-                                                    <p class="testimonial-designation-slider">Jewellery Enthusiast</p>
+                                                    <p class="testimonial-designation-slider">{{ __('Happy Customer') }}</p>
                                                 </div>
                                             </div>
                                             <div class="testimonial-rating-slider mb-3">
@@ -1602,7 +1482,7 @@
                                                 <i class="fas fa-star"></i>
                                                 <i class="fas fa-star"></i>
                                             </div>
-                                            <p class="testimonial-text-slider">"Exceptional service and beautiful jewellery pieces. I've been a customer for years and never disappointed."</p>
+                                            <p class="testimonial-text-slider">"{{ __('Exceptional service and authentic organic products. I have been ordering regularly and never disappointed.') }}"</p>
                                         </div>
                                     </div>
                                     
@@ -1626,7 +1506,7 @@
                                                 <i class="fas fa-star"></i>
                                                 <i class="fas fa-star"></i>
                                             </div>
-                                            <p class="testimonial-text-slider">"Premium quality jewellery at reasonable prices. The customer support team is very helpful and responsive."</p>
+                                            <p class="testimonial-text-slider">"{{ __('Premium quality dry fruits at fair prices. The support team is helpful and responsive.') }}"</p>
                                         </div>
                                     </div>
                                 </div>

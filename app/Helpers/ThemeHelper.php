@@ -10,13 +10,13 @@ class ThemeHelper
     {
         $setting = $setting ?: Setting::first();
 
-        $primary = self::normalizeHex($setting->theme_one ?? null, '#8B7BA8');
-        $secondary = self::normalizeHex($setting->theme_two ?? null, '#F7F6FA');
-        $background = self::normalizeHex($setting->background_color ?? null, $secondary);
-        $statisticsBg = self::normalizeHex($setting->statistics_color ?? null, '#2c3e50');
+        $primary = self::normalizeHex($setting->theme_one ?? null, '#B05B36');
+        $secondary = self::normalizeHex($setting->theme_two ?? null, '#F3F8F2');
+        $background = self::normalizeHex($setting->background_color ?? null, '#FFFFFF');
+        $statisticsBg = self::normalizeHex($setting->statistics_color ?? null, '#2D6A4F');
         $statisticsFont = self::normalizeHex($setting->statistics_font_color ?? null, '#ffffff');
         $navbarMenu = self::normalizeHex($setting->navbar_menu_color ?? null, '#333333');
-        $navbarMenuActive = self::normalizeHex($setting->navbar_menu_active_color ?? null, $primary);
+        $navbarMenuActive = self::normalizeHex($setting->navbar_menu_active_color ?? null, '#2D6A4F');
         $navbarBg = self::normalizeHex($setting->navbar_bg_color ?? null, '#FFFFFF');
         $navbarMenuRgb = self::hexToRgbString($navbarMenuActive);
 

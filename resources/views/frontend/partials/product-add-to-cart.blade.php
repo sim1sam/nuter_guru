@@ -36,7 +36,7 @@
     @if($availableStock <= 0)
         <button type="button" class="btn btn-secondary product-add-btn w-100" disabled>{{ __('Out of Stock') }}</button>
     @elseif($hasVariants)
-        <a href="{{ route('product-detail', ['slug' => $product->slug]) }}" class="btn btn-outline-primary product-add-btn w-100">
+        <a href="{{ route('product-detail', ['slug' => $product->slug]) }}" class="btn btn-primary product-add-btn w-100">
             {{ __('Select Options') }}
         </a>
     @else
@@ -46,7 +46,7 @@
                 data-product-name="{{ $product->name }}"
                 data-product-price="{{ $effectivePrice }}"
                 data-product-image="{{ $product->thumb_image ? asset($product->thumb_image) : asset('frontend/images/default-product.svg') }}">
-            <i class="fas fa-shopping-cart me-1"></i>{{ __('Add to Cart') }}
+            {{ __('Add to Cart') }}
         </button>
     @endif
 @endif

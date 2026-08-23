@@ -1,8 +1,8 @@
 @extends('frontend.layouts.app')
 
 @section('title', 'Our Story - Learn About Our Journey')
-@section('meta_description', 'Read our latest blog posts about jewellery trends, care tips, and industry insights.')
-@section('meta_keywords', 'jewellery blog, diamond care, jewellery trends, fashion news')
+@section('meta_description', 'Read our latest posts about organic foods, dry fruits, nutrition tips, and healthy living.')
+@section('meta_keywords', 'organic food blog, dry fruits, nutrition, healthy living')
 
 @push('styles')
 <style>
@@ -160,7 +160,7 @@
 <section class="blog-hero">
     <div class="container">
         <h1 class="display-4 fw-bold mb-3">Our Story</h1>
-        <p class="lead text-muted">Stay updated with the latest jewellery trends, care tips, and industry insights</p>
+        <p class="lead text-muted">{{ __('Stay updated with nutrition tips, organic food guides, and healthy living ideas') }}</p>
     </div>
 </section>
 

@@ -1,23 +1,23 @@
-/* Custom CSS for Diamonds Jewelry Website */
+/* Custom CSS for Nuter Guru Organic Food Store */
 
 /* Root Variables — overridden by admin theme settings in layout */
 :root {
-    --primary-color: #8B7BA8;
-    --secondary-color: #F7F6FA;
-    --accent-color: #A594C4;
-    --background-color: #F7F6FA;
-    --text-dark: #4A4A5C;
-    --text-light: #8B8B9A;
-    --bg-light: #F7F6FA;
-    --bg-elegant: #F2F1F6;
-    --border-color: #E5E3EB;
-    --primary-rgb: 139, 123, 168;
-    --shadow: 0 2px 15px rgba(var(--primary-rgb), 0.15);
+    --primary-color: #B05B36;
+    --secondary-color: #F3F8F2;
+    --accent-color: #D1642D;
+    --background-color: #FFFFFF;
+    --text-dark: #2C2C2C;
+    --text-light: #6B6B6B;
+    --bg-light: #F3F8F2;
+    --bg-elegant: #E8F3E8;
+    --border-color: #E5E5E5;
+    --primary-rgb: 176, 91, 54;
+    --shadow: 0 2px 15px rgba(var(--primary-rgb), 0.12);
     --transition: all 0.3s ease;
-    --gradient-bg: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-elegant) 50%, var(--light-purple, #EAE8F0) 100%);
-    --statistics-color: #2c3e50;
+    --gradient-bg: #ffffff;
+    --statistics-color: #2D6A4F;
     --statistics-font-color: #ffffff;
-    --footer-color: #343a40;
+    --footer-color: #1A1A1A;
 }
 
 /* Mobile-First Responsive Design */
@@ -2915,13 +2915,13 @@ h1, h2, h3, h4, h5, h6 {
 @media (min-width: 992px) {
     .main-content > .home-hero:first-child {
         margin-top: -10px;
-        width: 100vw;
-        max-width: 100vw;
-        margin-left: calc(50% - 50vw);
-        margin-right: calc(50% - 50vw);
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
     }
 
-    .home-hero {
+    .home-hero:not(.home-hero--contained) {
         min-height: calc(100vh - var(--site-header-height, 88px));
         min-height: calc(100dvh - var(--site-header-height, 88px));
         height: calc(100vh - var(--site-header-height, 88px));

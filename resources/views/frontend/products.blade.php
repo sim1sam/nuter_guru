@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', 'Products - Jewellery Collection')
+@section('title', 'Products - ' . config('app.name', 'Nuter Guru'))
 
 @section('content')
 <div class="container-fluid px-0">

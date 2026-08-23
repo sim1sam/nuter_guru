@@ -58,18 +58,14 @@ class FrontendController extends Controller
             ->orderBy('id', 'asc')
             ->get();
         
-        // Categories (check visibility setting)
+        // Categories — show 6 active categories on homepage (below slider)
         $categories = Category::withCount(['products' => function ($query) {
                 $query->where('status', 1)->where('approve_by_admin', 1);
             }])
-            ->where('status', 1);
-        
-        if ($homePageVisibility && $homePageVisibility->category_section_status) {
-            $categories = $categories->take($homePageVisibility->category_qty ?? 4);
-        } else {
-            $categories = $categories->take(4);
-        }
-        $categories = $categories->get();
+            ->where('status', 1)
+            ->orderBy('name', 'asc')
+            ->take(6)
+            ->get();
         
         // Popular Categories
         $popularCategories = PopularCategory::with('category')
@@ -82,39 +78,64 @@ class FrontendController extends Controller
             }]);
         }])->get();
             
-        // Top Products for "Our Products" section - Show last 8 highlighted/top products
+        // Top / Best Selling Products
         $products = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
             ->where('status', 1)
-            ->where('is_top', 1)
             ->where('approve_by_admin', 1)
+            ->where(function ($q) {
+                $q->where('is_top', 1)->orWhere('is_best', 1);
+            })
             ->latest()
-            ->take(8)
+            ->take(10)
             ->get();
+
+        if ($products->isEmpty()) {
+            $products = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
+                ->where('status', 1)
+                ->where('approve_by_admin', 1)
+                ->latest()
+                ->take(10)
+                ->get();
+        }
             
         // Featured Products
-        $featuredProducts = Product::with(['category', 'brand', 'reviews'])
+        $featuredProducts = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
             ->where('status', 1)
             ->where('is_featured', 1)
-            ->where('show_homepage', 1)
             ->where('approve_by_admin', 1)
-            ->take(4)
+            ->latest()
+            ->take(10)
             ->get();
+
+        if ($featuredProducts->isEmpty()) {
+            $featuredProducts = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
+                ->where('status', 1)
+                ->where('approve_by_admin', 1)
+                ->latest()
+                ->take(10)
+                ->get();
+        }
             
-        // New Arrival Products - Show last 4 newest products
+        // New Arrival Products
         $newArrivalProducts = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
             ->where('status', 1)
             ->where('approve_by_admin', 1)
             ->latest()
-            ->take(4)
+            ->take(12)
             ->get();
             
-        // Best Products - Show 4 best products
-        $bestProducts = Product::with(['category', 'brand', 'reviews'])
+        // Best Products
+        $bestProducts = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
             ->where('status', 1)
             ->where('is_best', 1)
             ->where('approve_by_admin', 1)
-            ->take(4)
+            ->latest()
+            ->take(10)
             ->get();
+
+        if ($bestProducts->isEmpty()) {
+            $bestProducts = $products;
+        }
         
         // Flash Sale
         $flashSale = FlashSale::where('status', 1)

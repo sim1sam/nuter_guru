@@ -21,8 +21,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>@yield('title', isset($seoSetting) ? $seoSetting->seo_title : config('app.name', 'Nuter Guru'))</title>
-    <meta name="description" content="@yield('meta_description', isset($seoSetting) ? $seoSetting->seo_description : 'Discover our exquisite collection of diamond jewellery, rings, necklaces, and more.')">
-    <meta name="keywords" content="@yield('meta_keywords', isset($seoSetting) ? $seoSetting->seo_keywords : 'diamonds, jewellery, rings, necklaces, earrings, bracelets')">
+    <meta name="description" content="@yield('meta_description', isset($seoSetting) ? $seoSetting->seo_description : 'Shop premium organic dry fruits, nuts, spices and healthy foods at Nuter Guru.')">
+    <meta name="keywords" content="@yield('meta_keywords', isset($seoSetting) ? $seoSetting->seo_keywords : 'organic food, dry fruits, nuts, spices, healthy snacks, Nuter Guru')">
     
     @if(isset($seoSetting))
         @if($seoSetting->facebook_app_id)
@@ -86,12 +86,13 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.cdnfonts.com/css/nexa" rel="stylesheet">
+    <!-- Google Fonts — organic storefront (Bengali + Latin) -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ asset('frontend/css/style.css') }}?v={{ filemtime(public_path('frontend/css/style.css')) }}">
+    <link rel="stylesheet" href="{{ asset('frontend/css/organic-theme.css') }}?v={{ filemtime(public_path('frontend/css/organic-theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/mobile-app.css') }}?v={{ filemtime(public_path('frontend/css/mobile-app.css')) }}">
     <link rel="stylesheet" href="{{ asset('frontend/css/pwa-install.css') }}?v={{ filemtime(public_path('frontend/css/pwa-install.css')) }}">
     
@@ -900,135 +901,131 @@
     @include('frontend.partials.gtm_body')
     <!-- Header -->
     <header class="header">
-        <!-- Top Bar -->
-        @if(!request()->routeIs('contact'))
-        <div class="top-bar corano-topbar py-2">
-            <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-md-6">
-                        <div class="contact-info">
-                            <span class="me-3"><i class="fas fa-phone me-1"></i> +1 (555) 123-4567</span>
-                            <span><i class="fas fa-envelope me-1"></i> info@diamondsjewelry.com</span>
+        <div class="organic-header">
+            <div class="organic-header__top">
+                <div class="container">
+                    <div class="row align-items-center g-3">
+                        <div class="col-auto col-lg-3">
+                            <a class="organic-logo" href="{{ route('home') }}">
+                                @if($setting && $setting->logo)
+                                    <img src="{{ asset($setting->logo) }}" alt="{{ config('app.name', 'Nuter Guru') }}" class="img-fluid logo-img">
+                                @else
+                                    <span class="organic-logo__mark">Nuter</span>
+                                    <span class="organic-logo__name">Guru</span>
+                                @endif
+                            </a>
                         </div>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <div class="social-links">
-                            <a href="#" class="topbar-social-link me-2"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="topbar-social-link me-2"><i class="fab fa-instagram"></i></a>
-                            <a href="#" class="topbar-social-link me-2"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="topbar-social-link"><i class="fab fa-pinterest"></i></a>
+
+                        <div class="col col-lg-6">
+                            <div class="organic-search">
+                                <form action="{{ route('products') }}" method="GET" class="organic-search__form">
+                                    <input type="text"
+                                           name="search"
+                                           class="form-control organic-search__input"
+                                           placeholder="{{ __('Search products...') }}"
+                                           value="{{ request('search') }}">
+                                    <button type="submit" class="organic-search__btn" aria-label="{{ __('Search') }}">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="col-auto col-lg-3">
+                            <div class="d-flex align-items-center justify-content-end gap-3">
+                                <button type="button"
+                                        class="btn btn-link text-dark p-0 d-none d-lg-inline-flex"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#appDownloadSheet"
+                                        title="{{ __('Get the app') }}"
+                                        aria-label="{{ __('Download app') }}">
+                                    <i class="fas fa-mobile-alt fs-5"></i>
+                                </button>
+
+                                <a href="{{ route('cart') }}" class="organic-cart wsus__cart_icon" aria-label="{{ __('Cart') }}">
+                                    <span class="organic-cart__icon">
+                                        <i class="fas fa-shopping-bag"></i>
+                                        <span class="cart-count badge d-none">0</span>
+                                    </span>
+                                    <span class="organic-cart__total d-none d-md-inline">
+                                        <span class="cart-total-amount">0</span>{{ $setting->currency_icon ?? '৳' }}
+                                    </span>
+                                </a>
+
+                                <button class="navbar-toggler d-lg-none border-0 p-0"
+                                        type="button"
+                                        data-bs-toggle="offcanvas"
+                                        data-bs-target="#mobileMenu"
+                                        aria-controls="mobileMenu"
+                                        aria-label="{{ __('Toggle navigation') }}">
+                                    <span class="navbar-toggler-icon"><span></span></span>
+                                </button>
+
+                                <div class="d-none d-lg-block">
+                                    @auth
+                                        <div class="dropdown">
+                                            <a href="#" class="btn btn-link text-dark dropdown-toggle p-0" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-user"></i>
+                                            </a>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" href="{{ route('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>{{ __('Dashboard') }}</a></li>
+                                                <li><a class="dropdown-item" href="{{ route('profile') }}"><i class="fas fa-user me-2"></i>{{ __('Profile') }}</a></li>
+                                                <li><a class="dropdown-item" href="{{ route('orders') }}"><i class="fas fa-shopping-bag me-2"></i>{{ __('Orders') }}</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form action="{{ route('logout') }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i>{{ __('Logout') }}</button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    @else
+                                        <a href="{{ route('login') }}" class="btn btn-sm btn-outline-primary">{{ __('Login') }}</a>
+                                    @endauth
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        @endif
-        
-        <!-- Main Header with Navigation in One Line -->
-        <div class="main-header shadow-sm">
-            <div class="container">
-                <nav class="navbar navbar-expand-lg navbar-light py-3">
-                    <!-- Logo Section -->
-                    <a class="navbar-brand" href="{{ route('home') }}">
-                        @if($setting && $setting->logo)
-                            <img src="{{ asset($setting->logo) }}" alt="{{ config('app.name', 'Nuter Guru') }}" class="img-fluid logo-img">
-                        @else
-                            <h4 class="mb-0 text-dark fw-bold logo-text">{{ config('app.name', 'Nuter Guru') }}</h4>
-                        @endif
-                    </a>
-                    
-                    <!-- Mobile Actions Container - Menu (left) and Cart (right) in same div -->
-                    <div class="d-lg-none mobile-actions-container">
-                        <button class="navbar-toggler mobile-menu-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-controls="mobileMenu" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"><span></span></span>
-                    <span class="close-icon d-none"><i class="fas fa-times fs-4"></i></span>
-                </button>
-                        <div class="mobile-actions-right">
-                        <a href="{{ route('cart') }}" class="btn-icon text-dark position-relative wsus__cart_icon mobile-cart-btn" aria-label="Cart">
-                            <i class="fas fa-shopping-bag"></i>
-                            <span class="cart-count badge bg-primary position-absolute top-0 start-100 translate-middle d-none">0</span>
-                        </a>
-                        </div>
-                    </div>
-                    
-                    <!-- Collapsible Content -->
-                    <div class="collapse navbar-collapse" id="navbarNav">
-                        <!-- Navigation Menu -->
-                        <ul class="navbar-nav">
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">Home</a>
+
+            <nav class="organic-nav d-none d-lg-block">
+                <div class="container">
+                    <ul class="organic-nav__list">
+                        <li>
+                            <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">{{ __('Home') }}</a>
+                        </li>
+                        <li>
+                            <a class="nav-link {{ request()->routeIs('products') ? 'active' : '' }}" href="{{ route('products') }}">{{ __('Shop') }}</a>
+                        </li>
+                        @foreach($categories->take(7) as $category)
+                            <li>
+                                <a class="nav-link {{ request()->routeIs('category') && request()->route('slug') === $category->slug ? 'active' : '' }}"
+                                   href="{{ route('category', $category->slug) }}">{{ $category->name }}</a>
                             </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Categories
-                                </a>
+                        @endforeach
+                        @if($categories->count() > 7)
+                            <li class="dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">{{ __('More') }}</a>
                                 <ul class="dropdown-menu">
-                                    @foreach($categories as $category)
+                                    @foreach($categories->slice(7) as $category)
                                         <li><a class="dropdown-item" href="{{ route('category', $category->slug) }}">{{ $category->name }}</a></li>
                                     @endforeach
                                 </ul>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('products') ? 'active' : '' }}" href="{{ route('products') }}">Products</a>
+                        @endif
+                        <li>
+                            <a class="nav-link {{ request()->routeIs('our-story') ? 'active' : '' }}" href="{{ route('our-story') }}">{{ __('About Us') }}</a>
+                        </li>
+                        @if(\Illuminate\Support\Facades\Route::has('contact'))
+                            <li>
+                                <a class="nav-link {{ request()->routeIs('contact') ? 'active' : '' }}" href="{{ route('contact') }}">{{ __('Contact') }}</a>
                             </li>
-
-                               <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('our-story') ? 'active' : '' }}" href="{{ route('our-story') }}">Our Story</a>
-                            </li>
-
-                     
-
-
-
-                     
-                        </ul>
-                        
-                        <!-- Search Bar -->
-                        <div class="search-section">
-                            <form action="{{ route('products') }}" method="GET" class="position-relative">
-                                <input type="text" name="search" class="form-control pe-5" placeholder="Search" value="{{ request('search') }}" style="border-radius: 25px;">
-                                <button type="submit" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-muted">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                            </form>
-                        </div>
-                        
-                        <!-- Cart and User Actions -->
-                        <div class="header-actions d-flex align-items-center">
-                            <button type="button" class="btn btn-link text-dark me-2 d-none d-lg-inline-flex align-items-center justify-content-center desktop-app-btn" data-bs-toggle="modal" data-bs-target="#appDownloadSheet" title="Get the app" aria-label="Download app">
-                                <i class="fas fa-mobile-alt fs-5"></i>
-                            </button>
-                            <a href="{{ route('cart') }}" class="btn btn-link text-dark me-3 position-relative d-none d-lg-inline-flex wsus__cart_icon">
-                                <i class="fas fa-shopping-bag fs-5"></i>
-                                <span class="cart-count badge bg-primary position-absolute top-0 start-100 translate-middle rounded-pill d-none">0</span>
-                            </a>
-                            @auth
-                                <div class="dropdown">
-                                    <a href="#" class="btn btn-link text-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-user fs-5 me-1"></i>
-                                        {{ Str::limit(auth()->user()->name, 8) }}
-                                    </a>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="{{ route('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-                                        <li><a class="dropdown-item" href="{{ route('profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
-                                        <li><a class="dropdown-item" href="{{ route('orders') }}"><i class="fas fa-shopping-bag me-2"></i>Orders</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <form action="{{ route('logout') }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <button type="submit" class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i>Logout</button>
-                                            </form>
-                                        </li>
-                                    </ul>
-                                </div>
-                            @else
-                                <a href="{{ route('login') }}" class="btn btn-outline-primary btn-sm me-2">Login</a>
-<a href="{{ route('register') }}" class="btn btn-primary btn-sm">Register</a>
-                            @endauth
-                        </div>
-                    </div>
-                </nav>
-            </div>
+                        @endif
+                    </ul>
+                </div>
+            </nav>
         </div>
     </header>
     
@@ -1049,7 +1046,7 @@
                             <img src="{{ asset($setting->logo) }}" alt="{{ $seoSetting->seo_title ?? 'Logo' }}" class="img-fluid" style="max-height: 48px;">
                         </a>
                         
-                        <p class="text-muted">{{ $footer->description ?? 'Discover our exquisite collections of jewellery crafted with elegance. Each piece tells a story of timeless beauty.' }}</p>
+                        <p class="text-muted">{{ $footer->description ?? 'Premium organic dry fruits, nuts, spices and healthy foods — fresh, pure, and delivered to your door.' }}</p>
                         <div class="social-links mt-3">
                             @if($socialLinks->count() > 0)
                                 @foreach($socialLinks as $socialLink)
@@ -1107,7 +1104,7 @@
                             @if($footer && $footer->address)
                                 <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-2"></i> {{ $footer->address }}</p>
                             @else
-                                <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-2"></i> 123 Jewellery Street, Diamond City, DC 12345</p>
+                                <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-2"></i> Dhaka, Bangladesh</p>
                             @endif
                             @if($footer && $footer->phone)
                                 <p class="text-muted mb-2"><i class="fas fa-phone me-2"></i> {{ $footer->phone }}</p>
@@ -1117,7 +1114,7 @@
                             @if($footer && $footer->email)
                                 <p class="text-muted mb-2"><i class="fas fa-envelope me-2"></i> {{ $footer->email }}</p>
                             @else
-                                <p class="text-muted mb-2"><i class="fas fa-envelope me-2"></i> info@diamondsjewelry.com</p>
+                                <p class="text-muted mb-2"><i class="fas fa-envelope me-2"></i> {{ $setting->contact_email ?? 'info@nuterguru.com' }}</p>
                             @endif
                             @if($footer && $footer->working_hours)
                                 <p class="text-muted"><i class="fas fa-clock me-2"></i> {{ $footer->working_hours }}</p>

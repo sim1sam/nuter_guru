@@ -20,12 +20,11 @@
     <div class="home-category-card__body">
         <h3 class="home-category-card__title">{{ $category->name }}</h3>
         <span class="home-category-card__action">
-            @if($productCount)
-                {{ $productCount }} {{ $productCount === 1 ? __('item') : __('items') }}
+            @if($productCount !== null)
+                {{ $productCount }} {{ $productCount === 1 ? __('product') : __('products') }}
             @else
-                {{ __('Shop collection') }}
+                {{ __('Shop now') }}
             @endif
-            <i class="fas fa-chevron-right"></i>
         </span>
     </div>
 </a>

@@ -492,6 +492,8 @@
   'Facebook Pixel' => 'Facebook Pixel',
   'Frontend Root URL' => 'Frontend Root URL',
   'Multi Vendor System' => 'Multi Vendor System',
+  'Homepage Four Banners' => 'Homepage Four Banners',
+  'Show or hide the four promo banners below the homepage slider.' => 'Show or hide the four promo banners below the homepage slider.',
   'Layout' => 'Layout',
   'RTL (right to left)' => 'RTL (right to left)',
   'LTR (left to right)' => 'LTR (left to right)',

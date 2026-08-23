@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', $category->name . ' - Jewellery Collection')
+@section('title', $category->name . ' - ' . config('app.name', 'Nuter Guru'))
 
 @push('styles')
 <style>

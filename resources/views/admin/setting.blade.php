@@ -118,6 +118,15 @@
                                                               </select>
                                                           </div>
 
+                                                          <div class="form-group">
+                                                              <label for="">{{ __('admin.Homepage Four Banners') }}</label>
+                                                              <select name="show_homepage_banners" class="form-control">
+                                                                  <option {{ ($setting->show_homepage_banners ?? 0) == 1 ? 'selected' : '' }} value="1">{{ __('admin.Enable') }}</option>
+                                                                  <option {{ ($setting->show_homepage_banners ?? 0) == 0 ? 'selected' : '' }} value="0">{{ __('admin.Disable') }}</option>
+                                                              </select>
+                                                              <small class="text-muted">{{ __('admin.Show or hide the four promo banners below the homepage slider.') }}</small>
+                                                          </div>
+
 
                                                           <div class="form-group d-none">
                                                               <label for="">{{__('admin.Layout')}}</label>

@@ -1,8 +1,8 @@
 @extends('frontend.layouts.app')
 
 @section('title', 'Our Story')
-@section('meta_description', 'Discover our story—heritage, craftsmanship, and culture reimagined for today.')
-@section('meta_keywords', 'our story, heritage, craftsmanship, jewellery')
+@section('meta_description', 'Discover Nuter Guru — premium organic dry fruits, nuts, spices and healthy foods.')
+@section('meta_keywords', 'our story, organic food, dry fruits, nuts, Nuter Guru')
 
 @push('styles')
 <style>
@@ -64,13 +64,10 @@
             <!-- Text Content -->
             <div class="col-lg-12">
                 <div class="story-text">
-                    <h2>Rooted in Heritage, Crafted for Today</h2>
-                    <p>Our journey began with a heartfelt desire to reconnect with our roots and celebrate the timeless artistry of South Asian jewellery.</p>
-                    <p>Growing up, jewellery was never just an accessory - it was part of our culture, our celebrations, and our everyday lives. Each piece carried meaning: a grandmother’s bangle, a mother’s necklace, a gift marking life’s milestones. These heirlooms reminded us of who we are and the stories woven into our traditions.</p>
-                  
-                    <p>With this inspiration, we created a brand that honours the beauty of our heritage while embracing the style of today. Every design in our collection is rooted in traditional craftsmanship, reimagined for the modern wearer who values both culture and convenience. From delicate details to bold statement pieces, our jewellery is made to be cherished every day, not just on special occasions.</p>
-                    
-                    <p>At its core, our mission is about more than jewellery. It’s about carrying forward the richness of tradition, sharing the beauty of our culture, and making it easy to embrace pieces that feel meaningful and personal. Each design is created with love, so you can wear it with pride and carry a little piece of your story wherever you go.</p>
+                    <h2>{{ __('Rooted in Nature, Packed with Care') }}</h2>
+                    <p>{{ __('Nuter Guru began with a simple belief: everyday food should be pure, nutritious, and trustworthy. We source premium dry fruits, nuts, spices and organic essentials so your family can enjoy healthier living.') }}</p>
+                    <p>{{ __('From farm-fresh selections to hygienic packaging, every product is chosen for quality and taste. Whether you need almonds for breakfast, mixed dry fruits for guests, or authentic spices for cooking — we make it easy to shop with confidence.') }}</p>
+                    <p>{{ __('Our mission is more than selling groceries. We want to bring wholesome organic foods to your doorstep with fair prices, fast delivery, and caring support.') }}</p>
                 </div>
             </div>
         </div>

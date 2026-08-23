@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', $brand->name . ' - Jewellery Brand Collection')
+@section('title', $brand->name . ' - ' . config('app.name', 'Nuter Guru'))
 
 @section('content')
 <div class="container my-5">
