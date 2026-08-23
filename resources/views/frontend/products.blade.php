@@ -4,8 +4,8 @@
 
 @section('content')
 <div class="container-fluid px-0">
-    <!-- Page Header -->
-    <div class="page-header bg-light py-5">
+    <!-- Page Header (desktop only) -->
+    <div class="page-header bg-light py-5 d-none d-lg-block">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6">
@@ -18,7 +18,7 @@
         </div>
     </div>
 
-    <div class="container my-5">
+    <div class="container my-5 products-page-body">
         <div class="row">
             <div class="col-lg-3 d-none d-lg-block mb-4">
                 <div class="filters-sidebar" id="productsFiltersSidebar">

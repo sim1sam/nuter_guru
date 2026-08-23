@@ -25,6 +25,16 @@
         padding-top: 0 !important;
     }
 
+    body.mobile-app-mode .products-page-body {
+        margin-top: 0.75rem !important;
+        margin-bottom: 1.5rem !important;
+        padding-top: 0 !important;
+    }
+
+    body.mobile-app-mode .page-header {
+        display: none !important;
+    }
+
     body.mobile-app-mode .top-bar {
         display: none !important;
     }
@@ -265,6 +275,12 @@
         font-weight: 600;
         padding-top: 0.55rem;
         padding-bottom: 0.55rem;
+        accent-color: var(--selection-color, var(--primary-color));
+    }
+
+    .mobile-shop-bar__sort .form-select:focus {
+        border-color: var(--selection-color, var(--primary-color)) !important;
+        box-shadow: 0 0 0 0.2rem rgba(var(--selection-color-rgb, var(--primary-rgb)), 0.22) !important;
     }
 }
 
