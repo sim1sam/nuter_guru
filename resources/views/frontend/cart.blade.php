@@ -49,12 +49,12 @@
 
                     <div class="cart-summary-row">
                         <span>Subtotal</span>
-                        <span id="subtotal">{{ $setting->currency_icon ?? '$' }}0.00</span>
+                        <span id="subtotal">{{ currency_icon() }}0.00</span>
                     </div>
 
                     <div class="cart-summary-total">
                         <span>Total</span>
-                        <span id="total">{{ $setting->currency_icon ?? '$' }}0.00</span>
+                        <span id="total">{{ currency_icon() }}0.00</span>
                     </div>
 
                     <div class="cart-summary-actions">
@@ -82,7 +82,7 @@
 class ShoppingCart {
     constructor() {
         this.cart = [];
-        this.currencyIcon = @json($setting->currency_icon ?? '$');
+        this.currencyIcon = @json(currency_icon());
         this.defaultProductImage = @json(asset('frontend/images/default-product.svg'));
         this.init();
     }

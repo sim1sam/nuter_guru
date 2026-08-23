@@ -89,7 +89,7 @@
                                     <td><strong>#{{ $order->order_id ?? $order->id }}</strong></td>
                                     <td>{{ $order->created_at->format('M d, Y') }}</td>
                                     <td><span class="badge bg-{{ $statusClass }}">{{ $statusText }}</span></td>
-                                    <td>${{ number_format($order->total_amount ?? 0, 2) }}</td>
+                                    <td>{{ format_currency($order->total_amount ?? 0) }}</td>
                                     <td>
                                         <a href="{{ route('orders.show', $order->id) }}" class="btn btn-outline-primary btn-sm">View</a>
                                     </td>

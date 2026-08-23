@@ -234,7 +234,7 @@
                                         <div class="text-end">
                                             <strong class="text-success">
                                                 @if($shipping->shipping_fee > 0)
-                                                    ${{ number_format($shipping->shipping_fee, 2) }}
+                                                    {{ format_currency($shipping->shipping_fee) }}
                                                 @else
                                                     Free
                                                 @endif
@@ -385,15 +385,15 @@
                     
                     <div class="d-flex justify-content-between mb-2">
                         <span>Subtotal:</span>
-                        <span id="subtotal">$0.00</span>
+                        <span id="subtotal">{{ currency_icon() }}0.00</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Shipping:</span>
-                        <span id="shipping-cost">$10.00</span>
+                        <span id="shipping-cost">{{ currency_icon() }}0.00</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Tax:</span>
-                        <span id="tax">$0.00</span>
+                        <span id="tax">{{ currency_icon() }}0.00</span>
                     </div>
                     
                     <!-- Coupon Section -->
@@ -415,11 +415,11 @@
                     <hr>
                     <div class="d-flex justify-content-between mb-2" id="coupon-discount" style="display: none;">
                         <span>Coupon Discount:</span>
-                        <span id="coupon-discount-amount" class="text-success">-$0.00</span>
+                        <span id="coupon-discount-amount" class="text-success">-{{ currency_icon() }}0.00</span>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <strong>Total:</strong>
-                        <strong id="total">$0.00</strong>
+                        <strong id="total">{{ currency_icon() }}0.00</strong>
                     </div>
                     
                     <div class="d-grid">
@@ -751,6 +751,7 @@
 
 <script>
 const BD_COUNTRY_ID = @json($bangladeshCountryId ?? null);
+const STORE_CURRENCY = @json(currency_icon());
 
 function setDeliveryArea(name, value) {
     const target = value === 'outside' ? 'outside' : 'inside';
@@ -905,7 +906,13 @@ class Checkout {
         this.shippingMethods = [];
         this.appliedCoupon = null;
         this.userData = null; // Store user data without auto-populating
+        this.currencyIcon = STORE_CURRENCY;
         this.init();
+    }
+
+    formatMoney(amount) {
+        const value = parseFloat(amount);
+        return this.currencyIcon + (isNaN(value) ? '0.00' : value.toFixed(2));
     }
 
     async init() {
@@ -1190,7 +1197,7 @@ class Checkout {
                             item.variants.map(function(v) { return v.variant_name + ': ' + v.variant_value; }).join(', ') + 
                             '</div>' : '') +
                     '</div>' +
-                    '<div class="order-item-price">$' + totalItemPrice.toFixed(2) + '</div>' +
+                    '<div class="order-item-price">' + this.formatMoney(totalItemPrice) + '</div>' +
                 '</div>';
         }).join('');
 
@@ -1200,12 +1207,12 @@ class Checkout {
     loadShippingMethods() {
         const shippingContainer = document.querySelector('.shipping-methods');
         if (shippingContainer && this.shippingMethods.length > 0) {
-            shippingContainer.innerHTML = this.shippingMethods.map(function(method, index) {
+            shippingContainer.innerHTML = this.shippingMethods.map((method, index) => {
                 return '<div class="form-check mb-2">' +
                     '<input class="form-check-input" type="radio" name="shipping_method" id="shipping_' + method.id + '" value="' + method.id + '" ' + (index === 0 ? 'checked' : '') + '>' +
                     '<label class="form-check-label d-flex justify-content-between" for="shipping_' + method.id + '">' +
                         '<span>' + method.shipping_rule + '</span>' +
-                        '<span class="fw-bold">$' + parseFloat(method.shipping_fee || 0).toFixed(2) + '</span>' +
+                        '<span class="fw-bold">' + this.formatMoney(parseFloat(method.shipping_fee || 0)) + '</span>' +
                     '</label>' +
                 '</div>';
             }).join('');
@@ -1411,7 +1418,7 @@ class Checkout {
             const selectedShipping = this.shippingMethods.find(function(method) { return method.id == selectedShippingId; });
             const shippingCost = selectedShipping ? parseFloat(selectedShipping.shipping_fee) : 0;
             
-            document.getElementById('shipping-cost').textContent = '$' + shippingCost.toFixed(2);
+            document.getElementById('shipping-cost').textContent = this.formatMoney(shippingCost);
             this.updateOrderSummary();
         }
     }
@@ -1419,14 +1426,14 @@ class Checkout {
     updateOrderSummary() {
         // Handle empty cart scenario
         if (!this.cart || this.cart.length === 0) {
-            document.getElementById('subtotal').textContent = '$0.00';
-            document.getElementById('shipping-cost').textContent = '$0.00';
-            document.getElementById('tax').textContent = '$0.00';
-            document.getElementById('total').textContent = '$0.00';
+            document.getElementById('subtotal').textContent = this.formatMoney(0);
+            document.getElementById('shipping-cost').textContent = this.formatMoney(0);
+            document.getElementById('tax').textContent = this.formatMoney(0);
+            document.getElementById('total').textContent = this.formatMoney(0);
             
             const couponDiscountElement = document.getElementById('coupon-discount-amount');
             if (couponDiscountElement) {
-                couponDiscountElement.textContent = '-$0.00';
+                couponDiscountElement.textContent = '-' + this.formatMoney(0);
             }
             return;
         }
@@ -1457,15 +1464,15 @@ class Checkout {
         const safeTotal = isNaN(total) ? 0 : total;
         const safeCouponDiscount = isNaN(couponDiscount) ? 0 : couponDiscount;
 
-        document.getElementById('subtotal').textContent = '$' + safeSubtotal.toFixed(2);
-        document.getElementById('shipping-cost').textContent = '$' + safeShipping.toFixed(2);
-        document.getElementById('tax').textContent = '$' + safeTax.toFixed(2);
-        document.getElementById('total').textContent = '$' + safeTotal.toFixed(2);
+        document.getElementById('subtotal').textContent = this.formatMoney(safeSubtotal);
+        document.getElementById('shipping-cost').textContent = this.formatMoney(safeShipping);
+        document.getElementById('tax').textContent = this.formatMoney(safeTax);
+        document.getElementById('total').textContent = this.formatMoney(safeTotal);
         
         // Update coupon discount display if exists
         const couponDiscountElement = document.getElementById('coupon-discount-amount');
         if (couponDiscountElement) {
-            couponDiscountElement.textContent = '-$' + safeCouponDiscount.toFixed(2);
+            couponDiscountElement.textContent = '-' + this.formatMoney(safeCouponDiscount);
         }
     }
     
@@ -1519,7 +1526,7 @@ class Checkout {
                 if (couponInfo && couponInfoText) {
                     const discountText = data.coupon.discount_type === 'percentage' 
                     ? data.coupon.discount + '% off'
-                    : '$' + data.coupon.discount + ' off';
+                    : this.formatMoney(data.coupon.discount) + ' off';
                 couponInfoText.textContent = 'Coupon "' + data.coupon.code + '" applied - ' + discountText;
                     couponInfo.style.display = 'block';
                 }

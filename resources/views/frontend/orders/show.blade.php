@@ -127,14 +127,14 @@
                                                     </div>
                                                 </td>
                                                 <td class="align-middle">
-                                                    <strong>${{ number_format($item->unit_price ?? $item->price ?? 0, 2) }}</strong>
+                                                    <strong>{{ format_currency($item->unit_price ?? $item->price ?? 0) }}</strong>
                                                 </td>
                                                 <td class="align-middle">
                                                     <span class="badge bg-light text-dark">{{ $item->qty ?? $item->quantity ?? 1 }}</span>
                                                 </td>
                                                 <td class="align-middle">
                                                     <strong class="text-success">
-                                                        ${{ number_format(($item->unit_price ?? $item->price ?? 0) * ($item->qty ?? $item->quantity ?? 1), 2) }}
+                                                        {{ format_currency(($item->unit_price ?? $item->price ?? 0) * ($item->qty ?? $item->quantity ?? 1)) }}
                                                     </strong>
                                                 </td>
                                             </tr>
@@ -161,28 +161,28 @@
                             @if(isset($order->subtotal))
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Subtotal:</span>
-                                <span>${{ number_format($order->subtotal, 2) }}</span>
+                                <span>{{ format_currency($order->subtotal) }}</span>
                             </div>
                             @endif
                             
                             @if(isset($order->tax_amount) && $order->tax_amount > 0)
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Tax:</span>
-                                <span>${{ number_format($order->tax_amount, 2) }}</span>
+                                <span>{{ format_currency($order->tax_amount) }}</span>
                             </div>
                             @endif
                             
                             @if(isset($order->shipping_cost) && $order->shipping_cost > 0)
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Shipping:</span>
-                                <span>${{ number_format($order->shipping_cost, 2) }}</span>
+                                <span>{{ format_currency($order->shipping_cost) }}</span>
                             </div>
                             @endif
                             
                             @if(isset($order->discount_amount) && $order->discount_amount > 0)
                             <div class="d-flex justify-content-between mb-2 text-success">
                                 <span>Discount:</span>
-                                <span>-${{ number_format($order->discount_amount, 2) }}</span>
+                                <span>-{{ format_currency($order->discount_amount) }}</span>
                             </div>
                             @endif
                             
@@ -190,7 +190,7 @@
                             <div class="d-flex justify-content-between">
                                 <strong>Total:</strong>
                                 <strong class="text-success">
-                                    ${{ number_format($order->total_amount ?? $order->amount_real_currency ?? 0, 2) }}
+                                    {{ format_currency($order->total_amount ?? $order->amount_real_currency ?? 0) }}
                                 </strong>
                             </div>
                         </div>
@@ -426,7 +426,7 @@
                                             <h6>{{ __('Payment Summary') }}</h6>
                                             <div class="d-flex justify-content-between">
                                                 <span>{{ __('Total Amount') }}:</span>
-                                                <strong>{{ $setting->currency_icon }}{{ number_format($order->total_amount, 2) }}</strong>
+                                                <strong>{{ format_currency($order->total_amount) }}</strong>
                                             </div>
                                             <hr>
                                             <button type="submit" class="btn btn-success w-100" id="pay-now-btn">

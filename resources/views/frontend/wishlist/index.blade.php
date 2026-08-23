@@ -33,9 +33,9 @@
                         <h6 class="mb-2">{{ $item->product->name ?? 'Product Name' }}</h6>
                         <p class="text-muted small flex-grow-1 mb-2">{{ Str::limit($item->product->short_description ?? 'No description available', 80) }}</p>
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="h6 text-primary mb-0">${{ number_format($item->product->price ?? 0, 2) }}</span>
+                            <span class="h6 text-primary mb-0">{{ format_currency($item->product->price ?? 0) }}</span>
                             @if(isset($item->product->offer_price) && $item->product->offer_price > 0)
-                                <small class="text-muted"><del>${{ number_format($item->product->offer_price, 2) }}</del></small>
+                                <small class="text-muted"><del>{{ format_currency($item->product->offer_price) }}</del></small>
                             @endif
                         </div>
                         @if(isset($item->product))

@@ -39,7 +39,7 @@
     </div>
     <div class="account-order-card__row">
         <span>Total</span>
-        <strong>${{ number_format($total, 2) }}</strong>
+        <strong>{{ format_currency($total) }}</strong>
     </div>
     @if ($paymentStatusText)
         <div class="account-order-card__row">

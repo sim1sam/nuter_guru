@@ -20,13 +20,7 @@
                         <div class="alert alert-info">
                             <h6><i class="fas fa-info-circle me-2"></i>Order Summary</h6>
                             <p class="mb-1"><strong>Order ID:</strong> {{ $order->order_id ?? 'N/A' }}</p>
-                            <p class="mb-0"><strong>Total Amount:</strong> 
-                                @if($setting && $setting->currency_icon)
-                                    {{ $setting->currency_icon }}{{ number_format($order->total_amount ?? 0, 2) }}
-                                @else
-                                    ${{ number_format($order->total_amount ?? 0, 2) }}
-                                @endif
-                            </p>
+                            <p class="mb-0"><strong>Total Amount:</strong> {{ format_currency($order->total_amount ?? 0) }}</p>
                         </div>
 
                         <!-- Billing Address (from order) -->

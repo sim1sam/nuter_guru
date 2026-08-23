@@ -58,9 +58,9 @@
                                         <div class="order-item-name">{{ $orderProduct->product_name }}</div>
                                         <div class="order-item-details">Category: {{ $orderProduct->product->category->name ?? 'N/A' }}</div>
                                         <div class="order-item-details">Quantity: {{ $orderProduct->qty }}</div>
-                                        <div class="order-item-details">Unit Price: {{ $setting->currency_icon ?? '$' }}{{ number_format($orderProduct->unit_price, 2) }}</div>
+                                        <div class="order-item-details">Unit Price: {{ currency_icon() }}{{ number_format($orderProduct->unit_price, 2) }}</div>
                     </div>
-                    <div class="order-item-price">{{ $setting->currency_icon ?? '$' }}{{ number_format($orderProduct->unit_price * $orderProduct->qty, 2) }}</div>
+                    <div class="order-item-price">{{ currency_icon() }}{{ number_format($orderProduct->unit_price * $orderProduct->qty, 2) }}</div>
                                 </div>
                             @endforeach
                         @else
@@ -83,26 +83,26 @@
                             @endphp
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Subtotal:</span>
-                                <span>{{ $setting->currency_icon ?? '$' }}{{ number_format($subtotal, 2) }}</span>
+                                <span>{{ currency_icon() }}{{ number_format($subtotal, 2) }}</span>
                             </div>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Shipping:</span>
-                                <span>{{ $setting->currency_icon ?? '$' }}{{ number_format($shipping, 2) }}</span>
+                                <span>{{ currency_icon() }}{{ number_format($shipping, 2) }}</span>
                             </div>
                             @if($couponDiscount > 0)
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Coupon Discount:</span>
-                                <span class="text-success">-{{ $setting->currency_icon ?? '$' }}{{ number_format($couponDiscount, 2) }}</span>
+                                <span class="text-success">-{{ currency_icon() }}{{ number_format($couponDiscount, 2) }}</span>
                             </div>
                             @endif
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Tax:</span>
-                                <span>{{ $setting->currency_icon ?? '$' }}{{ number_format($tax, 2) }}</span>
+                                <span>{{ currency_icon() }}{{ number_format($tax, 2) }}</span>
                             </div>
                             <hr>
                             <div class="d-flex justify-content-between">
                                 <strong>Total:</strong>
-                                <strong>{{ $setting->currency_icon ?? '$' }}{{ number_format($total, 2) }}</strong>
+                                <strong>{{ currency_icon() }}{{ number_format($total, 2) }}</strong>
                             </div>
                         </div>
                     </div>

@@ -61,7 +61,7 @@
                         </div>
                         <div class="col-md-4">
                             <strong>Total Amount:</strong><br>
-                            <span class="h5 text-success">{{ $setting->currency_icon ?? '$' }}{{ number_format($order->total_amount, 2) }}</span>
+                            <span class="h5 text-success">{{ currency_icon() }}{{ number_format($order->total_amount, 2) }}</span>
                         </div>
                     </div>
                     
@@ -226,11 +226,11 @@
                                 <strong>Qty: {{ $orderProduct->qty }}</strong>
                             </div>
                             <div class="col-md-2 text-center">
-                                <span>{{ $setting->currency_icon ?? '$' }}{{ number_format($orderProduct->product_price, 2) }}</span>
+                                <span>{{ currency_icon() }}{{ number_format($orderProduct->product_price, 2) }}</span>
                                 <br><small class="text-muted">per item</small>
                             </div>
                             <div class="col-md-2 text-end">
-                                <strong>{{ $setting->currency_icon ?? '$' }}{{ number_format($orderProduct->product_price * $orderProduct->qty, 2) }}</strong>
+                                <strong>{{ currency_icon() }}{{ number_format($orderProduct->product_price * $orderProduct->qty, 2) }}</strong>
                             </div>
                         </div>
                     @endforeach
@@ -254,26 +254,26 @@
                             @endphp
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Subtotal:</span>
-                                <span>{{ $setting->currency_icon ?? '$' }}{{ number_format($subtotal, 2) }}</span>
+                                <span>{{ currency_icon() }}{{ number_format($subtotal, 2) }}</span>
                             </div>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Shipping:</span>
-                                <span>{{ $setting->currency_icon ?? '$' }}{{ number_format($shipping, 2) }}</span>
+                                <span>{{ currency_icon() }}{{ number_format($shipping, 2) }}</span>
                             </div>
                             @if($couponDiscount > 0)
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Coupon Discount:</span>
-                                <span class="text-success">-{{ $setting->currency_icon ?? '$' }}{{ number_format($couponDiscount, 2) }}</span>
+                                <span class="text-success">-{{ currency_icon() }}{{ number_format($couponDiscount, 2) }}</span>
                             </div>
                             @endif
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Tax:</span>
-                                <span>{{ $setting->currency_icon ?? '$' }}{{ number_format($tax, 2) }}</span>
+                                <span>{{ currency_icon() }}{{ number_format($tax, 2) }}</span>
                             </div>
                             <hr>
                             <div class="d-flex justify-content-between">
                                 <strong>Total:</strong>
-                                <strong class="text-success">{{ $setting->currency_icon ?? '$' }}{{ number_format($total, 2) }}</strong>
+                                <strong class="text-success">{{ currency_icon() }}{{ number_format($total, 2) }}</strong>
                             </div>
                         </div>
                     </div>

@@ -62,7 +62,7 @@
                                         <small class="text-muted">{{ $order->created_at->format('h:i A') }}</small>
                                     </td>
                                     <td><span class="badge bg-{{ $statusClass }}">{{ $statusText }}</span></td>
-                                    <td><strong class="text-success">${{ number_format($order->total_amount ?? $order->amount_real_currency ?? 0, 2) }}</strong></td>
+                                    <td><strong class="text-success">{{ format_currency($order->total_amount ?? $order->amount_real_currency ?? 0) }}</strong></td>
                                     <td><span class="badge bg-{{ $paymentStatusClass }}">{{ $paymentStatusText }}</span></td>
                                     <td>
                                         <a href="{{ route('orders.show', $order->id) }}" class="btn btn-outline-primary btn-sm">

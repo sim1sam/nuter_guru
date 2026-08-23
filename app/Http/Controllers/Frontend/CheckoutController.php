@@ -630,7 +630,7 @@ class CheckoutController extends Controller
 
             $order_details .= "Product: " . $product->name . "<br>";
             $order_details .= "Quantity: " . $cartQty . "<br>";
-            $order_details .= "Price: " . ($setting->currency_icon ?? '$') . ($cartQty * $price) . "<br>";
+            $order_details .= "Price: " . format_currency($cartQty * $price, 2, $setting) . "<br>";
         }
 
         // Store shipping and billing address
@@ -760,7 +760,7 @@ class CheckoutController extends Controller
         $subject = $template->subject;
         $message = $template->description;
         $message = str_replace('{{user_name}}', $user->name, $message);
-        $message = str_replace('{{total_amount}}', ($setting->currency_icon ?? '$') . $order->total_amount, $message);
+        $message = str_replace('{{total_amount}}', format_currency($order->total_amount, 2, $setting), $message);
         $message = str_replace('{{payment_method}}', $order->payment_method, $message);
         $message = str_replace('{{payment_status}}', $order->payment_status == 1 ? 'Paid' : 'Pending', $message);
         $message = str_replace('{{order_status}}', 'Pending', $message);
