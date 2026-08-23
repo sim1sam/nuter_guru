@@ -580,6 +580,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (typeof updateCartCount === 'function') {
                     try { updateCartCount(); } catch (e) { /* no-op */ }
                 }
+                if (typeof window.openCartDrawer === 'function') {
+                    window.openCartDrawer();
+                }
             } else {
                 showNotification(data.message, 'danger');
             }

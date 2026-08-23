@@ -179,7 +179,9 @@ class CartController extends Controller
 
             return response()->json([
                 'success' => true,
-                'cart_items' => $cartItems
+                'cart_items' => $cartItems,
+                'cart_count' => $this->getCartCount(),
+                'cart_total' => $this->getCartTotal(),
             ]);
         } catch (\Exception $e) {
             \Log::error('Error in getCartItems: ' . $e->getMessage());

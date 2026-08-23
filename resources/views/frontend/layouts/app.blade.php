@@ -948,7 +948,7 @@
                                     <i class="fas fa-search"></i>
                                 </button>
 
-                                <a href="{{ route('cart') }}" class="organic-cart wsus__cart_icon d-none d-lg-inline-flex" aria-label="{{ __('Cart') }}">
+                                <a href="{{ route('cart') }}" class="organic-cart wsus__cart_icon js-open-cart-drawer d-none d-lg-inline-flex" aria-label="{{ __('Cart') }}">
                                     <span class="organic-cart__icon">
                                         <i class="fas fa-shopping-bag"></i>
                                         <span class="cart-count badge d-none">0</span>
@@ -1155,6 +1155,7 @@
 
     @include('frontend.partials.mobile-app-menu')
     @include('frontend.partials.mobile-app-shell')
+    @include('frontend.partials.cart-drawer')
     
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -1163,7 +1164,11 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Custom JS -->
-    <script>window.__searchProductsUrl = @json(route('products.search'));</script>
+    <script>
+        window.__searchProductsUrl = @json(route('products.search'));
+        window.__cartCurrency = @json($setting->currency_icon ?? '৳');
+        window.__defaultProductImage = @json(asset('frontend/images/default-product.svg'));
+    </script>
     <script src="{{ asset('frontend/js/app.js') }}?v={{ filemtime(public_path('frontend/js/app.js')) }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

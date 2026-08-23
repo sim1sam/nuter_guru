@@ -689,6 +689,15 @@
     .mobile-tab__badge.d-none {
         display: none !important;
     }
+
+    /* Offcanvas panels (cart drawer, mobile menu) above bottom nav */
+    .offcanvas {
+        z-index: 10050 !important;
+    }
+
+    .offcanvas-backdrop {
+        z-index: 10040 !important;
+    }
 }
 
 /* App download sheet (desktop header only) */

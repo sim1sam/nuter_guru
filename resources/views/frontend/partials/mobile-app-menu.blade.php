@@ -30,7 +30,7 @@
                 <span class="mobile-app-menu__tile-icon"><i class="fas fa-store"></i></span>
                 <span>Shop</span>
             </a>
-            <a href="{{ route('cart') }}" class="mobile-app-menu__tile {{ request()->routeIs('cart') ? 'is-active' : '' }}">
+            <a href="{{ route('cart') }}" class="mobile-app-menu__tile js-open-cart-drawer {{ request()->routeIs('cart') ? 'is-active' : '' }}">
                 <span class="mobile-app-menu__tile-icon"><i class="fas fa-shopping-bag"></i></span>
                 <span>Cart</span>
             </a>

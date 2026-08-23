@@ -23,7 +23,7 @@
             <i class="fas fa-th-large"></i>
             <span>Menu</span>
         </button>
-        <a href="{{ route('cart') }}" class="mobile-tab {{ request()->routeIs('cart') ? 'is-active' : '' }}">
+        <a href="{{ route('cart') }}" class="mobile-tab js-open-cart-drawer {{ request()->routeIs('cart') ? 'is-active' : '' }}">
             <i class="fas fa-shopping-bag"></i>
             <span>Cart</span>
             <span class="mobile-tab__badge cart-count d-none">0</span>
