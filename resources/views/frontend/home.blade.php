@@ -1054,7 +1054,8 @@
             <h2 class="section-title fade-in">{{ __('OUR CATEGORIES') }}</h2>
         </div>
 
-        <div class="home-category-grid home-category-grid--six">
+        <div class="home-category-slider" id="homeCategorySlider">
+            <div class="home-category-grid home-category-grid--six">
             @forelse(($categories ?? collect())->take(6) as $category)
                 @include('frontend.partials.home-category-card', ['category' => $category])
             @empty
@@ -1079,6 +1080,7 @@
                     @include('frontend.partials.home-category-card', ['category' => $category])
                 @endforeach
             @endforelse
+            </div>
         </div>
     </div>
 </section>

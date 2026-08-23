@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initQuantityControls();
     initSmoothScrolling();
     initMobileSearchToggle();
+    initHomeCategoryAutoSlide();
 });
 
 // Scroll Animations
@@ -538,6 +539,100 @@ function initMobileSearchToggle() {
     if (searchInput && searchInput.value.trim() !== '' && window.matchMedia('(max-width: 991.98px)').matches) {
         setOpen(true);
     }
+}
+
+function initHomeCategoryAutoSlide() {
+    const slider = document.getElementById('homeCategorySlider');
+    if (!slider) {
+        return;
+    }
+
+    const mobileQuery = window.matchMedia('(max-width: 991.98px)');
+    const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let intervalId = null;
+    let paused = false;
+    let resumeTimeout = null;
+
+    const getScrollStep = () => {
+        const cards = slider.querySelectorAll('.home-category-card');
+        if (cards.length < 2) {
+            return slider.clientWidth * 0.75;
+        }
+        return Math.max(cards[1].offsetLeft - cards[0].offsetLeft, 80);
+    };
+
+    const canAutoSlide = () => {
+        return mobileQuery.matches
+            && !reduceMotionQuery.matches
+            && slider.scrollWidth > slider.clientWidth + 4;
+    };
+
+    const tick = () => {
+        if (paused || !canAutoSlide()) {
+            return;
+        }
+
+        const maxScroll = slider.scrollWidth - slider.clientWidth;
+        const step = getScrollStep();
+        const next = slider.scrollLeft + step;
+
+        if (next >= maxScroll - 4) {
+            slider.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+            slider.scrollTo({ left: next, behavior: 'smooth' });
+        }
+    };
+
+    const stop = () => {
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
+    };
+
+    const start = () => {
+        stop();
+        if (!canAutoSlide()) {
+            return;
+        }
+        intervalId = window.setInterval(tick, 3200);
+    };
+
+    const pauseTemporarily = (ms) => {
+        paused = true;
+        if (resumeTimeout) {
+            clearTimeout(resumeTimeout);
+        }
+        resumeTimeout = window.setTimeout(function () {
+            paused = false;
+        }, ms || 5000);
+    };
+
+    slider.addEventListener('touchstart', function () {
+        pauseTemporarily(6000);
+    }, { passive: true });
+
+    slider.addEventListener('pointerdown', function () {
+        pauseTemporarily(6000);
+    });
+
+    slider.addEventListener('wheel', function () {
+        pauseTemporarily(4000);
+    }, { passive: true });
+
+    const onLayoutChange = () => start();
+
+    if (mobileQuery.addEventListener) {
+        mobileQuery.addEventListener('change', onLayoutChange);
+    }
+    if (reduceMotionQuery.addEventListener) {
+        reduceMotionQuery.addEventListener('change', onLayoutChange);
+    }
+
+    window.addEventListener('resize', onLayoutChange);
+    window.addEventListener('load', onLayoutChange);
+
+    start();
 }
 
 // Image Zoom
