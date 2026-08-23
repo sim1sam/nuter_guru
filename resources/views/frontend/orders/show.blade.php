@@ -1,25 +1,20 @@
-@extends('frontend.layouts.app')
+@extends('frontend.layouts.account')
 
 @section('title', 'Order Details - #' . ($order->order_id ?? $order->id))
 
-@section('content')
-<div class="container py-5">
-    <div class="row">
-        <div class="col-12">
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="mb-1">Order Details</h2>
-                    <p class="text-muted mb-0">Order #{{ $order->order_id ?? $order->id }}</p>
-                </div>
-                <a href="{{ route('orders') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left me-2"></i>Back to Orders
-                </a>
-            </div>
+@section('account')
+    <div class="account-page-header">
+        <div>
+            <h2>Order Details</h2>
+            <p class="account-page-header__subtitle">Order #{{ $order->order_id ?? $order->id }}</p>
+        </div>
+        <a href="{{ route('orders') }}" class="btn btn-outline-secondary btn-auto-sm">
+            <i class="fas fa-arrow-left me-2"></i>Back to Orders
+        </a>
+    </div>
 
-            <div class="row">
-                <!-- Order Information -->
-                <div class="col-lg-8">
+    <div class="account-detail-grid">
+        <div>
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-light">
                             <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Order Information</h5>
@@ -155,10 +150,9 @@
                             @endif
                         </div>
                     </div>
-                </div>
+        </div>
 
-                <!-- Order Summary -->
-                <div class="col-lg-4">
+        <div>
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-light">
                             <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Order Summary</h5>
@@ -234,12 +228,12 @@
                         </div>
                     </div>
                     @endif
-                </div>
-            </div>
+        </div>
+    </div>
 
             <!-- Pay Now Section -->
             @if($order->payment_status == 0)
-                <div class="col-lg-12 mb-4">
+                <div class="mt-3">
                     <div class="card shadow-sm">
                         <div class="card-header bg-warning text-dark">
                             <h5 class="mb-0">
@@ -446,12 +440,9 @@
                     </div>
                 </div>
             @endif
-        </div>
-    </div>
-</div>
 @endsection
 
-@push('styles')
+@push('account-styles')
 <style>
 .badge.fs-6 {
     font-size: 0.875rem !important;
@@ -478,7 +469,7 @@
 </style>
 @endpush
 
-@push('scripts')
+@push('account-scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Add form submission handler

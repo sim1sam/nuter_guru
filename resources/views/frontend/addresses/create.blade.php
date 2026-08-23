@@ -1,22 +1,16 @@
-@extends('frontend.layouts.app')
+@extends('frontend.layouts.account')
 
 @section('title', 'Add New Address')
 
-@section('content')
-<div class="container my-5">
-    <div class="row">
-        <div class="col-md-3">
-            @include('frontend.layouts.sidebar')
+@section('account')
+    <div class="account-card">
+        <div class="account-card__header">
+            <h2>Add New Address</h2>
+            <a href="{{ route('addresses.index') }}" class="btn btn-secondary btn-sm btn-auto-sm">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
         </div>
-        <div class="col-md-9">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Add New Address</h4>
-                    <a href="{{ route('addresses.index') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Addresses
-                    </a>
-                </div>
-                <div class="card-body">
+        <div class="account-card__body account-form">
                     <form action="{{ route('addresses.store') }}" method="POST">
                         @csrf
                         
@@ -94,16 +88,13 @@
                             @enderror
                         </div>
 
-                        <div class="d-flex justify-content-end gap-2">
+                        <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
                             <a href="{{ route('addresses.index') }}" class="btn btn-secondary">Cancel</a>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Save Address
                             </button>
                         </div>
                     </form>
-                </div>
-            </div>
         </div>
     </div>
-</div>
 @endsection

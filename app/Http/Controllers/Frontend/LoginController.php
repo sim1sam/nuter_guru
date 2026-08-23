@@ -91,7 +91,7 @@ class LoginController extends Controller
             if ($redirect && filter_var($redirect, FILTER_VALIDATE_URL) && str_starts_with($redirect, url('/'))) {
                 $redirectTo = $redirect;
             } else {
-                $redirectTo = route('user.dashboard');
+                $redirectTo = route('dashboard');
             }
 
             return response()->json([
@@ -282,7 +282,7 @@ class LoginController extends Controller
             $user = Socialite::driver('google')->user();
             $user = $this->createUser($user, 'google');
             Auth::login($user);
-            return redirect()->intended(route('user.dashboard'));
+            return redirect()->intended(route('dashboard'));
         } catch (\Exception $e) {
             $notification = trans('Something went wrong');
             $notification = array('messege' => $notification, 'alert-type' => 'error');
@@ -309,7 +309,7 @@ class LoginController extends Controller
             $user = Socialite::driver('facebook')->user();
             $user = $this->createUser($user, 'facebook');
             Auth::login($user);
-            return redirect()->intended(route('user.dashboard'));
+            return redirect()->intended(route('dashboard'));
         } catch (\Exception $e) {
             $notification = trans('Something went wrong');
             $notification = array('messege' => $notification, 'alert-type' => 'error');

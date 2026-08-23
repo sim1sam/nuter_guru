@@ -28,7 +28,7 @@
             <span>Cart</span>
             <span class="mobile-tab__badge cart-count d-none">0</span>
         </a>
-        <a href="{{ auth()->check() ? route('dashboard') : route('login') }}" class="mobile-tab {{ request()->routeIs('dashboard') || request()->routeIs('profile') || request()->routeIs('orders') || request()->routeIs('login') ? 'is-active' : '' }}">
+        <a href="{{ auth()->check() ? route('dashboard') : route('login') }}" class="mobile-tab {{ \App\Helpers\AccountNavHelper::isAccountPage() || request()->routeIs('login') ? 'is-active' : '' }}">
             <i class="fas fa-user"></i>
             <span>{{ auth()->check() ? 'Account' : 'Login' }}</span>
         </a>

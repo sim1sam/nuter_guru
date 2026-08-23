@@ -35,7 +35,7 @@
                 <span>Cart</span>
             </a>
             @auth
-            <a href="{{ route('dashboard') }}" class="mobile-app-menu__tile">
+            <a href="{{ route('dashboard') }}" class="mobile-app-menu__tile {{ \App\Helpers\AccountNavHelper::isDashboard() ? 'is-active' : '' }}">
                 <span class="mobile-app-menu__tile-icon"><i class="fas fa-user"></i></span>
                 <span>Account</span>
             </a>
@@ -50,7 +50,7 @@
                 <span>Story</span>
             </a>
             @auth
-            <a href="{{ route('orders') }}" class="mobile-app-menu__tile">
+            <a href="{{ route('orders') }}" class="mobile-app-menu__tile {{ request()->routeIs('orders', 'orders.show', 'user.orders', 'user.orders.show') ? 'is-active' : '' }}">
                 <span class="mobile-app-menu__tile-icon"><i class="fas fa-box"></i></span>
                 <span>Orders</span>
             </a>
@@ -78,8 +78,9 @@
 
         @auth
         <div class="mobile-app-menu__links">
-            <a href="{{ route('profile') }}"><i class="fas fa-id-card me-2"></i>Profile</a>
-            <a href="{{ route('wishlist') }}"><i class="fas fa-heart me-2"></i>Wishlist</a>
+            <a href="{{ route('profile') }}" class="{{ request()->routeIs('profile', 'user.profile') ? 'is-active' : '' }}"><i class="fas fa-id-card me-2"></i>Profile</a>
+            <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist', 'user.wishlist') ? 'is-active' : '' }}"><i class="fas fa-heart me-2"></i>Wishlist</a>
+            <a href="{{ route('addresses.index') }}" class="{{ request()->routeIs('addresses.*') ? 'is-active' : '' }}"><i class="fas fa-map-marker-alt me-2"></i>Addresses</a>
         </div>
         @endauth
     </div>
