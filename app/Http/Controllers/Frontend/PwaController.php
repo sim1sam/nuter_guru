@@ -16,9 +16,9 @@ class PwaController extends Controller
         $seo = SeoSetting::first();
         $theme = ThemeHelper::variables($setting);
 
-        $appName = $seo?->seo_title ?? 'Diamonds Jewellery';
+        $appName = $seo?->seo_title ?? config('app.name', 'Nuter Guru');
         $shortName = mb_strlen($appName) > 12 ? mb_substr($appName, 0, 12) : $appName;
-        $description = $seo?->seo_description ?? 'Shop jewellery online — fast, easy, and secure.';
+        $description = $seo?->seo_description ?? 'Shop online with Nuter Guru — fast, easy, and secure.';
 
         $icons = $this->buildIcons($setting);
 

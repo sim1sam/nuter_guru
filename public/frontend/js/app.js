@@ -1,4 +1,4 @@
-// Frontend JavaScript for Diamonds Jewelry Website
+// Frontend JavaScript for Nuter Guru
 
 // DOM Content Loaded
 document.addEventListener('DOMContentLoaded', function() {

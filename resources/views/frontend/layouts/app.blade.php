@@ -20,7 +20,7 @@
     <meta name="theme-color" content="{{ theme_variables($setting)['primary'] }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>@yield('title', isset($seoSetting) ? $seoSetting->seo_title : 'Diamonds Jewellery Collection')</title>
+    <title>@yield('title', isset($seoSetting) ? $seoSetting->seo_title : config('app.name', 'Nuter Guru'))</title>
     <meta name="description" content="@yield('meta_description', isset($seoSetting) ? $seoSetting->seo_description : 'Discover our exquisite collection of diamond jewellery, rings, necklaces, and more.')">
     <meta name="keywords" content="@yield('meta_keywords', isset($seoSetting) ? $seoSetting->seo_keywords : 'diamonds, jewellery, rings, necklaces, earrings, bracelets')">
     
@@ -931,9 +931,9 @@
                     <!-- Logo Section -->
                     <a class="navbar-brand" href="{{ route('home') }}">
                         @if($setting && $setting->logo)
-                            <img src="{{ asset($setting->logo) }}" alt="Diamonds Jewellery" class="img-fluid logo-img">
+                            <img src="{{ asset($setting->logo) }}" alt="{{ config('app.name', 'Nuter Guru') }}" class="img-fluid logo-img">
                         @else
-                            <h4 class="mb-0 text-dark fw-bold logo-text">Diamonds</h4>
+                            <h4 class="mb-0 text-dark fw-bold logo-text">{{ config('app.name', 'Nuter Guru') }}</h4>
                         @endif
                     </a>
                     
@@ -1133,7 +1133,7 @@
             <div class="container">
                 <div class="row align-items-center">
                     <div class="col-md-6">
-                        <p class="text-muted mb-0">&copy; {{ date('Y') }} {{ $footer->copyright ?? 'Diamonds Jewellery Collection. All rights reserved.' }}</p>
+                        <p class="text-muted mb-0">&copy; {{ date('Y') }} {{ $footer->copyright ?? config('app.name', 'Nuter Guru') . '. All rights reserved.' }}</p>
                     </div>
                     <div class="col-md-6 text-end">
                         <div class="payment-methods">

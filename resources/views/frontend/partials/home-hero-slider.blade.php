@@ -40,7 +40,7 @@
                                     @if($slider->title_one)
                                         <span class="home-hero__eyebrow">{{ __('Featured') }}</span>
                                     @endif
-                                    <h1 class="home-hero__title">{{ $slider->title_one ?? __('Diamonds Jewellery Collection') }}</h1>
+                                    <h1 class="home-hero__title">{{ $slider->title_one ?? config('app.name', 'Nuter Guru') }}</h1>
                                     <p class="home-hero__desc">{{ $slider->title_two ?? __('Discover our exquisite collection of handcrafted jewellery.') }}</p>
                                     <div class="home-hero__actions">
                                         <a href="{{ $shopUrl }}" class="home-hero__btn home-hero__btn--primary">{{ __('Shop Now') }}</a>
@@ -69,7 +69,7 @@
             <div class="container home-hero__container">
                 <div class="home-hero__content">
                     <span class="home-hero__eyebrow">{{ __('New Collection') }}</span>
-                    <h1 class="home-hero__title">{{ __('Diamonds Jewellery Collection') }}</h1>
+                    <h1 class="home-hero__title">{{ config('app.name', 'Nuter Guru') }}</h1>
                     <p class="home-hero__desc">{{ __('Discover our exquisite collection of handcrafted diamond jewellery.') }}</p>
                     <div class="home-hero__actions">
                         <a href="{{ route('products') }}" class="home-hero__btn home-hero__btn--primary">{{ __('Shop Now') }}</a>

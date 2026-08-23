@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 @section('title')
-<title>{{__('Seller Registration')}} || {{$setting->app_name}}</title>
+<title>{{__('Seller Registration')}} || {{ $setting->sidebar_lg_header ?? config('app.name', 'Nuter Guru') }}</title>
 @endsection
 @section('meta')
 <meta name="description" content="{{__('Join our marketplace as a seller')}}">
