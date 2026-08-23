@@ -31,6 +31,16 @@
         --footer-color: {{ $footerColor }};
         --brand-brown: {{ $theme['brand_brown'] }};
         --accent-green: {{ $theme['accent_green'] }};
+        --accent-green-rgb: {{ $theme['accent_green_rgb'] }};
+        --button-color: {{ $theme['button_color'] }};
+        --button-hover-color: {{ $theme['button_hover'] }};
+        --button-color-rgb: {{ $theme['button_color_rgb'] }};
+        --newsletter-bg: {{ $theme['newsletter_bg'] }};
+        --newsletter-bg-end: {{ $theme['newsletter_bg_end'] }};
+        --newsletter-text: {{ $theme['newsletter_text'] }};
+        --newsletter-btn: {{ $theme['newsletter_btn'] }};
+        --link-color: {{ $theme['button_color'] }};
+        --section-accent: {{ $theme['accent_green'] }};
         --organic-green: {{ $theme['accent_green'] }};
         --organic-green-soft: {{ $theme['green_soft'] }};
         --organic-terracotta: {{ $theme['primary'] }};

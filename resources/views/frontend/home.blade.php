@@ -551,8 +551,8 @@
 
 /* Newsletter Section */
 .newsletter-section {
-    background: linear-gradient(135deg, var(--primary-color, #8B7BA8) 0%, var(--accent-color, #A294C2) 100%);
-    color: #fff;
+    background: linear-gradient(135deg, var(--newsletter-bg, var(--accent-green)) 0%, var(--newsletter-bg-end, var(--brand-brown)) 100%);
+    color: var(--newsletter-text, #fff);
     padding: 100px 0;
     margin-bottom: 40px;
 }
@@ -572,11 +572,12 @@
 .newsletter-form .btn {
     border-radius: 0;
     padding: 18px 35px;
-    background: #2c3e50;
+    background: var(--newsletter-btn, var(--primary-color));
     border: none;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 1px;
+    color: #fff;
 }
 
 /* Services Section spacing */
@@ -1735,12 +1736,12 @@
     <div class="container">
         <div class="row">
             <div class="col-lg-8 mx-auto text-center">
-                <h2 class="mb-4 fade-in">Stay Updated</h2>
-                <p class="lead mb-4 fade-in">Be the first to know! Subscribe for exclusive updates on new collections & sales. Plus enjoy 10% off your first order.</p>
+                <h2 class="mb-4 fade-in">{{ __('Stay Updated') }}</h2>
+                <p class="lead mb-4 fade-in">{{ __('Get exclusive offers on organic dry fruits, nuts and healthy foods — plus 10% off your first order.') }}</p>
                 <form class="newsletter-form fade-in">
                     <div class="input-group">
-                        <input type="email" class="form-control" placeholder="Enter your email address" required>
-                        <button class="btn btn-secondary" type="submit">Subscribe</button>
+                        <input type="email" class="form-control" placeholder="{{ __('Enter your email address') }}" required>
+                        <button class="btn btn-primary" type="submit">{{ __('Subscribe') }}</button>
                     </div>
                 </form>
             </div>
@@ -1754,7 +1755,7 @@
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="d-flex flex-column align-items-center">
                     <div class="mb-3">
-                        <i class="fas fa-shipping-fast" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <i class="fas fa-shipping-fast" style="font-size: 2.5rem; color: var(--button-color, var(--accent-green));"></i>
                     </div>
                     <h6 class="fw-semibold mb-2" style="color: #333; font-size: 0.95rem;">Free UK Shipping</h6>
                     {{-- <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.4;">Free shipping on all orders</p> --}}
@@ -1763,7 +1764,7 @@
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="d-flex flex-column align-items-center">
                     <div class="mb-3">
-                        <i class="fas fa-headset" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <i class="fas fa-headset" style="font-size: 2.5rem; color: var(--button-color, var(--accent-green));"></i>
                     </div>
                     <h6 class="fw-semibold mb-2" style="color: #333; font-size: 0.95rem;">24/7 Support</h6>
                     {{-- <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.4;">Dedicated customer support</p> --}}
@@ -1772,7 +1773,7 @@
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="d-flex flex-column align-items-center">
                     <div class="mb-3">
-                        <i class="fas fa-undo-alt" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <i class="fas fa-undo-alt" style="font-size: 2.5rem; color: var(--button-color, var(--accent-green));"></i>
                     </div>
                     <h6 class="fw-semibold mb-2" style="color: #333; font-size: 0.95rem;"> Return and Refunds</h6>
 {{-- <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.4;">30-day money back guarantee</p> --}}
@@ -1781,7 +1782,7 @@
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="d-flex flex-column align-items-center">
                     <div class="mb-3">
-                        <i class="fas fa-shield-alt" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <i class="fas fa-shield-alt" style="font-size: 2.5rem; color: var(--button-color, var(--accent-green));"></i>
                     </div>
                     <h6 class="fw-semibold mb-2" style="color: #333; font-size: 0.95rem;">100% Payment Secure</h6>
                     {{-- <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.4;">Bank-level security protection</p> --}}

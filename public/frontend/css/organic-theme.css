@@ -33,33 +33,36 @@ h1, h2, h3, h4, h5, h6 {
     background: #fff;
 }
 
-/* Buttons */
+/* Buttons — dynamic theme green from admin accent color */
 .btn-primary,
 .btn.btn-primary {
-    background-color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
+    background-color: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
     border-radius: var(--organic-radius) !important;
     font-weight: 600;
     letter-spacing: 0.02em;
     text-transform: uppercase;
     box-shadow: none !important;
+    color: #fff !important;
 }
 
 .btn-primary:hover,
 .btn.btn-primary:hover {
-    background-color: var(--accent-color) !important;
-    border-color: var(--accent-color) !important;
+    background-color: var(--button-hover-color, var(--accent-green)) !important;
+    border-color: var(--button-hover-color, var(--accent-green)) !important;
     transform: none !important;
+    color: #fff !important;
 }
 
 .btn-outline-primary {
-    color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
+    color: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
     border-radius: var(--organic-radius) !important;
 }
 
 .btn-outline-primary:hover {
-    background: var(--primary-color) !important;
+    background: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
     color: #fff !important;
 }
 
@@ -148,7 +151,7 @@ h1, h2, h3, h4, h5, h6 {
 .organic-search__btn {
     width: 48px;
     border: none;
-    background: var(--primary-color);
+    background: var(--button-color, var(--accent-green));
     color: #fff;
     display: inline-flex;
     align-items: center;
@@ -157,7 +160,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .organic-search__btn:hover {
-    background: var(--accent-color);
+    background: var(--button-hover-color, var(--accent-green));
     color: #fff;
 }
 
@@ -183,7 +186,7 @@ h1, h2, h3, h4, h5, h6 {
     min-width: 18px;
     height: 18px;
     font-size: 0.65rem;
-    background: var(--primary-color) !important;
+    background: var(--button-color, var(--accent-green)) !important;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
@@ -279,7 +282,7 @@ body:has(.organic-header) {
 }
 
 .product-badge--sale {
-    background: var(--primary-color) !important;
+    background: var(--button-color, var(--accent-green)) !important;
 }
 
 .product-quick-actions {
@@ -351,8 +354,8 @@ body:has(.organic-header) {
 .product-cart-wrap a.btn {
     width: 100% !important;
     border-radius: 2px !important;
-    background: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
+    background: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
     color: #fff !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
@@ -365,7 +368,7 @@ body:has(.organic-header) {
     width: 100% !important;
     height: auto !important;
     border-radius: 2px !important;
-    background: var(--primary-color) !important;
+    background: var(--button-color, var(--accent-green)) !important;
     color: #fff !important;
     padding: 0.65rem !important;
 }
@@ -625,8 +628,8 @@ body:has(.organic-header) {
 
 .organic-filter-pills .pill.is-active,
 .organic-filter-pills .pill:hover {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
+    background: var(--button-color, var(--accent-green));
+    border-color: var(--button-color, var(--accent-green));
     color: #fff;
 }
 
@@ -666,7 +669,10 @@ body:has(.organic-header) {
     margin-top: 0 !important;
 }
 
-.home-hero__carousel,
+.home-hero__carousel {
+    position: relative;
+}
+
 .home-hero__carousel .carousel-inner,
 .home-hero__carousel .carousel-item {
     height: auto !important;
@@ -693,6 +699,7 @@ body:has(.organic-header) {
     padding: 0 2rem 0 clamp(2.5rem, 6vw, 4.5rem) !important;
     min-height: 0 !important;
     max-width: 100%;
+    pointer-events: none;
 }
 
 .home-hero__content {
@@ -700,6 +707,15 @@ body:has(.organic-header) {
     margin-left: 0;
     margin-right: auto;
     text-align: left;
+    background: rgba(var(--accent-green-rgb, 106, 179, 68), 0.72);
+    padding: 1.35rem 1.5rem 1.25rem;
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: #fff;
+    pointer-events: auto;
 }
 
 .home-hero__content--right {
@@ -728,22 +744,23 @@ body:has(.organic-header) {
 }
 
 .home-hero__overlay {
-    background: linear-gradient(90deg, rgba(243, 248, 242, 0.92) 0%, rgba(243, 248, 242, 0.55) 45%, rgba(243, 248, 242, 0.15) 100%) !important;
+    background: linear-gradient(90deg, rgba(243, 248, 242, 0.35) 0%, rgba(243, 248, 242, 0.15) 45%, transparent 100%) !important;
 }
 
 .home-hero__slide--align-right .home-hero__overlay {
-    background: linear-gradient(270deg, rgba(243, 248, 242, 0.92) 0%, rgba(243, 248, 242, 0.55) 45%, rgba(243, 248, 242, 0.15) 100%) !important;
+    background: linear-gradient(270deg, rgba(243, 248, 242, 0.35) 0%, rgba(243, 248, 242, 0.15) 45%, transparent 100%) !important;
 }
 
 .home-hero__title {
-    color: var(--accent-green) !important;
+    color: #fff !important;
     font-weight: 800 !important;
     font-size: clamp(1.5rem, 3vw, 2.25rem) !important;
     margin-bottom: 0.4rem !important;
+    text-shadow: none !important;
 }
 
 .home-hero__desc {
-    color: var(--organic-muted) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
     font-size: 0.95rem !important;
     margin-bottom: 0.75rem !important;
 }
@@ -751,18 +768,59 @@ body:has(.organic-header) {
 .home-hero__eyebrow {
     margin-bottom: 0.4rem !important;
     font-size: 0.68rem !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #fff !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
+}
+
+.home-hero__btn--primary {
+    background: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
+    color: #fff !important;
+    border-radius: var(--organic-radius) !important;
+    box-shadow: none !important;
+}
+
+.home-hero__btn--primary:hover {
+    background: var(--button-hover-color, var(--accent-green)) !important;
+    border-color: var(--button-hover-color, var(--accent-green)) !important;
+    color: #fff !important;
+}
+
+.home-hero__btn--ghost {
+    background: transparent !important;
+    color: #fff !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    border-radius: var(--organic-radius) !important;
+    backdrop-filter: none !important;
+}
+
+.home-hero__btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+    border-color: #fff !important;
 }
 
 .home-hero__nav.carousel-control-prev {
     left: 8px !important;
+    z-index: 12 !important;
+    pointer-events: auto !important;
 }
 
 .home-hero__nav.carousel-control-next {
     right: 8px !important;
+    z-index: 12 !important;
+    pointer-events: auto !important;
+}
+
+.home-hero__nav {
+    opacity: 1 !important;
 }
 
 .home-hero__indicators {
     bottom: 12px !important;
+    z-index: 12 !important;
+    pointer-events: auto !important;
 }
 
 .home-hero__btn {
@@ -820,6 +878,7 @@ body:has(.organic-header) {
 
     .home-hero__content {
         max-width: 88%;
+        padding: 1rem 1.1rem 0.95rem;
     }
 
     .home-hero__title {
@@ -841,8 +900,8 @@ body:has(.organic-header) {
 
 .home-hero .btn,
 .hero-buttons .btn {
-    background: var(--accent-green) !important;
-    border-color: var(--accent-green) !important;
+    background: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
     border-radius: 4px !important;
     color: #fff !important;
     text-transform: uppercase;
@@ -1013,7 +1072,7 @@ body:has(.organic-header) {
 }
 
 .pd-qty-control button:hover {
-    background: var(--primary-color) !important;
+    background: var(--button-color, var(--accent-green)) !important;
     color: #fff !important;
 }
 
@@ -1046,13 +1105,14 @@ body:has(.organic-header) {
 .pd-btn--cart {
     flex: 1 1 auto;
     min-width: 0 !important;
-    background: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
+    background: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
     color: #fff !important;
 }
 
 .pd-btn--cart:hover {
-    background: var(--accent-color) !important;
+    background: var(--button-hover-color, var(--accent-green)) !important;
+    border-color: var(--button-hover-color, var(--accent-green)) !important;
     color: #fff !important;
     transform: none !important;
 }
@@ -1060,13 +1120,14 @@ body:has(.organic-header) {
 .pd-btn--buy {
     flex: 1 1 auto;
     min-width: 0 !important;
-    background: #111 !important;
-    border-color: #111 !important;
+    background: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
     color: #fff !important;
 }
 
 .pd-btn--buy:hover {
-    background: #333 !important;
+    background: var(--button-hover-color, var(--accent-green)) !important;
+    border-color: var(--button-hover-color, var(--accent-green)) !important;
     color: #fff !important;
     transform: none !important;
 }
@@ -1222,8 +1283,8 @@ body:has(.organic-header) {
 }
 
 .pd-tabs-nav .nav-link.active {
-    background: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
+    background: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
     color: #ffffff !important;
 }
 
@@ -1367,8 +1428,64 @@ body:has(.organic-header) {
 /* Cart drawer accents */
 .cart-drawer .btn-checkout,
 .offcanvas .btn-primary {
-    background: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
+    background: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
+}
+
+/* Newsletter — Stay Updated (dynamic theme colors) */
+.newsletter-section {
+    background: linear-gradient(135deg, var(--newsletter-bg, var(--accent-green)) 0%, var(--newsletter-bg-end, var(--brand-brown)) 100%) !important;
+    color: var(--newsletter-text, #fff) !important;
+    padding: 4.5rem 0 !important;
+    margin-bottom: 2rem;
+}
+
+.newsletter-section h2,
+.newsletter-section .lead {
+    color: var(--newsletter-text, #fff) !important;
+}
+
+.newsletter-section .lead {
+    opacity: 0.92;
+}
+
+.newsletter-form {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.newsletter-form .form-control {
+    border: none;
+    border-radius: var(--organic-radius) 0 0 var(--organic-radius);
+    padding: 0.85rem 1.1rem;
+    font-size: 0.95rem;
+}
+
+.newsletter-form .btn,
+.newsletter-form .btn-secondary {
+    border: none !important;
+    border-radius: 0 var(--organic-radius) var(--organic-radius) 0 !important;
+    padding: 0.85rem 1.35rem !important;
+    background: var(--newsletter-btn, var(--primary-color)) !important;
+    color: #fff !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.newsletter-form .btn:hover,
+.newsletter-form .btn-secondary:hover {
+    background: var(--button-hover-color, var(--accent-green)) !important;
+    color: #fff !important;
+}
+
+.services-section .fa,
+.services-section i[class*="fa-"] {
+    color: var(--button-color, var(--accent-green)) !important;
+}
+
+.services-section h6 {
+    color: var(--text-dark, var(--organic-text)) !important;
 }
 
 /* Misc jewelry cleanup */
@@ -1454,7 +1571,7 @@ body:has(.organic-header) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--primary-color);
+    background: var(--button-color, var(--accent-green));
     color: #fff !important;
     font-weight: 700;
     font-size: 0.78rem;
@@ -1468,7 +1585,7 @@ body:has(.organic-header) {
 
 .organic-auth__btn:hover,
 .organic-auth__btn.is-active {
-    background: var(--accent-color);
+    background: var(--button-hover-color, var(--accent-green));
     color: #fff !important;
 }
 
@@ -1552,8 +1669,8 @@ body:has(.organic-header) {
 }
 
 .organic-auth-card .form-control:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.15rem rgba(var(--primary-rgb), 0.15);
+    border-color: var(--button-color, var(--accent-green));
+    box-shadow: 0 0 0 0.15rem rgba(var(--button-color-rgb, var(--accent-green-rgb)), 0.15);
 }
 
 .organic-auth-card .password-input-wrapper {
@@ -1597,8 +1714,8 @@ body:has(.organic-header) {
 
 .organic-auth-card .btn-auth-submit {
     width: 100%;
-    background: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
+    background: var(--button-color, var(--accent-green)) !important;
+    border-color: var(--button-color, var(--accent-green)) !important;
     color: #fff !important;
     font-weight: 700;
     font-size: 0.85rem;
@@ -1609,19 +1726,19 @@ body:has(.organic-header) {
 }
 
 .organic-auth-card .btn-auth-submit:hover {
-    background: var(--accent-color) !important;
-    border-color: var(--accent-color) !important;
+    background: var(--button-hover-color, var(--accent-green)) !important;
+    border-color: var(--button-hover-color, var(--accent-green)) !important;
 }
 
 .organic-auth-card .auth-forgot-link {
-    color: var(--primary-color);
+    color: var(--button-color, var(--accent-green));
     font-weight: 600;
     font-size: 0.88rem;
     text-decoration: none;
 }
 
 .organic-auth-card .auth-forgot-link:hover {
-    color: var(--accent-color);
+    color: var(--button-hover-color, var(--accent-green));
 }
 
 .organic-auth-card .auth-switch {
@@ -1632,13 +1749,23 @@ body:has(.organic-header) {
 }
 
 .organic-auth-card .auth-switch a {
-    color: var(--primary-color);
+    color: var(--button-color, var(--accent-green));
     font-weight: 700;
     text-decoration: none;
 }
 
 .organic-auth-card .auth-switch a:hover {
-    color: var(--accent-color);
+    color: var(--button-hover-color, var(--accent-green));
+}
+
+.organic-auth-card .form-check-label a {
+    color: var(--button-color, var(--accent-green));
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.organic-auth-card .form-check-label a:hover {
+    color: var(--button-hover-color, var(--accent-green));
 }
 
 .organic-auth-divider {

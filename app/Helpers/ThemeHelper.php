@@ -37,11 +37,25 @@ class ThemeHelper
         $lightPurple = self::adjustHex($background, -6);
         $darkPurple = self::adjustHex($primary, -22);
         $primaryRgb = self::hexToRgbString($primary);
+        $accentGreenRgb = self::hexToRgbString($accentGreen);
+        $buttonColor = $accentGreen;
+        $buttonHover = self::adjustHex($accentGreen, -15);
+        $newsletterBg = $accentGreen;
+        $newsletterBgEnd = self::adjustHex($accentGreen, -22);
+        $newsletterBtn = $primary;
 
         return [
             'primary' => $primary,
             'brand_brown' => $brandBrown,
             'accent_green' => $accentGreen,
+            'accent_green_rgb' => $accentGreenRgb,
+            'button_color' => $buttonColor,
+            'button_hover' => $buttonHover,
+            'button_color_rgb' => $accentGreenRgb,
+            'newsletter_bg' => $newsletterBg,
+            'newsletter_bg_end' => $newsletterBgEnd,
+            'newsletter_text' => '#FFFFFF',
+            'newsletter_btn' => $newsletterBtn,
             'green_soft' => $greenSoft,
             'secondary' => $secondary,
             'background' => $background,

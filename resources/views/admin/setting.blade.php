@@ -669,7 +669,7 @@
                                                             <div class="form-group">
                                                                 <label for="">{{__('Primary color (Orange)')}}</label>
                                                                 <input type="color" class="form-control" name="theme_one" value="{{ $setting->theme_one }}">
-                                                                <small class="text-muted">{{ __('Main brand color — buttons, cart badge, search button, and primary actions.') }}</small>
+                                                                <small class="text-muted">{{ __('Orange brand color — newsletter subscribe button, prices, and highlight accents.') }}</small>
                                                             </div>
 
                                                             <div class="form-group">
@@ -681,7 +681,7 @@
                                                             <div class="form-group">
                                                                 <label for="">{{__('Accent green color')}}</label>
                                                                 <input type="color" class="form-control" name="accent_color" value="{{ $setting->accent_color ?? '#6AB344' }}">
-                                                                <small class="text-muted">{{ __('Leaf green from logo — active menu, section underlines, and success accents.') }}</small>
+                                                                <small class="text-muted">{{ __('Green brand color — all buttons, Stay Updated section background, active menu, and section accents.') }}</small>
                                                             </div>
 
                                                             <div class="form-group">
