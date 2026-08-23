@@ -542,6 +542,13 @@ document.addEventListener('DOMContentLoaded', function() {
         addToCartBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
         addToCartBtn.disabled = true;
 
+        if (typeof requiresCartLogin === 'function' && requiresCartLogin()) {
+            addToCartBtn.innerHTML = originalText;
+            addToCartBtn.disabled = false;
+            redirectToLogin('Please login to add products to cart.');
+            return;
+        }
+
         // Prepare data
         const formData = new FormData();
         formData.append('product_id', productId);
@@ -567,6 +574,9 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
+            if (typeof handleCartLoginRequired === 'function' && handleCartLoginRequired(data)) {
+                return;
+            }
             if (data.success) {
                 showNotification(data.message, 'success');
                 // Update cart count across all header badges

@@ -22,7 +22,7 @@ use App\Models\Country;
 use App\Models\CountryState;
 use App\Models\City;
 use App\Models\EmailTemplate;
-use App\Helpers\MailHelper;
+use App\Helpers\GuestModeHelper;
 use App\Mail\OrderSuccessfully;
 use Illuminate\Support\Facades\Mail;
 use App\Models\StripePayment;
@@ -126,6 +126,10 @@ class CheckoutController extends Controller
     public function getCheckoutData(Request $request)
     {
         try {
+            if (! GuestModeHelper::guestCartAllowed()) {
+                return GuestModeHelper::loginRequiredResponse('Please login to checkout.');
+            }
+
             $user = Auth::user();
             
             // Get shipping methods
@@ -388,6 +392,10 @@ class CheckoutController extends Controller
     
     public function placeOrder(Request $request)
     {
+        if (! GuestModeHelper::guestCartAllowed()) {
+            return GuestModeHelper::loginRequiredResponse('Please login to place an order.');
+        }
+
         // Validate request data
         $validatedData = $request->validate([
             'billing_first_name' => 'required|string|max:255',

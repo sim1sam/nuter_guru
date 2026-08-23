@@ -1168,6 +1168,9 @@
         window.__searchProductsUrl = @json(route('products.search'));
         window.__cartCurrency = @json($setting->currency_icon ?? '৳');
         window.__defaultProductImage = @json(asset('frontend/images/default-product.svg'));
+        window.__guestModeEnabled = @json((int) ($setting->enable_guest_mode ?? 0) === 1);
+        window.__isAuthenticated = @json(auth()->check());
+        window.__loginUrl = @json(route('login'));
     </script>
     <script src="{{ asset('frontend/js/app.js') }}?v={{ filemtime(public_path('frontend/js/app.js')) }}"></script>
     <script>

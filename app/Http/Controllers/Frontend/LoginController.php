@@ -87,9 +87,16 @@ class LoginController extends Controller
 
         if(Auth::attempt($credential, $request->remember)){
             $notification = trans('Login Successfully');
+            $redirect = $request->input('redirect');
+            if ($redirect && filter_var($redirect, FILTER_VALIDATE_URL) && str_starts_with($redirect, url('/'))) {
+                $redirectTo = $redirect;
+            } else {
+                $redirectTo = route('user.dashboard');
+            }
+
             return response()->json([
                 'success' => $notification,
-                'redirect' => route('user.dashboard')
+                'redirect' => $redirectTo,
             ]);
         } else {
             $notification = trans('Invalid credentials');

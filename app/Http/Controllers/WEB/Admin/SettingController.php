@@ -210,6 +210,7 @@ class SettingController extends Controller
         $setting->timezone = $request->timezone;
         $setting->tax = $request->tax;
         $setting->show_homepage_banners = $request->show_homepage_banners ?? 0;
+        $setting->enable_guest_mode = $request->enable_guest_mode ?? 0;
         $setting->save();
 
         $notification = trans('admin_validation.Update Successfully');

@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\SubCategory;
 use App\Models\Brand;
 use App\Models\Slider;
+use App\Helpers\GuestModeHelper;
 use App\Models\Setting;
 use App\Models\Order;
 use App\Models\BannerImage;
@@ -694,11 +695,20 @@ class FrontendController extends Controller
     public function cart()
     {
         $setting = Setting::first();
+
+        if (! GuestModeHelper::guestCartAllowed()) {
+            return redirect()->route('login')->with('error', 'Please login to view your cart.');
+        }
+
         return view('frontend.cart', compact('setting'));
     }
 
     public function checkout()
     {
+        if (! GuestModeHelper::guestCartAllowed()) {
+            return redirect()->route('login')->with('error', 'Please login to checkout.');
+        }
+
         $shippingMethods = \App\Models\Shipping::all();
         $bangladeshCountryId = \App\Models\Country::where('name', 'like', 'Bangladesh%')->value('id');
 

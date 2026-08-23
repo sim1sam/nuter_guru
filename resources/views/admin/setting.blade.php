@@ -119,6 +119,15 @@
                                                           </div>
 
                                                           <div class="form-group">
+                                                              <label for="">{{ __('Guest Mode (Cart & Checkout)') }}</label>
+                                                              <select name="enable_guest_mode" class="form-control">
+                                                                  <option {{ ($setting->enable_guest_mode ?? 0) == 1 ? 'selected' : '' }} value="1">{{ __('admin.Enable') }}</option>
+                                                                  <option {{ ($setting->enable_guest_mode ?? 0) == 0 ? 'selected' : '' }} value="0">{{ __('admin.Disable') }}</option>
+                                                              </select>
+                                                              <small class="text-muted">{{ __('When disabled, customers must login before adding to cart or checkout.') }}</small>
+                                                          </div>
+
+                                                          <div class="form-group">
                                                               <label for="">{{ __('admin.Homepage Four Banners') }}</label>
                                                               <select name="show_homepage_banners" class="form-control">
                                                                   <option {{ ($setting->show_homepage_banners ?? 0) == 1 ? 'selected' : '' }} value="1">{{ __('admin.Enable') }}</option>

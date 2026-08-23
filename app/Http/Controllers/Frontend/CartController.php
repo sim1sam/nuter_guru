@@ -10,6 +10,7 @@ use App\Models\ShoppingCart;
 use App\Models\ShoppingCartVariant;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use App\Helpers\GuestModeHelper;
 
 class CartController extends Controller
 {
@@ -21,6 +22,10 @@ class CartController extends Controller
     public function addToCart(Request $request)
     {
         try {
+            if (! GuestModeHelper::guestCartAllowed()) {
+                return GuestModeHelper::loginRequiredResponse('Please login to add products to cart.');
+            }
+
             $request->validate([
                 'product_id' => 'required|exists:products,id',
                 'quantity' => 'required|integer|min:1'
@@ -155,6 +160,16 @@ class CartController extends Controller
     public function getCartItems()
     {
         try {
+            if (! GuestModeHelper::guestCartAllowed()) {
+                return response()->json([
+                    'success' => true,
+                    'cart_items' => [],
+                    'cart_count' => 0,
+                    'cart_total' => 0,
+                    'login_required' => true,
+                ]);
+            }
+
             if (Auth::check()) {
                 $user = Auth::user();
                 $cartItems = ShoppingCart::with(['product', 'variants.variantItem'])
@@ -195,6 +210,10 @@ class CartController extends Controller
     public function updateQuantity(Request $request)
     {
         try {
+            if (! GuestModeHelper::guestCartAllowed()) {
+                return GuestModeHelper::loginRequiredResponse('Please login to update your cart.');
+            }
+
             $request->validate([
                 'cart_item_id' => 'required',
                 'quantity' => 'required|integer|min:1'
@@ -282,6 +301,10 @@ class CartController extends Controller
     public function removeItem(Request $request)
     {
         try {
+            if (! GuestModeHelper::guestCartAllowed()) {
+                return GuestModeHelper::loginRequiredResponse('Please login to update your cart.');
+            }
+
             $request->validate([
             'cart_item_id' => 'required'
         ]);
