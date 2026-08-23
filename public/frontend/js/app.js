@@ -179,16 +179,7 @@ function addToCart(product, buttonEl) {
             showNotification(data.message, 'success');
             // Immediately update cart count using server response
             if (typeof data.cart_count !== 'undefined') {
-                const cartCountElements = document.querySelectorAll('.cart-count');
-                cartCountElements.forEach(el => {
-                    const count = parseInt(data.cart_count, 10) || 0;
-                    el.textContent = count;
-                    if (count > 0) {
-                        el.classList.remove('d-none');
-                    } else {
-                        el.classList.add('d-none');
-                    }
-                });
+                updateCartDisplay(data.cart_count, data.cart_total);
             }
             // Update cart count from server (resync)
             updateCartCount();
@@ -207,6 +198,30 @@ function addToCart(product, buttonEl) {
     });
 }
 
+// Update cart badge count and header total from server
+function updateCartDisplay(count, total) {
+    const countNum = parseInt(count, 10) || 0;
+    const totalNum = parseFloat(total) || 0;
+
+    document.querySelectorAll('.cart-count').forEach(element => {
+        element.textContent = countNum;
+        if (countNum > 0) {
+            element.classList.remove('d-none');
+        } else {
+            element.classList.add('d-none');
+        }
+    });
+
+    document.querySelectorAll('.cart-total-amount').forEach(element => {
+        element.textContent = formatCartAmount(totalNum);
+    });
+}
+
+function formatCartAmount(amount) {
+    const value = parseFloat(amount) || 0;
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
 // Update cart count from server
 function updateCartCount() {
     fetch('/cart/count?ts=' + Date.now(), {
@@ -219,26 +234,12 @@ function updateCartCount() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const cartCountElements = document.querySelectorAll('.cart-count');
-            const count = parseInt(data.cart_count, 10) || 0;
-            cartCountElements.forEach(element => {
-                element.textContent = count;
-                if (count > 0) {
-                    element.classList.remove('d-none');
-                } else {
-                    element.classList.add('d-none');
-                }
-            });
+            updateCartDisplay(data.cart_count, data.cart_total);
         }
     })
     .catch(error => {
         console.error('Error fetching cart count:', error);
-        // Fallback to 0 if there's an error
-        const cartCountElements = document.querySelectorAll('.cart-count');
-        cartCountElements.forEach(element => {
-            element.textContent = '0';
-            element.classList.add('d-none');
-        });
+        updateCartDisplay(0, 0);
     });
 }
 

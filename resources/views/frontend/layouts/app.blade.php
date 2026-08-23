@@ -934,16 +934,7 @@
                         </div>
 
                         <div class="col-auto col-lg-3">
-                            <div class="d-flex align-items-center justify-content-end gap-3">
-                                <button type="button"
-                                        class="btn btn-link text-dark p-0 d-none d-lg-inline-flex"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#appDownloadSheet"
-                                        title="{{ __('Get the app') }}"
-                                        aria-label="{{ __('Download app') }}">
-                                    <i class="fas fa-mobile-alt fs-5"></i>
-                                </button>
-
+                            <div class="d-flex align-items-center justify-content-end gap-2 gap-md-3">
                                 <a href="{{ route('cart') }}" class="organic-cart wsus__cart_icon" aria-label="{{ __('Cart') }}">
                                     <span class="organic-cart__icon">
                                         <i class="fas fa-shopping-bag"></i>
@@ -963,11 +954,12 @@
                                     <span class="navbar-toggler-icon"><span></span></span>
                                 </button>
 
-                                <div class="d-none d-lg-block">
+                                <div class="organic-auth d-none d-lg-flex align-items-center">
                                     @auth
                                         <div class="dropdown">
-                                            <a href="#" class="btn btn-link text-dark dropdown-toggle p-0" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="fas fa-user"></i>
+                                            <a href="#" class="organic-auth__user dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-user-circle"></i>
+                                                <span>{{ __('Account') }}</span>
                                             </a>
                                             <ul class="dropdown-menu dropdown-menu-end">
                                                 <li><a class="dropdown-item" href="{{ route('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>{{ __('Dashboard') }}</a></li>
@@ -983,7 +975,8 @@
                                             </ul>
                                         </div>
                                     @else
-                                        <a href="{{ route('login') }}" class="btn btn-sm btn-outline-primary">{{ __('Login') }}</a>
+                                        <a href="{{ route('login') }}" class="organic-auth__link {{ request()->routeIs('login') ? 'is-active' : '' }}">{{ __('Login') }}</a>
+                                        <a href="{{ route('register') }}" class="organic-auth__btn {{ request()->routeIs('register') ? 'is-active' : '' }}">{{ __('Register') }}</a>
                                     @endauth
                                 </div>
                             </div>

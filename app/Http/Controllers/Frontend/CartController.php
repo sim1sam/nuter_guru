@@ -131,11 +131,13 @@ class CartController extends Controller
 
         // Get updated cart count
         $cartCount = $this->getCartCount();
+        $cartTotal = $this->getCartTotal();
 
         return response()->json([
                 'success' => true,
                 'message' => 'Product added to cart successfully',
-                'cart_count' => $cartCount
+                'cart_count' => $cartCount,
+                'cart_total' => $cartTotal,
             ]);
         } catch (\Exception $e) {
             \Log::error('Add to cart failed: ' . $e->getMessage());
@@ -258,11 +260,13 @@ class CartController extends Controller
 
             // Get updated cart count
             $cartCount = $this->getCartCount();
+            $cartTotal = $this->getCartTotal();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Cart updated successfully',
-                'cart_count' => $cartCount
+                'cart_count' => $cartCount,
+                'cart_total' => $cartTotal,
             ]);
         } catch (\Exception $e) {
             \Log::error('Error in updateQuantity: ' . $e->getMessage());
@@ -297,11 +301,13 @@ class CartController extends Controller
         }
 
         $cartCount = $this->getCartCount();
+        $cartTotal = $this->getCartTotal();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Item removed from cart',
-                'cart_count' => $cartCount
+                'cart_count' => $cartCount,
+                'cart_total' => $cartTotal,
             ]);
         } catch (\Exception $e) {
             \Log::error('Error in removeItem: ' . $e->getMessage());
@@ -330,7 +336,8 @@ class CartController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Cart cleared successfully',
-                'cart_count' => 0
+                'cart_count' => 0,
+                'cart_total' => 0,
             ]);
         } catch (\Exception $e) {
             \Log::error('Error in clearCart: ' . $e->getMessage());
@@ -391,16 +398,17 @@ class CartController extends Controller
     public function getCartCountApi()
     {
         try {
-            $cartCount = $this->getCartCount();
             return response()->json([
                 'success' => true,
-                'cart_count' => $cartCount
+                'cart_count' => $this->getCartCount(),
+                'cart_total' => $this->getCartTotal(),
             ]);
         } catch (\Exception $e) {
             \Log::error('Error getting cart count: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'cart_count' => 0
+                'cart_count' => 0,
+                'cart_total' => 0,
             ], 500);
         }
     }
@@ -409,10 +417,75 @@ class CartController extends Controller
     {
         if (Auth::check()) {
             return ShoppingCart::where('user_id', Auth::id())->sum('qty');
-        } else {
-            $cart = Session::get('guest_cart', []);
-            return array_sum(array_column($cart, 'quantity'));
         }
+
+        $cart = Session::get('guest_cart', []);
+
+        return array_sum(array_column($cart, 'quantity'));
+    }
+
+    private function getCartTotal(): float
+    {
+        $total = 0.0;
+
+        if (Auth::check()) {
+            $cartItems = ShoppingCart::with(['product', 'variants.variantItem'])
+                ->where('user_id', Auth::id())
+                ->get();
+
+            foreach ($cartItems as $item) {
+                if (! $item->product) {
+                    continue;
+                }
+
+                $total += $this->calculateLineTotal($item->product, $item->qty, $item->variants) ;
+            }
+
+            return round($total, 2);
+        }
+
+        $cart = Session::get('guest_cart', []);
+
+        foreach ($cart as $item) {
+            $product = Product::find($item['product_id'] ?? null);
+            if (! $product) {
+                continue;
+            }
+
+            $variantItems = collect($item['variants'] ?? [])
+                ->map(function ($variant) {
+                    if (! isset($variant['variant_item_id'])) {
+                        return null;
+                    }
+
+                    return ProductVariantItem::find($variant['variant_item_id']);
+                })
+                ->filter();
+
+            $total += $this->calculateLineTotal($product, $item['quantity'] ?? 1, $variantItems);
+        }
+
+        return round($total, 2);
+    }
+
+    private function calculateLineTotal(Product $product, int $quantity, $variants = null): float
+    {
+        $variantPrice = 0.0;
+
+        if ($variants) {
+            foreach ($variants as $variant) {
+                $variantItem = $variant->variantItem ?? $variant;
+                if ($variantItem) {
+                    $variantPrice += (float) $variantItem->price;
+                }
+            }
+        }
+
+        $basePrice = $product->offer_price === null
+            ? (float) $product->price
+            : (float) $product->offer_price;
+
+        return ($basePrice + $variantPrice) * max(1, $quantity);
     }
 
     public function applyCoupon(Request $request)
