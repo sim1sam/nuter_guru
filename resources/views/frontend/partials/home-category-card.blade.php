@@ -15,10 +15,10 @@
 
 <a href="{{ route('category', $category->slug) }}" class="home-category-card fade-in">
     <div class="home-category-card__media">
-        <img src="{{ $categoryImage }}" alt="{{ $category->name }}" class="home-category-card__img" loading="lazy">
+        <img src="{{ $categoryImage }}" alt="{{ category_name($category) }}" class="home-category-card__img" loading="lazy">
     </div>
     <div class="home-category-card__body">
-        <h3 class="home-category-card__title">{{ $category->name }}</h3>
+        <h3 class="home-category-card__title">{{ category_name($category) }}</h3>
         <span class="home-category-card__action">
             @if($productCount !== null)
                 {{ $productCount }} {{ $productCount === 1 ? __('product') : __('products') }}

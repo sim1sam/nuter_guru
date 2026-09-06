@@ -53,7 +53,7 @@
                     <a href="{{ route('products', ['brand' => $brand->id, 'category' => $category->slug]) }}" class="text-decoration-none">
                         <div class="category-image">
                             @if($category->image)
-                                <img src="{{ asset($category->image) }}" alt="{{ $category->name }}" class="img-fluid">
+                                <img src="{{ asset($category->image) }}" alt="{{ category_name($category) }}" class="img-fluid">
                             @else
                                 <div class="placeholder-image d-flex align-items-center justify-content-center">
                                     <i class="fas fa-gem fa-3x text-muted"></i>
@@ -61,7 +61,7 @@
                             @endif
                         </div>
                         <div class="category-info text-center p-3">
-                            <h5 class="category-name mb-2">{{ $category->name }}</h5>
+                            <h5 class="category-name mb-2">{{ category_name($category) }}</h5>
                             <p class="text-muted small mb-0">{{ $category->products->where('brand_id', $brand->id)->count() }} items</p>
                         </div>
                     </a>

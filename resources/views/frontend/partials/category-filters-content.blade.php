@@ -13,7 +13,7 @@
                    value="{{ $subCategory->id }}" id="subCat{{ $idPrefix }}{{ $subCategory->id }}"
                    {{ in_array($subCategory->id, $activeSubCategories ?? []) ? 'checked' : '' }}>
             <label class="form-check-label" for="subCat{{ $idPrefix }}{{ $subCategory->id }}">
-                {{ $subCategory->name }}
+                {{ category_name($subCategory) }}
             </label>
         </div>
         @endforeach

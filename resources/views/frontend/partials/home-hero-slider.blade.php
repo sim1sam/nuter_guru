@@ -33,17 +33,17 @@
                             <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
                                 <div class="home-hero__slide {{ $alignRight ? 'home-hero__slide--align-right' : '' }}">
                                     <img src="{{ asset($slider->image) }}"
-                                         alt="{{ $slider->title_one ?? __('Hero slide') }}"
+                                         alt="{{ slider_text($slider, 'title_one') ?: __('Hero slide') }}"
                                          class="home-hero__img"
                                          loading="{{ $index === 0 ? 'eager' : 'lazy' }}">
                                     <div class="home-hero__overlay"></div>
                                     <div class="home-hero__container">
                                         <div class="home-hero__content {{ $alignRight ? 'home-hero__content--right' : '' }}">
-                                            @if($slider->title_one)
+                                            @if(slider_text($slider, 'title_one'))
                                                 <span class="home-hero__eyebrow">{{ __('Featured') }}</span>
                                             @endif
-                                            <h1 class="home-hero__title">{{ $slider->title_one ?? config('app.name', 'Nuter Guru') }}</h1>
-                                            <p class="home-hero__desc">{{ $slider->title_two ?? __('Premium organic dry fruits, nuts and healthy foods — pure and fresh.') }}</p>
+                                            <h1 class="home-hero__title">{{ slider_text($slider, 'title_one') ?: config('app.name', 'Nuter Guru') }}</h1>
+                                            <p class="home-hero__desc">{{ slider_text($slider, 'title_two') ?: __('Premium organic dry fruits, nuts and healthy foods — pure and fresh.') }}</p>
                                             <div class="home-hero__actions">
                                                 <a href="{{ $shopUrl }}" class="home-hero__btn home-hero__btn--primary">{{ __('Shop Now') }}</a>
                                                 <a href="{{ route('our-story') }}" class="home-hero__btn home-hero__btn--ghost">{{ __('Learn More') }}</a>

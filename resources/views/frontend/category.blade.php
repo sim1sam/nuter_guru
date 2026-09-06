@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', $category->name . ' - ' . config('app.name', 'Nuter Guru'))
+@section('title', category_name($category) . ' - ' . config('app.name', 'Nuter Guru'))
 
 @push('styles')
 <style>
@@ -109,7 +109,7 @@ body.category-page .main-content {
 <section class="category-hero-banner" style="--banner-img: url('{{ asset($category->image) }}');">
     <div class="category-hero-banner__overlay">
         <div class="container">
-            <h1 class="category-hero-banner__title">{{ $category->name }}</h1>
+            <h1 class="category-hero-banner__title">{{ category_name($category) }}</h1>
             @if($category->description)
             <p class="category-hero-banner__desc">{{ $category->description }}</p>
             @endif
@@ -120,7 +120,7 @@ body.category-page .main-content {
 @else
 <section class="category-hero-banner category-hero-banner--plain">
     <div class="container text-center">
-        <h1 class="category-hero-banner__title">{{ $category->name }}</h1>
+        <h1 class="category-hero-banner__title">{{ category_name($category) }}</h1>
         @if($category->description)
         <p class="category-hero-banner__desc">{{ $category->description }}</p>
         @endif
@@ -141,7 +141,7 @@ body.category-page .main-content {
                     <a href="{{ route('products', ['category' => $subCategory->slug]) }}" class="text-decoration-none">
                         <div class="sub-category-image">
                             @if($subCategory->image)
-                                <img src="{{ asset($subCategory->image) }}" alt="{{ $subCategory->name }}" class="img-fluid">
+                                <img src="{{ asset($subCategory->image) }}" alt="{{ category_name($subCategory) }}" class="img-fluid">
                             @else
                                 <div class="placeholder-image d-flex align-items-center justify-content-center">
                                     <i class="fas fa-gem fa-3x text-muted"></i>
@@ -149,7 +149,7 @@ body.category-page .main-content {
                             @endif
                         </div>
                         <div class="sub-category-info text-center p-3">
-                            <h5 class="sub-category-name mb-2">{{ $subCategory->name }}</h5>
+                            <h5 class="sub-category-name mb-2">{{ category_name($subCategory) }}</h5>
                             <p class="text-muted small mb-0">{{ \App\Models\Product::where('sub_category_id', $subCategory->id)->where('status', 1)->where('approve_by_admin', 1)->count() }} items</p>
                         </div>
                     </a>

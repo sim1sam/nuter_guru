@@ -30,13 +30,23 @@
                                 </div>
 
                                 <div class="form-group col-12">
-                                    <label>{{__('admin.Title One')}} <span class="text-danger">*</span></label>
+                                    <label>{{__('admin.Title One')}} (EN) <span class="text-danger">*</span></label>
                                     <input type="text" name="title_one" class="form-control">
                                 </div>
 
                                 <div class="form-group col-12">
-                                    <label>{{__('admin.Title Two')}} <span class="text-danger">*</span></label>
+                                    <label>{{__('admin.Title One')}} (BN)</label>
+                                    <input type="text" name="title_one_bn" class="form-control" value="{{ old('title_one_bn') }}" placeholder="বাংলা শিরোনাম">
+                                </div>
+
+                                <div class="form-group col-12">
+                                    <label>{{__('admin.Title Two')}} (EN) <span class="text-danger">*</span></label>
                                     <input type="text" name="title_two" class="form-control">
+                                </div>
+
+                                <div class="form-group col-12">
+                                    <label>{{__('admin.Title Two')}} (BN)</label>
+                                    <input type="text" name="title_two_bn" class="form-control" value="{{ old('title_two_bn') }}" placeholder="বাংলা বিবরণ">
                                 </div>
 
                                 <div class="form-group col-12">

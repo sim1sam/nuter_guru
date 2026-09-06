@@ -62,7 +62,9 @@ class SliderController extends Controller
         $slider->serial = $request->serial;
         $slider->status = $request->status;
         $slider->title_one = $request->title_one;
+        $slider->title_one_bn = $request->title_one_bn;
         $slider->title_two = $request->title_two;
+        $slider->title_two_bn = $request->title_two_bn;
         $slider->text_position = $request->text_position;
         $slider->save();
 
@@ -117,7 +119,9 @@ class SliderController extends Controller
         $slider->serial = $request->serial;
         $slider->status = $request->status;
         $slider->title_one = $request->title_one;
+        $slider->title_one_bn = $request->title_one_bn;
         $slider->title_two = $request->title_two;
+        $slider->title_two_bn = $request->title_two_bn;
         $slider->text_position = $request->text_position;
         $slider->save();
 

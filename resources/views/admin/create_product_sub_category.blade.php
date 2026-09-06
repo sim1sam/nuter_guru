@@ -34,8 +34,12 @@
                                     </select>
                                 </div>
                                 <div class="form-group col-12">
-                                    <label>{{__('admin.Sub Category Name')}} <span class="text-danger">*</span></label>
+                                    <label>{{__('admin.Sub Category Name')}} (EN) <span class="text-danger">*</span></label>
                                     <input type="text" id="name" class="form-control"  name="name">
+                                </div>
+                                <div class="form-group col-12">
+                                    <label>{{__('admin.Sub Category Name')}} (BN)</label>
+                                    <input type="text" id="name_bn" class="form-control" name="name_bn" value="{{ old('name_bn') }}" placeholder="বাংলা সাব-ক্যাটাগরি নাম">
                                 </div>
                                 <div class="form-group col-12">
                                     <label>{{__('admin.Slug')}} <span class="text-danger">*</span></label>

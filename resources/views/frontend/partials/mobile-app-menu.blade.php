@@ -85,7 +85,7 @@
             <div class="collapse" id="mobileCategories">
                 <div class="mobile-app-menu__category-list">
                     @foreach($categories as $category)
-                    <a href="{{ route('category', $category->slug) }}">{{ $category->name }}</a>
+                    <a href="{{ route('category', $category->slug) }}">{{ category_name($category) }}</a>
                     @endforeach
                 </div>
             </div>

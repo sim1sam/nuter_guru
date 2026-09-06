@@ -51,6 +51,7 @@ class ProductSubCategoryController extends Controller
         $subCategory = new SubCategory();
         $subCategory->category_id = $request->category;
         $subCategory->name = $request->name;
+        $subCategory->name_bn = $request->name_bn;
         $subCategory->slug = $request->slug;
         $subCategory->status = $request->status;
         $subCategory->save();
@@ -93,6 +94,7 @@ class ProductSubCategoryController extends Controller
 
         $subCategory->category_id = $request->category;
         $subCategory->name = $request->name;
+        $subCategory->name_bn = $request->name_bn;
         $subCategory->slug = $request->slug;
         $subCategory->status = $request->status;
         $subCategory->save();

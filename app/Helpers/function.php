@@ -91,6 +91,57 @@ function product_name($product): string
 }
 
 /**
+ * Category / subcategory display name for the active locale.
+ */
+function category_name($category): string
+{
+    if (! $category) {
+        return '';
+    }
+
+    if (is_array($category)) {
+        $locale = app()->getLocale();
+        if ($locale === 'bn' && ! empty($category['name_bn'])) {
+            return (string) $category['name_bn'];
+        }
+
+        return (string) ($category['name'] ?? '');
+    }
+
+    return (string) ($category->localized_name ?? $category->name ?? '');
+}
+
+/**
+ * Slider title/description for the active locale.
+ */
+function slider_text($slider, string $field = 'title_one'): string
+{
+    if (! $slider) {
+        return '';
+    }
+
+    $bnField = $field . '_bn';
+
+    if (is_array($slider)) {
+        if (app()->getLocale() === 'bn' && ! empty($slider[$bnField])) {
+            return (string) $slider[$bnField];
+        }
+
+        return (string) ($slider[$field] ?? '');
+    }
+
+    if ($field === 'title_one') {
+        return (string) ($slider->localized_title_one ?? $slider->title_one ?? '');
+    }
+
+    if ($field === 'title_two') {
+        return (string) ($slider->localized_title_two ?? $slider->title_two ?? '');
+    }
+
+    return (string) ($slider->{$field} ?? '');
+}
+
+/**
  * Resolve selling unit price from product + selected variant items.
  * Variant item prices are full option prices (not added on top of base).
  */

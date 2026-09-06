@@ -63,6 +63,7 @@ class ProductCategoryController extends Controller
             $category->image = $category_image;
         }
         $category->name = $request->name;
+        $category->name_bn = $request->name_bn;
         $category->slug = $request->slug;
         $category->status = $request->status;
         $category->icon = $request->icon;
@@ -123,6 +124,7 @@ class ProductCategoryController extends Controller
 
         $category->icon = $request->icon;
         $category->name = $request->name;
+        $category->name_bn = $request->name_bn;
         $category->slug = $request->slug;
         $category->status = $request->status;
         $category->save();

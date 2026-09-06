@@ -1022,7 +1022,7 @@
                         @foreach($categories->take(7) as $category)
                             <li>
                                 <a class="nav-link {{ request()->routeIs('category') && request()->route('slug') === $category->slug ? 'active' : '' }}"
-                                   href="{{ route('category', $category->slug) }}">{{ $category->name }}</a>
+                                   href="{{ route('category', $category->slug) }}">{{ category_name($category) }}</a>
                             </li>
                         @endforeach
                         @if($categories->count() > 7)
@@ -1030,7 +1030,7 @@
                                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">{{ __('More') }}</a>
                                 <ul class="dropdown-menu">
                                     @foreach($categories->slice(7) as $category)
-                                        <li><a class="dropdown-item" href="{{ route('category', $category->slug) }}">{{ $category->name }}</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('category', $category->slug) }}">{{ category_name($category) }}</a></li>
                                     @endforeach
                                 </ul>
                             </li>
@@ -1063,10 +1063,10 @@
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="footer-widget">
                         <a href="{{ route('home') }}" class="d-inline-block">
-                            <img src="{{ asset($setting->logo) }}" alt="{{ $seoSetting->seo_title ?? 'Logo' }}" class="img-fluid" style="max-height: 72px;">
+                            <img src="{{ asset($setting->logo) }}" alt="{{ $seoSetting->seo_title ?? __('Logo') }}" class="img-fluid" style="max-height: 72px;">
                         </a>
                         
-                        <p class="text-muted">{{ $footer->description ?? 'Premium organic dry fruits, nuts, spices and healthy foods — fresh, pure, and delivered to your door.' }}</p>
+                        <p class="text-muted">{{ __($footer->description ?: 'Premium organic dry fruits, nuts, spices and healthy foods — fresh, pure, and delivered to your door.') }}</p>
                         <div class="social-links mt-3">
                             @if($socialLinks->count() > 0)
                                 @foreach($socialLinks as $socialLink)
@@ -1083,48 +1083,50 @@
                 </div>
                 <div class="col-lg-2 col-md-6 mb-4">
                     <div class="footer-widget">
-                        <h6 class="mb-3">{{ $footer->column_two_title ?? 'Quick Links' }}</h6>
+                        <h6 class="mb-3">{{ __($footer->column_two_title ?: 'Quick Links') }}</h6>
                         <ul class="list-unstyled">
                             @if($footerLinks1->count() > 0)
                                 @foreach($footerLinks1 as $link)
-                                    <li><a href="{{ $link->link }}" class="text-muted text-decoration-none">{{ $link->title }}</a></li>
+                                    <li><a href="{{ $link->link }}" class="text-muted text-decoration-none">{{ __($link->title) }}</a></li>
                                 @endforeach
                             @else
-                                {{-- <li><a href="{{ route('home') }}" class="text-muted text-decoration-none">Home</a></li>
-                                <li><a href="{{ route('products') }}" class="text-muted text-decoration-none">Products</a></li>
-                                <li><a href="{{ route('about') }}" class="text-muted text-decoration-none">About Us</a></li>
-                                <li><a href="{{ route('contact') }}" class="text-muted text-decoration-none">Contact</a></li> --}}
-                               
+                                <li><a href="{{ route('home') }}" class="text-muted text-decoration-none">{{ __('Home') }}</a></li>
+                                <li><a href="{{ route('products') }}" class="text-muted text-decoration-none">{{ __('Products') }}</a></li>
+                                <li><a href="{{ route('about') }}" class="text-muted text-decoration-none">{{ __('About Us') }}</a></li>
+                                <li><a href="{{ route('contact') }}" class="text-muted text-decoration-none">{{ __('Contact') }}</a></li>
                             @endif
                         </ul>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="footer-widget">
-                        <h6 class="mb-3">{{ $footer->column_three_title ?? 'Customer Service' }}</h6>
+                        <h6 class="mb-3">{{ __($footer->column_three_title ?: 'Customer Service') }}</h6>
                         <ul class="list-unstyled">
-                            @if($footerLinks2->count() > 0)
+                            @if($footerLinks2->count() > 0 || $footerLinks3->count() > 0)
                                 @foreach($footerLinks2 as $link)
-                                    <li><a href="{{ $link->link }}" class="text-muted text-decoration-none">{{ $link->title }}</a></li>
+                                    <li><a href="{{ $link->link }}" class="text-muted text-decoration-none">{{ __($link->title) }}</a></li>
+                                @endforeach
+                                @foreach($footerLinks3 as $link)
+                                    <li><a href="{{ $link->link }}" class="text-muted text-decoration-none">{{ __($link->title) }}</a></li>
                                 @endforeach
                             @else
-                                <li><a href="{{ route('faq') }}" class="text-muted text-decoration-none">FAQ</a></li>
-                                <li><a href="#" class="text-muted text-decoration-none">Shipping Info</a></li>
-                                <li><a href="#" class="text-muted text-decoration-none">Returns</a></li>
-                                <li><a href="{{ route('terms.conditions') }}" class="text-muted text-decoration-none">Terms & Conditions</a></li>
-                                <li><a href="{{ route('privacy.policy') }}" class="text-muted text-decoration-none">Privacy Policy</a></li>
+                                <li><a href="{{ route('faq') }}" class="text-muted text-decoration-none">{{ __('FAQ') }}</a></li>
+                                <li><a href="#" class="text-muted text-decoration-none">{{ __('Shipping Info') }}</a></li>
+                                <li><a href="#" class="text-muted text-decoration-none">{{ __('Returns') }}</a></li>
+                                <li><a href="{{ route('terms.conditions') }}" class="text-muted text-decoration-none">{{ __('Terms & Conditions') }}</a></li>
+                                <li><a href="{{ route('privacy.policy') }}" class="text-muted text-decoration-none">{{ __('Privacy Policy') }}</a></li>
                             @endif
                         </ul>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="footer-widget">
-                        <h6 class="mb-3">{{ $footer->column_four_title ?? 'Contact Info' }}</h6>
+                        <h6 class="mb-3">{{ __($footer->column_four_title ?: 'Contact Info') }}</h6>
                         <div class="contact-info">
                             @if($footer && $footer->address)
-                                <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-2"></i> {{ $footer->address }}</p>
+                                <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-2"></i> {{ __($footer->address) }}</p>
                             @else
-                                <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-2"></i> Dhaka, Bangladesh</p>
+                                <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-2"></i> {{ __('Dhaka, Bangladesh') }}</p>
                             @endif
                             @if($footer && $footer->phone)
                                 <p class="text-muted mb-2"><i class="fas fa-phone me-2"></i> {{ $footer->phone }}</p>
@@ -1137,9 +1139,9 @@
                                 <p class="text-muted mb-2"><i class="fas fa-envelope me-2"></i> {{ $setting->contact_email ?? 'info@nuterguru.com' }}</p>
                             @endif
                             @if($footer && $footer->working_hours)
-                                <p class="text-muted"><i class="fas fa-clock me-2"></i> {{ $footer->working_hours }}</p>
+                                <p class="text-muted"><i class="fas fa-clock me-2"></i> {{ __($footer->working_hours) }}</p>
                             @else
-                                <p class="text-muted"><i class="fas fa-clock me-2"></i> Mon - Sat: 9:00 AM - 8:00 PM</p>
+                                <p class="text-muted"><i class="fas fa-clock me-2"></i> {{ __('Mon - Sat: 9:00 AM - 8:00 PM') }}</p>
                             @endif
                         </div>
                     </div>
@@ -1150,7 +1152,7 @@
             <div class="container">
                 <div class="row align-items-center">
                     <div class="col-md-6">
-                        <p class="text-muted mb-0">&copy; {{ date('Y') }} {{ $footer->copyright ?? config('app.name', 'Nuter Guru') . '. All rights reserved.' }}</p>
+                        <p class="text-muted mb-0">&copy; {{ date('Y') }} {{ __($footer->copyright ?: (config('app.name', 'Nuter Guru') . '. All rights reserved.')) }}</p>
                     </div>
                     <div class="col-md-6 text-end">
                         <div class="payment-methods">

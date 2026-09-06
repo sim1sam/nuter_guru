@@ -12,7 +12,7 @@
                    value="{{ $category->id }}" id="cat{{ $idPrefix }}{{ $category->id }}"
                    {{ request('category') == $category->id ? 'checked' : '' }}>
             <label class="form-check-label" for="cat{{ $idPrefix }}{{ $category->id }}">
-                {{ $category->name }}
+                {{ category_name($category) }}
             </label>
         </div>
         @endforeach
