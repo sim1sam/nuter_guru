@@ -55,12 +55,14 @@ body.category-page .main-content {
     border: none;
     background: none;
     cursor: pointer;
-    transition: background-color 0.15s ease-in-out;
+    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
 }
 
-.sort-item:hover {
-    background-color: #f8f9fa;
-    color: #212529;
+.sort-item:hover,
+.sort-item:focus,
+.sort-item.is-active {
+    background-color: rgba(var(--primary-rgb, 245, 130, 32), 0.12);
+    color: var(--primary-color, #F58220);
     text-decoration: none;
 }
 
@@ -79,14 +81,17 @@ body.category-page .main-content {
     cursor: pointer;
 }
 
-.sort-dropdown .dropdown-item:hover {
-    background-color: #f8f9fa;
+.sort-dropdown .dropdown-item:hover,
+.sort-dropdown .dropdown-item:focus,
+.sort-dropdown .dropdown-item.active {
+    background-color: rgba(var(--primary-rgb, 245, 130, 32), 0.12);
+    color: var(--primary-color, #F58220);
 }
 
 .custom-dropdown-menu .dropdown-item:hover,
 .custom-dropdown-menu .dropdown-item:focus {
-    background-color: #f8f9fa !important;
-    color: #16181b !important;
+    background-color: rgba(var(--primary-rgb, 245, 130, 32), 0.12) !important;
+    color: var(--primary-color, #F58220) !important;
 }
 
 /* Ensure all other elements stay below */
@@ -206,12 +211,12 @@ body.category-page .main-content {
                                     <i class="fas fa-sort me-2"></i>{{ __('Sort by') }} <i class="fas fa-chevron-down ms-2"></i>
                                 </button>
                                 <div class="sort-menu" id="sortMenu" style="display: none;">
-                                    <a href="#" class="sort-item" onclick="sortProducts('name_asc', event); return false;">{{ __('Name (A-Z)') }}</a>
-                                    <a href="#" class="sort-item" onclick="sortProducts('name_desc', event); return false;">{{ __('Name (Z-A)') }}</a>
-                                    <a href="#" class="sort-item" onclick="sortProducts('price_asc', event); return false;">{{ __('Price (Low to High)') }}</a>
-                                    <a href="#" class="sort-item" onclick="sortProducts('price_desc', event); return false;">{{ __('Price (High to Low)') }}</a>
-                                    <a href="#" class="sort-item" onclick="sortProducts('newest', event); return false;">{{ __('Newest First') }}</a>
-                                    <a href="#" class="sort-item" onclick="sortProducts('rating', event); return false;">{{ __('Highest Rated') }}</a>
+                                    <a href="#" class="sort-item {{ request('sort', 'name_asc') === 'name_asc' ? 'is-active' : '' }}" onclick="sortProducts('name_asc', event); return false;">{{ __('Name (A-Z)') }}</a>
+                                    <a href="#" class="sort-item {{ request('sort') === 'name_desc' ? 'is-active' : '' }}" onclick="sortProducts('name_desc', event); return false;">{{ __('Name (Z-A)') }}</a>
+                                    <a href="#" class="sort-item {{ request('sort') === 'price_asc' ? 'is-active' : '' }}" onclick="sortProducts('price_asc', event); return false;">{{ __('Price (Low to High)') }}</a>
+                                    <a href="#" class="sort-item {{ request('sort') === 'price_desc' ? 'is-active' : '' }}" onclick="sortProducts('price_desc', event); return false;">{{ __('Price (High to Low)') }}</a>
+                                    <a href="#" class="sort-item {{ request('sort') === 'newest' ? 'is-active' : '' }}" onclick="sortProducts('newest', event); return false;">{{ __('Newest First') }}</a>
+                                    <a href="#" class="sort-item {{ request('sort') === 'rating' ? 'is-active' : '' }}" onclick="sortProducts('rating', event); return false;">{{ __('Highest Rated') }}</a>
                                 </div>
                             </div>
                         </div>
@@ -401,12 +406,13 @@ body.category-page .main-content {
 }
 
 .sort-dropdown-menu .dropdown-item:hover {
-    background-color: #f8f9fa;
-    color: #1e2125;
+    background-color: rgba(var(--primary-rgb, 245, 130, 32), 0.12);
+    color: var(--primary-color, #F58220);
 }
 
-.sort-dropdown-menu .dropdown-item:active {
-    background-color: #0d6efd;
+.sort-dropdown-menu .dropdown-item:active,
+.sort-dropdown-menu .dropdown-item.active {
+    background-color: var(--primary-color, #F58220);
     color: #fff;
 }
 

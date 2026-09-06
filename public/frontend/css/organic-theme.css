@@ -2340,3 +2340,61 @@ body:has(.organic-header) .main-content {
         flex-direction: column;
     }
 }
+
+/* Product sort / short-list selection — theme instead of Bootstrap blue */
+.sort-options .form-select,
+.mobile-shop-bar__sort .form-select,
+.products-toolbar .form-select {
+    border-color: var(--border-color, #E5E5E5);
+    color: var(--text-dark, #2C2C2C);
+    accent-color: var(--selection-color, var(--primary-color));
+}
+
+.sort-options .form-select:focus,
+.mobile-shop-bar__sort .form-select:focus,
+.products-toolbar .form-select:focus {
+    border-color: var(--selection-color, var(--primary-color)) !important;
+    box-shadow: 0 0 0 0.2rem rgba(var(--selection-color-rgb, var(--primary-rgb)), 0.22) !important;
+}
+
+.sort-options .form-select option:checked,
+.mobile-shop-bar__sort .form-select option:checked,
+.products-toolbar .form-select option:checked {
+    background: linear-gradient(0deg, var(--selection-color, var(--primary-color)), var(--selection-color, var(--primary-color)));
+    color: #fff;
+}
+
+.sort-item:hover,
+.sort-item:focus,
+.sort-item.is-active,
+.sort-menu a:hover,
+.sort-menu a:focus,
+.sort-dropdown-menu .dropdown-item:hover,
+.sort-dropdown-menu .dropdown-item:focus {
+    background-color: rgba(var(--primary-rgb), 0.12) !important;
+    color: var(--primary-color) !important;
+}
+
+.sort-dropdown-menu .dropdown-item:active,
+.sort-dropdown-menu .dropdown-item.active,
+.dropdown-item.active,
+.dropdown-item:active {
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+.view-options .btn:focus,
+.view-toggle .btn:focus,
+.view-btn:focus,
+.sort-btn:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.22) !important;
+}
+
+.view-options .btn.active,
+.view-toggle .view-btn.active,
+.view-btn.active {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: #fff !important;
+}
