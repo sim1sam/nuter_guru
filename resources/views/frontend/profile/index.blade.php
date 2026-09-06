@@ -100,17 +100,9 @@
 
                     <div class="col-md-6 mb-3">
                         <label for="country" class="form-label">Country</label>
-                        <select class="form-select @error('country') is-invalid @enderror" id="country" name="country">
-                            <option value="">Select Country</option>
-                            <option value="US" {{ old('country', auth()->user()->country) == 'US' ? 'selected' : '' }}>United States</option>
-                            <option value="CA" {{ old('country', auth()->user()->country) == 'CA' ? 'selected' : '' }}>Canada</option>
-                            <option value="GB" {{ old('country', auth()->user()->country) == 'GB' ? 'selected' : '' }}>United Kingdom</option>
-                            <option value="AU" {{ old('country', auth()->user()->country) == 'AU' ? 'selected' : '' }}>Australia</option>
-                            <option value="IN" {{ old('country', auth()->user()->country) == 'IN' ? 'selected' : '' }}>India</option>
-                        </select>
-                        @error('country')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        <input type="text" class="form-control" value="Bangladesh" readonly>
+                        <input type="hidden" id="country" name="country" value="BD">
+                        <small class="text-muted">Country is fixed to Bangladesh</small>
                     </div>
                 </div>
 

@@ -50,7 +50,7 @@ class ProfileController extends Controller
             'city' => ['nullable', 'string', 'max:100'],
             'state' => ['nullable', 'string', 'max:100'],
             'zip_code' => ['nullable', 'string', 'max:20'],
-            'country' => ['nullable', 'string', 'max:2'],
+            'country' => ['nullable', 'string', 'max:2', 'in:BD'],
         ];
         
         // Add password validation if password fields are provided
@@ -79,7 +79,7 @@ class ProfileController extends Controller
             'city' => $request->city,
             'state' => $request->state,
             'zip_code' => $request->zip_code,
-            'country' => $request->country,
+            'country' => $request->input('country', 'BD') ?: 'BD',
         ];
         
         // Add password to update data if provided
