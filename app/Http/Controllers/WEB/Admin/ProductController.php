@@ -145,7 +145,9 @@ class ProductController extends Controller
         }
 
         $product->short_name = $request->short_name;
+        $product->short_name_bn = $request->short_name_bn;
         $product->name = $request->name;
+        $product->name_bn = $request->name_bn;
         $product->slug = $request->slug;
         $product->category_id = $request->category;
         $product->sub_category_id = $request->sub_category ? $request->sub_category : 0;
@@ -298,7 +300,9 @@ class ProductController extends Controller
 
 
         $product->short_name = $request->short_name;
+        $product->short_name_bn = $request->short_name_bn;
         $product->name = $request->name;
+        $product->name_bn = $request->name_bn;
         $product->slug = $request->slug;
         $product->category_id = $request->category;
         $product->sub_category_id = $request->sub_category ? $request->sub_category : 0;

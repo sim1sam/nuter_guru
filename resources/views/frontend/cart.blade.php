@@ -1,15 +1,15 @@
 @extends('frontend.layouts.app')
 
-@section('title', 'Shopping Cart')
+@section('title', __('Shopping Cart'))
 
 @section('content')
 <div class="cart-page">
     <div class="container">
         <div class="cart-page-header">
-            <h1 class="cart-page-title">Shopping Cart</h1>
+            <h1 class="cart-page-title">{{ __('Shopping Cart') }}</h1>
             <span class="cart-page-count">
                 <i class="fas fa-shopping-bag"></i>
-                <span id="cart-count">0</span> items
+                <span id="cart-count">0</span> {{ __('items') }}
             </span>
         </div>
 
@@ -17,27 +17,27 @@
             <div class="col-lg-8">
                 <div class="cart-panel">
                     <div class="cart-panel__head">
-                        <h2>Your Items</h2>
+                        <h2>{{ __('Your Items') }}</h2>
                     </div>
 
                     <div id="cart-items" class="cart-items-list"></div>
 
                     <div id="empty-cart" class="cart-empty" style="display: none;">
                         <div class="cart-empty__icon"><i class="fas fa-shopping-bag"></i></div>
-                        <h3>Your cart is empty</h3>
-                        <p>Add products you love and they will show up here.</p>
+                        <h3>{{ __('Your cart is empty') }}</h3>
+                        <p>{{ __('Add products you love and they will show up here.') }}</p>
                         <a href="{{ route('products') }}" class="cart-btn cart-btn--checkout">
-                            <i class="fas fa-store"></i> Continue Shopping
+                            <i class="fas fa-store"></i> {{ __('Continue Shopping') }}
                         </a>
                     </div>
 
                     <div id="login-prompt" class="cart-login-prompt" style="display: none;">
                         <div class="cart-login-prompt__icon"><i class="fas fa-user-lock"></i></div>
-                        <h3>Please log in to view your cart</h3>
-                        <p>Sign in to access saved cart items and checkout faster.</p>
+                        <h3>{{ __('Please log in to view your cart') }}</h3>
+                        <p>{{ __('Sign in to access saved cart items and checkout faster.') }}</p>
                         <div class="d-flex flex-wrap justify-content-center gap-2">
-                            <a href="{{ route('login') }}" class="cart-btn cart-btn--checkout">Login</a>
-                            <a href="{{ route('register') }}" class="cart-btn cart-btn--secondary">Register</a>
+                            <a href="{{ route('login') }}" class="cart-btn cart-btn--checkout">{{ __('Login') }}</a>
+                            <a href="{{ route('register') }}" class="cart-btn cart-btn--secondary">{{ __('Register') }}</a>
                         </div>
                     </div>
                 </div>
@@ -45,32 +45,32 @@
 
             <div class="col-lg-4">
                 <div class="cart-summary-card">
-                    <h2>Order Summary</h2>
+                    <h2>{{ __('Order Summary') }}</h2>
 
                     <div class="cart-summary-row">
-                        <span>Subtotal</span>
+                        <span>{{ __('Subtotal') }}</span>
                         <span id="subtotal">{{ currency_icon() }}0.00</span>
                     </div>
 
                     <div class="cart-summary-total">
-                        <span>Total</span>
+                        <span>{{ __('Total') }}</span>
                         <span id="total">{{ currency_icon() }}0.00</span>
                     </div>
 
                     <div class="cart-summary-actions">
                         <button class="cart-btn cart-btn--checkout" id="checkout-btn" disabled>
-                            <i class="fas fa-lock"></i> Proceed to Checkout
+                            <i class="fas fa-lock"></i> {{ __('Proceed to Checkout') }}
                         </button>
                         <a href="{{ route('products') }}" class="cart-btn cart-btn--secondary">
-                            <i class="fas fa-arrow-left"></i> Continue Shopping
+                            <i class="fas fa-arrow-left"></i> {{ __('Continue Shopping') }}
                         </a>
                     </div>
                 </div>
 
                 <div class="cart-recommend-card">
-                    <h3>You might also like</h3>
+                    <h3>{{ __('You might also like') }}</h3>
                     <div id="recommended-products" class="cart-recommend-list">
-                        <p class="cart-recommend-empty mb-0">Loading suggestions...</p>
+                        <p class="cart-recommend-empty mb-0">{{ __('Loading suggestions...') }}</p>
                     </div>
                 </div>
             </div>
@@ -116,11 +116,11 @@ class ShoppingCart {
                 this.cart = data.cart_items;
                 this.renderCart();
             } else {
-                this.showNotification('Failed to load cart items', 'error');
+                this.showNotification(@json(__('Failed to load cart items')), 'error');
             }
         } catch (error) {
             console.error('Error loading cart:', error);
-            this.showNotification('Error loading cart', 'error');
+            this.showNotification(@json(__('Error loading cart')), 'error');
         }
     }
 
@@ -161,12 +161,12 @@ class ShoppingCart {
             const productImage = product.thumb_image
                 ? `{{ asset('') }}${product.thumb_image}`
                 : this.defaultProductImage;
-            const unitPrice = parseFloat(product.offer_price || product.price || 0);
-            const lineTotal = unitPrice * quantity;
+            const unitPrice = parseFloat(item.unit_price ?? product.offer_price ?? product.price ?? 0);
+            const lineTotal = parseFloat(item.line_total ?? (unitPrice * quantity));
             const productSlug = product.slug || '';
             const productUrl = productSlug ? `/product/${productSlug}` : '{{ route('products') }}';
             const variantsHtml = item.variants && Array.isArray(item.variants) && item.variants.length > 0
-                ? `<div class="cart-line__variants">${item.variants.map(v => v.name).join(' · ')}</div>`
+                ? `<div class="cart-line__variants">${item.variants.map(v => v.name || ((v.variant_name || '') + ': ' + (v.variant_value || ''))).filter(Boolean).join(' · ')}</div>`
                 : '';
 
             return `
@@ -178,25 +178,25 @@ class ShoppingCart {
                         <h3 class="cart-line__title">
                             <a href="${productUrl}">${product.name}</a>
                         </h3>
-                        <div class="cart-line__meta">${product.category?.name || 'Uncategorized'}</div>
+                        <div class="cart-line__meta">${product.category?.name || @json(__('Uncategorized'))}</div>
                         ${variantsHtml}
-                        <div class="cart-line__price">${this.formatMoney(unitPrice)} each</div>
+                        <div class="cart-line__price">${this.formatMoney(unitPrice)} ${@json(__('each'))}</div>
                     </div>
                     <div class="cart-line__actions">
                         <div class="cart-line__total">
-                            <span>Line total</span>
+                            <span>${@json(__('Line total'))}</span>
                             ${this.formatMoney(lineTotal)}
                         </div>
                         <div class="pd-qty-control">
-                            <button type="button" class="qty-btn" data-item-id="${itemId}" data-action="decrease" aria-label="Decrease quantity">
+                            <button type="button" class="qty-btn" data-item-id="${itemId}" data-action="decrease" aria-label="${@json(__('Decrease quantity'))}">
                                 <i class="fas fa-minus"></i>
                             </button>
-                            <input type="number" value="${quantity}" min="1" class="qty-input" data-item-id="${itemId}" aria-label="Quantity">
-                            <button type="button" class="qty-btn" data-item-id="${itemId}" data-action="increase" aria-label="Increase quantity">
+                            <input type="number" value="${quantity}" min="1" class="qty-input" data-item-id="${itemId}" aria-label="${@json(__('Quantity'))}">
+                            <button type="button" class="qty-btn" data-item-id="${itemId}" data-action="increase" aria-label="${@json(__('Increase quantity'))}">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
-                        <button type="button" class="cart-remove-btn" onclick="cart.removeItem(${itemId})" aria-label="Remove item">
+                        <button type="button" class="cart-remove-btn" onclick="cart.removeItem('${itemId}')" aria-label="${@json(__('Remove item'))}">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -259,14 +259,14 @@ class ShoppingCart {
 
             if (data.success) {
                 this.loadCartItems();
-                this.showNotification('Cart updated successfully!');
+                this.showNotification(@json(__('Cart updated successfully!')));
                 this.updateHeaderCartCount(data.cart_count, data.cart_total);
             } else {
-                this.showNotification(data.message || 'Failed to update cart', 'error');
+                this.showNotification(data.message || @json(__('Failed to update cart')), 'error');
             }
         } catch (error) {
             console.error('Error updating cart:', error);
-            this.showNotification('Error updating cart', 'error');
+            this.showNotification(@json(__('Error updating cart')), 'error');
         }
     }
 
@@ -286,14 +286,14 @@ class ShoppingCart {
             const data = await response.json();
             if (data.success) {
                 this.loadCartItems();
-                this.showNotification('Item removed from cart!');
+                this.showNotification(@json(__('Item removed from cart!')));
                 this.updateHeaderCartCount(data.cart_count, data.cart_total);
             } else {
-                this.showNotification(data.message || 'Failed to remove item', 'error');
+                this.showNotification(data.message || @json(__('Failed to remove item')), 'error');
             }
         } catch (error) {
             console.error('Error removing item:', error);
-            this.showNotification('Error removing item', 'error');
+            this.showNotification(@json(__('Error removing item')), 'error');
         }
     }
 
@@ -312,7 +312,7 @@ class ShoppingCart {
 
     proceedToCheckout() {
         if (this.cart.length === 0) {
-            this.showNotification('Your cart is empty!', 'error');
+            this.showNotification(@json(__('Your cart is empty!')), 'error');
             return;
         }
 
@@ -343,17 +343,17 @@ class ShoppingCart {
                             </div>
                             ${availableStock > 0
                                 ? `<button type="button" class="cart-recommend-add" onclick="cart.addRecommendedToCart(${product.id}, this)" aria-label="Add ${product.name} to cart"><i class="fas fa-plus"></i></button>`
-                                : `<span class="badge bg-warning text-dark">Out</span>`
+                                : `<span class="badge bg-warning text-dark">${@json(__('Out'))}</span>`
                             }
                         </div>
                     `;
                 }).join('');
             } else {
-                container.innerHTML = '<p class="cart-recommend-empty mb-0">No recommendations right now.</p>';
+                container.innerHTML = '<p class="cart-recommend-empty mb-0">' + @json(__('No recommendations right now.')) + '</p>';
             }
         } catch (error) {
             console.error('Error loading recommended products:', error);
-            container.innerHTML = '<p class="cart-recommend-empty mb-0">Unable to load recommendations.</p>';
+            container.innerHTML = '<p class="cart-recommend-empty mb-0">' + @json(__('Unable to load recommendations.')) + '</p>';
         }
     }
 
@@ -381,17 +381,17 @@ class ShoppingCart {
             const data = await response.json();
 
             if (data.success) {
-                this.showNotification(data.message || 'Product added to cart!', 'success');
+                this.showNotification(data.message || @json(__('Product added to cart!')), 'success');
                 if (data.cart_count !== undefined) {
                     this.updateHeaderCartCount(data.cart_count, data.cart_total);
                 }
                 this.loadCartItems();
             } else {
-                this.showNotification(data.message || 'Failed to add product to cart', 'error');
+                this.showNotification(data.message || @json(__('Failed to add product to cart')), 'error');
             }
         } catch (error) {
             console.error('Error adding product to cart:', error);
-            this.showNotification('An error occurred. Please try again.', 'error');
+            this.showNotification(@json(__('An error occurred. Please try again.')), 'error');
         } finally {
             button.innerHTML = originalContent;
             button.disabled = false;

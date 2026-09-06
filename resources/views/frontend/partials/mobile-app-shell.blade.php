@@ -9,28 +9,28 @@
     $appVersion = $setting->app_version ?? 'Mobile App';
 @endphp
 
-<nav class="mobile-bottom-nav d-lg-none" aria-label="Mobile navigation">
+<nav class="mobile-bottom-nav d-lg-none" aria-label="{{ __('Toggle navigation') }}">
     <div class="mobile-bottom-nav__inner">
         <a href="{{ route('home') }}" class="mobile-tab {{ request()->routeIs('home') ? 'is-active' : '' }}">
             <i class="fas fa-home"></i>
-            <span>Home</span>
+            <span>{{ __('Home') }}</span>
         </a>
         <a href="{{ route('products') }}" class="mobile-tab {{ request()->routeIs('products') || request()->routeIs('category') || request()->routeIs('product-detail') ? 'is-active' : '' }}">
             <i class="fas fa-store"></i>
-            <span>Shop</span>
+            <span>{{ __('Shop') }}</span>
         </a>
-        <button type="button" class="mobile-tab" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-label="Open menu">
+        <button type="button" class="mobile-tab" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-label="{{ __('Open menu') }}">
             <i class="fas fa-th-large"></i>
-            <span>Menu</span>
+            <span>{{ __('Menu') }}</span>
         </button>
         <a href="{{ route('cart') }}" class="mobile-tab js-open-cart-drawer {{ request()->routeIs('cart') ? 'is-active' : '' }}">
             <i class="fas fa-shopping-bag"></i>
-            <span>Cart</span>
+            <span>{{ __('Cart') }}</span>
             <span class="mobile-tab__badge cart-count d-none">0</span>
         </a>
         <a href="{{ auth()->check() ? route('dashboard') : route('login') }}" class="mobile-tab {{ \App\Helpers\AccountNavHelper::isAccountPage() || request()->routeIs('login') ? 'is-active' : '' }}">
             <i class="fas fa-user"></i>
-            <span>{{ auth()->check() ? 'Account' : 'Login' }}</span>
+            <span>{{ auth()->check() ? __('Account') : __('Login') }}</span>
         </a>
     </div>
 </nav>
@@ -41,27 +41,27 @@
             <div class="modal-body">
                 <div class="app-sheet-handle"></div>
                 <div class="app-sheet-icon"><i class="fas fa-mobile-alt"></i></div>
-                <h2 class="app-sheet-title" id="appDownloadSheetLabel">Get Our Mobile App</h2>
-                <p class="app-sheet-desc">Shop faster with our app — exclusive deals, easy checkout, and order tracking on the go.</p>
+                <h2 class="app-sheet-title" id="appDownloadSheetLabel">{{ __('Get Our Mobile App') }}</h2>
+                <p class="app-sheet-desc">{{ __('Shop faster with our app — exclusive deals, easy checkout, and order tracking on the go.') }}</p>
 
                 <a href="{{ $appStoreUrl }}" class="app-store-btn" target="_blank" rel="noopener noreferrer">
                     <i class="fab fa-apple"></i>
                     <span class="app-store-btn__text">
-                        <small>Download on the</small>
-                        <strong>App Store</strong>
+                        <small>{{ __('Download on the') }}</small>
+                        <strong>{{ __('App Store') }}</strong>
                     </span>
                 </a>
                 <a href="{{ $playStoreUrl }}" class="app-store-btn" target="_blank" rel="noopener noreferrer">
                     <i class="fab fa-google-play"></i>
                     <span class="app-store-btn__text">
-                        <small>Get it on</small>
-                        <strong>Google Play</strong>
+                        <small>{{ __('Get it on') }}</small>
+                        <strong>{{ __('Google Play') }}</strong>
                     </span>
                 </a>
 
                 <p class="app-sheet-hint">
                     <i class="fas fa-share-square me-1"></i>
-                    Tip: Add this site to your home screen for an app-like experience.
+                    {{ __('Tip: Add this site to your home screen for an app-like experience.') }}
                     @if($appVersion)
                         <br><span class="text-muted">{{ $appVersion }}</span>
                     @endif

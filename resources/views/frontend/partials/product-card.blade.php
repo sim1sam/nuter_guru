@@ -22,11 +22,11 @@
 <div class="product-card h-100 {{ $extraClass }}"
      data-category="{{ $product->category->slug ?? '' }}"
      data-price="{{ $product->offer_price ?? $product->price }}"
-     data-name="{{ $product->name }}">
+     data-name="{{ product_name($product) }}">
     <div class="product-image-container">
         <a href="{{ route('product-detail', ['slug' => $product->slug]) }}" class="product-image-link">
             <img src="{{ $product->thumb_image ? asset($product->thumb_image) : asset('frontend/images/default-product.svg') }}"
-                 alt="{{ $product->name }}"
+                 alt="{{ product_name($product) }}"
                  class="product-image"
                  loading="lazy"
                  onerror="this.src='{{ asset('frontend/images/default-product.svg') }}'">
@@ -37,13 +37,13 @@
         @endif
 
         @if($tagBadge === 'new')
-            <span class="product-badge product-badge--tag product-badge--new">New</span>
+            <span class="product-badge product-badge--tag product-badge--new">{{ __('New') }}</span>
         @elseif($tagBadge === 'featured')
-            <span class="product-badge product-badge--tag product-badge--featured">Featured</span>
+            <span class="product-badge product-badge--tag product-badge--featured">{{ __('Featured') }}</span>
         @elseif($tagBadge === 'best')
-            <span class="product-badge product-badge--tag product-badge--best">Best</span>
+            <span class="product-badge product-badge--tag product-badge--best">{{ __('Best') }}</span>
         @elseif($tagBadge === 'flash')
-            <span class="product-badge product-badge--tag product-badge--flash">Flash</span>
+            <span class="product-badge product-badge--tag product-badge--flash">{{ __('Flash') }}</span>
         @endif
 
         <div class="product-quick-actions">
@@ -72,7 +72,7 @@
         @endif
 
         <h3 class="product-title">
-            <a href="{{ route('product-detail', ['slug' => $product->slug]) }}">{{ $product->name }}</a>
+            <a href="{{ route('product-detail', ['slug' => $product->slug]) }}">{{ product_name($product) }}</a>
         </h3>
 
         <div class="product-rating">

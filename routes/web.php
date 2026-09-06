@@ -158,6 +158,9 @@ Route::group(['middleware' => ['demo','XSS']], function () {
 Route::group(['middleware' => ['maintainance']], function () {
 
     // Frontend Routes
+    Route::get('/locale/{locale}', [App\Http\Controllers\Frontend\LocaleController::class, 'switch'])
+        ->where('locale', 'bn|en')
+        ->name('locale.switch');
     Route::get('/', [App\Http\Controllers\FrontendController::class, 'index'])->name('home');
     Route::get('/products', [App\Http\Controllers\FrontendController::class, 'products'])->name('products');
     Route::get('/product/{slug}', [App\Http\Controllers\FrontendController::class, 'productDetail'])->name('product-detail');

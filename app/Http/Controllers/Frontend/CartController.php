@@ -63,82 +63,77 @@ class CartController extends Controller
             // If user is authenticated, save to database
             if (Auth::check()) {
                 $user = Auth::user();
-            
-            // Check if product already exists in cart
-            $existingCartItem = ShoppingCart::where([
-                'user_id' => $user->id,
-                'product_id' => $request->product_id
-            ])->first();
+                $incomingVariants = $this->normalizeRequestVariants($request);
+                $incomingItemIds = $this->variantItemIds($incomingVariants);
 
-            if ($existingCartItem) {
-                $newQuantity = $existingCartItem->qty + $request->quantity;
-                if ($newQuantity > $availableStock) {
-                    session()->flash('error', "Cannot add more items. Only {$availableStock} items available in stock");
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Cannot add more items. Only {$availableStock} items available in stock"
-                    ], 400);
-                }
-                $existingCartItem->qty = $newQuantity;
-                $existingCartItem->save();
-                $cartItemId = $existingCartItem->id;
-            } else {
-                $cartItem = new ShoppingCart();
-                $cartItem->user_id = $user->id;
-                $cartItem->product_id = $request->product_id;
-                $cartItem->qty = $request->quantity;
-                $cartItem->coupon_name = '';
-                $cartItem->offer_type = 0;
-                $cartItem->save();
-                $cartItemId = $cartItem->id;
-            }
+                $existingCartItem = ShoppingCart::with('variants')
+                    ->where('user_id', $user->id)
+                    ->where('product_id', $request->product_id)
+                    ->get()
+                    ->first(function ($item) use ($incomingItemIds) {
+                        return $this->variantItemIds($item->variants) === $incomingItemIds;
+                    });
 
-            // Handle product variants if provided
-            if ($request->has('variants') && is_array($request->variants)) {
-                // Remove existing variants for this cart item
-                ShoppingCartVariant::where('shopping_cart_id', $cartItemId)->delete();
-                
-                foreach ($request->variants as $variant) {
-                    if (isset($variant['variant_id']) && isset($variant['variant_item_id'])) {
+                if ($existingCartItem) {
+                    $newQuantity = $existingCartItem->qty + $request->quantity;
+                    if ($newQuantity > $availableStock) {
+                        session()->flash('error', "Cannot add more items. Only {$availableStock} items available in stock");
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Cannot add more items. Only {$availableStock} items available in stock"
+                        ], 400);
+                    }
+                    $existingCartItem->qty = $newQuantity;
+                    $existingCartItem->save();
+                } else {
+                    $cartItem = new ShoppingCart();
+                    $cartItem->user_id = $user->id;
+                    $cartItem->product_id = $request->product_id;
+                    $cartItem->qty = $request->quantity;
+                    $cartItem->coupon_name = '';
+                    $cartItem->offer_type = 0;
+                    $cartItem->save();
+
+                    foreach ($incomingVariants as $variant) {
                         $cartVariant = new ShoppingCartVariant();
-                        $cartVariant->shopping_cart_id = $cartItemId;
+                        $cartVariant->shopping_cart_id = $cartItem->id;
                         $cartVariant->variant_id = $variant['variant_id'];
                         $cartVariant->variant_item_id = $variant['variant_item_id'];
                         $cartVariant->save();
                     }
                 }
-            }
-        } else {
-            // For guest users, use session-based cart
-            $cart = Session::get('guest_cart', []);
-            $productKey = $request->product_id;
-            
-            if (isset($cart[$productKey])) {
-                $newQuantity = $cart[$productKey]['quantity'] + $request->quantity;
-                if ($newQuantity > $availableStock) {
-                    session()->flash('error', "Cannot add more items. Only {$availableStock} items available in stock");
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Cannot add more items. Only {$availableStock} items available in stock"
-                    ], 400);
-                }
-                $cart[$productKey]['quantity'] = $newQuantity;
             } else {
-                $cart[$productKey] = [
-                    'product_id' => $request->product_id,
-                    'quantity' => $request->quantity,
-                    'variants' => $request->variants ?? []
-                ];
+                // Guest session cart — separate line per product + variant combo
+                $cart = Session::get('guest_cart', []);
+                $incomingVariants = $this->normalizeRequestVariants($request);
+                $productKey = $this->guestCartKey($request->product_id, $incomingVariants);
+
+                if (isset($cart[$productKey])) {
+                    $newQuantity = $cart[$productKey]['quantity'] + $request->quantity;
+                    if ($newQuantity > $availableStock) {
+                        session()->flash('error', "Cannot add more items. Only {$availableStock} items available in stock");
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Cannot add more items. Only {$availableStock} items available in stock"
+                        ], 400);
+                    }
+                    $cart[$productKey]['quantity'] = $newQuantity;
+                } else {
+                    $cart[$productKey] = [
+                        'product_id' => (int) $request->product_id,
+                        'quantity' => (int) $request->quantity,
+                        'variants' => $incomingVariants,
+                    ];
+                }
+
+                Session::put('guest_cart', $cart);
             }
-            
-            Session::put('guest_cart', $cart);
-        }
 
-        // Get updated cart count
-        $cartCount = $this->getCartCount();
-        $cartTotal = $this->getCartTotal();
+            // Get updated cart count
+            $cartCount = $this->getCartCount();
+            $cartTotal = $this->getCartTotal();
 
-        return response()->json([
+            return response()->json([
                 'success' => true,
                 'message' => 'Product added to cart successfully',
                 'cart_count' => $cartCount,
@@ -155,6 +150,110 @@ class CartController extends Controller
                 'message' => 'Failed to add product to cart. Please try again.'
             ], 500);
         }
+    }
+
+    /**
+     * Normalize variant payload from request into [[variant_id, variant_item_id], ...]
+     */
+    private function normalizeRequestVariants(Request $request): array
+    {
+        $normalized = [];
+
+        if ($request->has('variants') && is_array($request->variants)) {
+            foreach ($request->variants as $index => $variant) {
+                if (is_array($variant) && isset($variant['variant_id'], $variant['variant_item_id'])) {
+                    $normalized[] = [
+                        'variant_id' => (int) $variant['variant_id'],
+                        'variant_item_id' => (int) $variant['variant_item_id'],
+                    ];
+                    continue;
+                }
+
+                // Legacy: variants[i]=variant_id, items[i]=variant_item_id
+                $variantId = is_numeric($variant) ? (int) $variant : null;
+                $itemId = $request->input("items.$index");
+                if ($variantId && $itemId) {
+                    $normalized[] = [
+                        'variant_id' => $variantId,
+                        'variant_item_id' => (int) $itemId,
+                    ];
+                }
+            }
+        }
+
+        usort($normalized, function ($a, $b) {
+            return [$a['variant_id'], $a['variant_item_id']] <=> [$b['variant_id'], $b['variant_item_id']];
+        });
+
+        return $normalized;
+    }
+
+    private function variantItemIds($variants): array
+    {
+        $ids = [];
+
+        foreach ($variants ?? [] as $variant) {
+            if (is_object($variant)) {
+                $ids[] = (int) ($variant->variant_item_id ?? 0);
+            } elseif (is_array($variant)) {
+                $ids[] = (int) ($variant['variant_item_id'] ?? 0);
+            }
+        }
+
+        $ids = array_values(array_filter($ids));
+        sort($ids);
+
+        return $ids;
+    }
+
+    private function guestCartKey($productId, array $variants): string
+    {
+        $ids = $this->variantItemIds($variants);
+
+        return empty($ids)
+            ? (string) $productId
+            : $productId . '_' . implode('-', $ids);
+    }
+
+    private function formatCartVariants($variants): array
+    {
+        $formatted = [];
+
+        foreach ($variants ?? [] as $variant) {
+            if (is_object($variant)) {
+                $item = $variant->variantItem ?? null;
+                $formatted[] = [
+                    'variant_id' => (int) ($variant->variant_id ?? 0),
+                    'variant_item_id' => (int) ($variant->variant_item_id ?? 0),
+                    'variant_name' => $item->product_variant_name ?? '',
+                    'variant_value' => $item->name ?? '',
+                    'name' => trim(($item->product_variant_name ?? '') . ': ' . ($item->name ?? ''), ': '),
+                    'price' => (float) ($item->price ?? 0),
+                    'variant_price' => (float) ($item->price ?? 0),
+                ];
+                continue;
+            }
+
+            if (is_array($variant)) {
+                $item = null;
+                if (! empty($variant['variant_item_id'])) {
+                    $item = ProductVariantItem::find($variant['variant_item_id']);
+                }
+                $formatted[] = [
+                    'variant_id' => (int) ($variant['variant_id'] ?? 0),
+                    'variant_item_id' => (int) ($variant['variant_item_id'] ?? 0),
+                    'variant_name' => $item->product_variant_name ?? ($variant['variant_name'] ?? ''),
+                    'variant_value' => $item->name ?? ($variant['variant_value'] ?? ''),
+                    'name' => $item
+                        ? trim($item->product_variant_name . ': ' . $item->name, ': ')
+                        : ($variant['name'] ?? ''),
+                    'price' => (float) ($item->price ?? ($variant['price'] ?? 0)),
+                    'variant_price' => (float) ($item->price ?? ($variant['variant_price'] ?? $variant['price'] ?? 0)),
+                ];
+            }
+        }
+
+        return $formatted;
     }
 
     public function getCartItems()
@@ -174,19 +273,42 @@ class CartController extends Controller
                 $user = Auth::user();
                 $cartItems = ShoppingCart::with(['product', 'variants.variantItem'])
                     ->where('user_id', $user->id)
-                    ->get();
+                    ->get()
+                    ->map(function ($item) {
+                        $variants = $this->formatCartVariants($item->variants);
+                        $unitPrice = product_unit_price($item->product, $item->variants);
+
+                        return [
+                            'id' => $item->id,
+                            'product_id' => $item->product_id,
+                            'qty' => $item->qty,
+                            'quantity' => $item->qty,
+                            'product' => $item->product,
+                            'variants' => $variants,
+                            'unit_price' => $unitPrice,
+                            'line_total' => $unitPrice * $item->qty,
+                        ];
+                    })
+                    ->values();
             } else {
                 $cart = Session::get('guest_cart', []);
                 $cartItems = collect();
-                
+
                 foreach ($cart as $itemId => $item) {
                     $product = Product::find($item['product_id']);
                     if ($product) {
+                        $variants = $this->formatCartVariants($item['variants'] ?? []);
+                        $unitPrice = product_unit_price($product, $item['variants'] ?? []);
+                        $qty = (int) ($item['quantity'] ?? 1);
                         $cartItems->push([
-                            'id' => $itemId, // Include the cart item ID for updates
+                            'id' => (string) $itemId,
+                            'product_id' => $product->id,
                             'product' => $product,
-                            'qty' => $item['quantity'],
-                            'variants' => $item['variants'] ?? []
+                            'qty' => $qty,
+                            'quantity' => $qty,
+                            'variants' => $variants,
+                            'unit_price' => $unitPrice,
+                            'line_total' => $unitPrice * $qty,
                         ]);
                     }
                 }
@@ -376,47 +498,51 @@ class CartController extends Controller
     public function calculateProductPrice(Request $request)
     {
         try {
-            \Log::info('Frontend calculateProductPrice called with:', $request->all());
-            
-            $prices = [];
-            $variantPrice = 0;
-            if($request->variants){
-                foreach($request->variants as $index => $varr){
-                    if (!isset($request->items[$index])) {
-                        \Log::error('Missing item for variant index: ' . $index);
-                        continue;
-                    }
-                    $item = ProductVariantItem::where(['id' => $request->items[$index]])->first();
-                    if ($item) {
-                        $prices[] = $item->price;
-                    } else {
-                        \Log::error('ProductVariantItem not found for id: ' . $request->items[$index]);
-                    }
-                }
-                $variantPrice = $variantPrice + array_sum($prices);
-            }
-
             $product = Product::find($request->product_id);
             if (!$product) {
-                \Log::error('Product not found for id: ' . $request->product_id);
                 return response()->json(['error' => 'Product not found'], 404);
             }
 
-            // Simplified price calculation without campaign logic
-            $productPrice = 0;
-            if ($product->offer_price == null) {
-                $productPrice = $product->price + $variantPrice;
-            } else {
-                $productPrice = $product->offer_price + $variantPrice;
+            $basePrice = $product->offer_price === null
+                ? (float) $product->price
+                : (float) $product->offer_price;
+
+            $variantTotal = 0.0;
+            $hasVariantPrice = false;
+
+            if ($request->items && is_array($request->items)) {
+                foreach ($request->items as $itemId) {
+                    $item = ProductVariantItem::find($itemId);
+                    if ($item && (float) $item->price > 0) {
+                        $variantTotal += (float) $item->price;
+                        $hasVariantPrice = true;
+                    }
+                }
+            } elseif ($request->variants && is_array($request->variants)) {
+                foreach ($request->variants as $variant) {
+                    $itemId = is_array($variant)
+                        ? ($variant['variant_item_id'] ?? null)
+                        : null;
+                    if (! $itemId) {
+                        continue;
+                    }
+                    $item = ProductVariantItem::find($itemId);
+                    if ($item && (float) $item->price > 0) {
+                        $variantTotal += (float) $item->price;
+                        $hasVariantPrice = true;
+                    }
+                }
             }
 
-            $productPrice = round($productPrice, 2);
-            \Log::info('Calculated product price: ' . $productPrice);
-            return response()->json(['productPrice' => $productPrice]);
+            // Variant prices are full selling prices for the option (not added to base)
+            $productPrice = $hasVariantPrice ? $variantTotal : $basePrice;
+
+            return response()->json([
+                'productPrice' => round($productPrice, 2),
+            ]);
         } catch (\Exception $e) {
             \Log::error('Error in calculateProductPrice: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            return response()->json(['error' => 'Internal server error'], 500);
+            return response()->json(['error' => 'An error occurred'], 500);
         }
     }
 
@@ -495,22 +621,7 @@ class CartController extends Controller
 
     private function calculateLineTotal(Product $product, int $quantity, $variants = null): float
     {
-        $variantPrice = 0.0;
-
-        if ($variants) {
-            foreach ($variants as $variant) {
-                $variantItem = $variant->variantItem ?? $variant;
-                if ($variantItem) {
-                    $variantPrice += (float) $variantItem->price;
-                }
-            }
-        }
-
-        $basePrice = $product->offer_price === null
-            ? (float) $product->price
-            : (float) $product->offer_price;
-
-        return ($basePrice + $variantPrice) * max(1, $quantity);
+        return product_unit_price($product, $variants) * max(1, $quantity);
     }
 
     public function applyCoupon(Request $request)

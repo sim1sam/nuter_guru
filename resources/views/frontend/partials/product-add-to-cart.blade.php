@@ -25,7 +25,7 @@
         <button type="button"
                 class="product-cart-icon-btn add-to-cart"
                 data-product-id="{{ $product->id }}"
-                data-product-name="{{ $product->name }}"
+                data-product-name="{{ product_name($product) }}"
                 data-product-price="{{ $effectivePrice }}"
                 data-product-image="{{ $product->thumb_image ? asset($product->thumb_image) : asset('frontend/images/default-product.svg') }}"
                 title="{{ __('Add to Cart') }}">
@@ -43,7 +43,7 @@
         <button type="button"
                 class="{{ $btnClass }} w-100"
                 data-product-id="{{ $product->id }}"
-                data-product-name="{{ $product->name }}"
+                data-product-name="{{ product_name($product) }}"
                 data-product-price="{{ $effectivePrice }}"
                 data-product-image="{{ $product->thumb_image ? asset($product->thumb_image) : asset('frontend/images/default-product.svg') }}">
             {{ __('Add to Cart') }}

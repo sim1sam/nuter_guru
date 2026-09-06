@@ -157,34 +157,66 @@ class CheckoutController extends Controller
             $cartItems = [];
             if ($user) {
                 // Get cart items from database for authenticated users
-                $cartItems = ShoppingCart::with(['product'])
+                $cartItems = ShoppingCart::with(['product', 'variants.variantItem'])
                     ->where('user_id', $user->id)
                     ->get()
                     ->map(function ($item) {
+                        $variants = [];
+                        foreach ($item->variants as $variant) {
+                            $vi = $variant->variantItem;
+                            $variants[] = [
+                                'variant_id' => $variant->variant_id,
+                                'variant_item_id' => $variant->variant_item_id,
+                                'variant_name' => $vi->product_variant_name ?? '',
+                                'variant_value' => $vi->name ?? '',
+                                'name' => $vi ? trim(($vi->product_variant_name ?? '') . ': ' . ($vi->name ?? ''), ': ') : '',
+                                'variant_price' => (float) ($vi->price ?? 0),
+                                'price' => (float) ($vi->price ?? 0),
+                            ];
+                        }
+
                         return [
                             'id' => $item->id,
                             'product_id' => $item->product_id,
-                            'product_name' => $item->product->name ?? 'Unknown Product',
+                            'product_name' => product_name($item->product) ?: 'Unknown Product',
                             'product_image' => $item->product->thumb_image ?? '',
-                            'product_price' => $item->product->price ?? 0,
+                            'product_price' => product_unit_price($item->product, $item->variants),
                             'quantity' => $item->qty,
-                            'variants' => []
+                            'variants' => $variants,
+                            'product' => $item->product,
                         ];
                     });
             } else {
                 // Get cart items from session for guest users
                 $sessionCart = Session::get('guest_cart', []);
-                foreach ($sessionCart as $item) {
+                foreach ($sessionCart as $key => $item) {
                     $product = Product::find($item['product_id']);
                     if ($product) {
+                        $rawVariants = $item['variants'] ?? [];
+                        $variants = [];
+                        foreach ($rawVariants as $variant) {
+                            $itemId = is_array($variant) ? ($variant['variant_item_id'] ?? null) : null;
+                            $vi = $itemId ? ProductVariantItem::find($itemId) : null;
+                            $variants[] = [
+                                'variant_id' => (int) (is_array($variant) ? ($variant['variant_id'] ?? 0) : 0),
+                                'variant_item_id' => (int) ($itemId ?? 0),
+                                'variant_name' => $vi->product_variant_name ?? '',
+                                'variant_value' => $vi->name ?? '',
+                                'name' => $vi ? trim(($vi->product_variant_name ?? '') . ': ' . ($vi->name ?? ''), ': ') : '',
+                                'variant_price' => (float) ($vi->price ?? 0),
+                                'price' => (float) ($vi->price ?? 0),
+                            ];
+                        }
+
                         $cartItems[] = [
-                            'id' => $item['id'] ?? uniqid(),
+                            'id' => (string) $key,
                             'product_id' => $item['product_id'],
-                            'product_name' => $product->name,
+                            'product_name' => product_name($product),
                             'product_image' => $product->thumb_image,
-                            'product_price' => $product->price,
-                            'quantity' => $item['quantity'] ?? 1, // Fixed: session cart uses 'quantity'
-                            'variants' => $item['variants'] ?? []
+                            'product_price' => product_unit_price($product, $rawVariants),
+                            'quantity' => $item['quantity'] ?? 1,
+                            'variants' => $variants,
+                            'product' => $product,
                         ];
                     }
                 }
@@ -544,20 +576,8 @@ class CheckoutController extends Controller
         $setting = Setting::first();
 
         foreach ($cartItems as $cartItem) {
-            $variantPrice = 0;
-            
             // Handle both object and array formats
             $variants = is_object($cartItem) ? $cartItem->variants : ($cartItem['variants'] ?? []);
-            
-            if ($variants && (is_array($variants) || $variants instanceof \Illuminate\Support\Collection)) {
-                foreach ($variants as $variant) {
-                    $variantItemId = is_object($variant) ? ($variant->variant_item_id ?? null) : ($variant['variant_item_id'] ?? null);
-                    $item = ProductVariantItem::find($variantItemId);
-                    if ($item) {
-                        $variantPrice += $item->price;
-                    }
-                }
-            }
 
             $productId = is_object($cartItem) ? $cartItem->product_id : $cartItem['product_id'];
             $product = Product::select('id', 'price', 'offer_price', 'weight', 'vendor_id', 'qty', 'name')
@@ -567,8 +587,7 @@ class CheckoutController extends Controller
                 continue;
             }
 
-            $price = $product->offer_price ? $product->offer_price : $product->price;
-            $price = $price + $variantPrice;
+            $price = product_unit_price($product, $variants);
 
             // Check for flash sale
             $isFlashSale = FlashSaleProduct::where([
@@ -592,7 +611,7 @@ class CheckoutController extends Controller
             $orderProduct->order_id = $order->id;
             $orderProduct->product_id = $productId;
             $orderProduct->seller_id = $product->vendor_id;
-            $orderProduct->product_name = $product->name;
+            $orderProduct->product_name = product_name($product);
             $orderProduct->unit_price = $price;
             $orderProduct->qty = is_object($cartItem) ? $cartItem->qty : $cartItem['qty'];
             $orderProduct->save();
@@ -628,7 +647,7 @@ class CheckoutController extends Controller
                 }
             }
 
-            $order_details .= "Product: " . $product->name . "<br>";
+            $order_details .= "Product: " . product_name($product) . "<br>";
             $order_details .= "Quantity: " . $cartQty . "<br>";
             $order_details .= "Price: " . format_currency($cartQty * $price, 2, $setting) . "<br>";
         }
@@ -843,19 +862,8 @@ class CheckoutController extends Controller
         // Calculate subtotal
         $subtotal = 0;
         foreach ($cartItems as $item) {
-            $itemPrice = $item->product->price;
-            
-            // Add variant prices
-            if (isset($item->variants)) {
-                foreach ($item->variants as $variant) {
-                    if (is_object($variant) && isset($variant->variantItem)) {
-                        $itemPrice += $variant->variantItem->price;
-                    } elseif (is_array($variant) && isset($variant['variant_price'])) {
-                        $itemPrice += $variant['variant_price'];
-                    }
-                }
-            }
-            
+            $variants = $item->variants ?? null;
+            $itemPrice = product_unit_price($item->product, $variants);
             $subtotal += $itemPrice * $item->qty;
         }
         
@@ -940,7 +948,7 @@ class CheckoutController extends Controller
             $orderProduct->order_id = $order->id;
             $orderProduct->product_id = $item->product_id;
             $orderProduct->seller_id = $item->product->vendor_id ?? 0;
-            $orderProduct->product_name = $item->product->name;
+            $orderProduct->product_name = product_name($item->product);
             $orderProduct->product_price = $item->product->price;
             $orderProduct->qty = $item->qty;
             $orderProduct->save();
@@ -1806,25 +1814,10 @@ class CheckoutController extends Controller
         $productWeight = 0;
 
         foreach ($cartProducts as $cartProduct) {
-            $variantPrice = 0;
-            if ($cartProduct->variants) {
-                foreach ($cartProduct->variants as $variant) {
-                    if ($user) {
-                        $item = ProductVariantItem::find($variant->variant_item_id);
-                    } else {
-                        $item = ProductVariantItem::find($variant['variant_item_id']);
-                    }
-                    if ($item) {
-                        $variantPrice += $item->price;
-                    }
-                }
-            }
-
             $product = Product::select('id', 'price', 'offer_price', 'weight')
                 ->find($cartProduct->product_id);
 
-            $price = $product->offer_price ? $product->offer_price : $product->price;
-            $price = $price + $variantPrice;
+            $price = product_unit_price($product, $cartProduct->variants ?? []);
 
             // Check flash sale
             $isFlashSale = FlashSaleProduct::where([
@@ -1956,25 +1949,10 @@ class CheckoutController extends Controller
         $setting = Setting::first();
 
         foreach ($cartProducts as $cartProduct) {
-            $variantPrice = 0;
-            if ($cartProduct->variants) {
-                foreach ($cartProduct->variants as $variant) {
-                    if ($user) {
-                        $item = ProductVariantItem::find($variant->variant_item_id);
-                    } else {
-                        $item = ProductVariantItem::find($variant['variant_item_id']);
-                    }
-                    if ($item) {
-                        $variantPrice += $item->price;
-                    }
-                }
-            }
-
             $product = Product::select('id', 'price', 'offer_price', 'weight', 'vendor_id', 'qty', 'name')
                 ->find($cartProduct->product_id);
 
-            $price = $product->offer_price ? $product->offer_price : $product->price;
-            $price = $price + $variantPrice;
+            $price = product_unit_price($product, $cartProduct->variants ?? []);
 
             // Check flash sale
             $isFlashSale = FlashSaleProduct::where([
@@ -1998,7 +1976,7 @@ class CheckoutController extends Controller
             $orderProduct->order_id = $order->id;
             $orderProduct->product_id = $cartProduct->product_id;
             $orderProduct->seller_id = $product->vendor_id;
-            $orderProduct->product_name = $product->name;
+            $orderProduct->product_name = product_name($product);
             $orderProduct->unit_price = $price;
             $orderProduct->qty = $cartProduct->qty;
             $orderProduct->save();
@@ -2036,7 +2014,7 @@ class CheckoutController extends Controller
                 }
             }
 
-            $order_details .= 'Product: ' . $product->name . '<br>';
+            $order_details .= 'Product: ' . product_name($product) . '<br>';
             $order_details .= 'Quantity: ' . $cartProduct->qty . '<br>';
             $order_details .= 'Price: ' . $setting->currency_icon . ($cartProduct->qty * $price) . '<br>';
         }

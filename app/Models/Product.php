@@ -9,11 +9,33 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $appends = ['averageRating','totalSold'];
+    protected $appends = ['averageRating','totalSold','localized_name','localized_short_name'];
 
     public function getAverageRatingAttribute()
     {
         return $this->avgReview()->avg('rating') ? : '0';
+    }
+
+    public function getLocalizedNameAttribute(): string
+    {
+        if (app()->getLocale() === 'bn' && ! empty($this->name_bn)) {
+            return $this->name_bn;
+        }
+
+        return (string) ($this->name ?? '');
+    }
+
+    public function getLocalizedShortNameAttribute(): string
+    {
+        if (app()->getLocale() === 'bn' && ! empty($this->short_name_bn)) {
+            return $this->short_name_bn;
+        }
+
+        if (! empty($this->short_name)) {
+            return (string) $this->short_name;
+        }
+
+        return $this->localized_name;
     }
 
     public function getTotalSoldAttribute()
@@ -144,7 +166,9 @@ class Product extends Model
 
     protected $fillable = [
         'name',
+        'name_bn',
         'short_name',
+        'short_name_bn',
         'slug',
         'thumb_image',
         'vendor_id',
@@ -180,5 +204,14 @@ class Product extends Model
         'is_specification',
         'approve_by_admin'
     ];
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        $array['name'] = $this->localized_name;
+        $array['short_name'] = $this->localized_short_name;
+
+        return $array;
+    }
 
 }

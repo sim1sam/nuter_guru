@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', 'Contact Us - Get in Touch')
+@section('title', __('Contact Us'))
 @section('meta_description', 'Contact us for any questions, support, or inquiries. We are here to help you.')
 @section('meta_keywords', 'contact us, support, customer service, get in touch')
 
@@ -153,9 +153,9 @@
                 @if($contactPage && $contactPage->title)
                     <h1 class="display-4 font-weight-bold mb-4">{{ $contactPage->title }}</h1>
                 @else
-                    <h1 class="display-4 font-weight-bold mb-4">Contact Us</h1>
+                    <h1 class="display-4 font-weight-bold mb-4">{{ __('Contact Us') }}</h1>
                 @endif
-                <p class="lead mb-0">We'd love to hear from you. Get in touch with us for any questions or support.</p>
+                <p class="lead mb-0">{{ __('We\'d love to hear from you. Get in touch with us for any questions or support.') }}</p>
             </div>
         </div>
     </div>
@@ -168,7 +168,7 @@
     <div class="container">
         <div class="row">
             <div class="col-12">
-                <img src="{{ asset($contactPage->banner) }}" alt="Contact Us" class="contact-banner">
+                <img src="{{ asset($contactPage->banner) }}" alt="{{ __('Contact Us') }}" class="contact-banner">
             </div>
         </div>
     </div>
@@ -195,8 +195,8 @@
     <div class="container">
         <div class="row">
             <div class="col-lg-12 text-center mb-5">
-                <h2 class="font-weight-bold">Get In Touch</h2>
-                <p class="lead">Reach out to us through any of the following methods.</p>
+                <h2 class="font-weight-bold">{{ __('Get In Touch') }}</h2>
+                <p class="lead">{{ __('Reach out to us through any of the following methods.') }}</p>
             </div>
         </div>
         <div class="row">
@@ -206,7 +206,7 @@
                     <div class="contact-icon">
                         <i class="fas fa-envelope"></i>
                     </div>
-                    <h3 class="contact-title">Email Address</h3>
+                    <h3 class="contact-title">{{ __('Email Address') }}</h3>
                     <div class="contact-details">
                         <a href="mailto:{{ $contactPage->email }}" class="text-decoration-none">{{ $contactPage->email }}</a>
                     </div>
@@ -220,7 +220,7 @@
                     <div class="contact-icon">
                         <i class="fas fa-phone"></i>
                     </div>
-                    <h3 class="contact-title">Phone Number</h3>
+                    <h3 class="contact-title">{{ __('Phone Number') }}</h3>
                     <div class="contact-details">
                         <a href="tel:{{ $contactPage->phone }}" class="text-decoration-none">{{ $contactPage->phone }}</a>
                     </div>
@@ -234,7 +234,7 @@
                     <div class="contact-icon">
                         <i class="fas fa-map-marker-alt"></i>
                     </div>
-                    <h3 class="contact-title">Our Address</h3>
+                    <h3 class="contact-title">{{ __('Our Address') }}</h3>
                     <div class="contact-details">
                         {{ $contactPage->address }}
                     </div>
@@ -251,7 +251,7 @@
         <div class="row">
             <div class="col-lg-8 mx-auto">
                 <div class="contact-form">
-                    <h3 class="text-center mb-4">Send Us a Message</h3>
+                    <h3 class="text-center mb-4">{{ __('Send Us a Message') }}</h3>
                     
 
                     
@@ -260,13 +260,13 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="name">Full Name <span class="text-danger">*</span></label>
+                                    <label for="name">{{ __('Full Name') }} <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="name" name="name" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="email">Email Address <span class="text-danger">*</span></label>
+                                    <label for="email">{{ __('Email Address') }} <span class="text-danger">*</span></label>
                                     <input type="email" class="form-control" id="email" name="email" required>
                                 </div>
                             </div>
@@ -274,23 +274,23 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="phone">Phone Number</label>
+                                    <label for="phone">{{ __('Phone Number') }}</label>
                                     <input type="tel" class="form-control" id="phone" name="phone">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="subject">Subject <span class="text-danger">*</span></label>
+                                    <label for="subject">{{ __('Subject') }} <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="subject" name="subject" required>
                                 </div>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="message">Message <span class="text-danger">*</span></label>
+                            <label for="message">{{ __('Message') }} <span class="text-danger">*</span></label>
                             <textarea class="form-control" id="message" name="message" rows="6" required></textarea>
                         </div>
                         <button type="submit" class="btn btn-contact">
-                            <i class="fas fa-paper-plane me-2"></i> Send Message
+                            <i class="fas fa-paper-plane me-2"></i> {{ __('Send Message') }}
                         </button>
                     </form>
                 </div>
@@ -305,8 +305,8 @@
     <div class="container">
         <div class="row">
             <div class="col-lg-12 text-center mb-5">
-                <h2 class="font-weight-bold">Find Us Here</h2>
-                <p class="lead">Visit our location or get directions using the map below.</p>
+                <h2 class="font-weight-bold">{{ __('Find Us Here') }}</h2>
+                <p class="lead">{{ __('Visit our location or get directions using the map below.') }}</p>
             </div>
         </div>
         <div class="row">
@@ -330,24 +330,24 @@
     <div class="container">
         <div class="row">
             <div class="col-lg-8 mx-auto text-center">
-                <h2>Contact Us</h2>
-                <p class="lead">Contact information is being updated. Please check back soon.</p>
+                <h2>{{ __('Contact Us') }}</h2>
+                <p class="lead">{{ __('Contact information is being updated. Please check back soon.') }}</p>
                 
                 <!-- Default Contact Form -->
                 <div class="contact-form mt-5">
-                    <h3 class="mb-4">Send Us a Message</h3>
+                    <h3 class="mb-4">{{ __('Send Us a Message') }}</h3>
                     <form action="{{ route('send-contact-message') }}" method="POST">
                         @csrf
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="name">Full Name <span class="text-danger">*</span></label>
+                                    <label for="name">{{ __('Full Name') }} <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="name" name="name" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="email">Email Address <span class="text-danger">*</span></label>
+                                    <label for="email">{{ __('Email Address') }} <span class="text-danger">*</span></label>
                                     <input type="email" class="form-control" id="email" name="email" required>
                                 </div>
                             </div>
@@ -355,23 +355,23 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="phone">Phone Number</label>
+                                    <label for="phone">{{ __('Phone Number') }}</label>
                                     <input type="tel" class="form-control" id="phone" name="phone">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="subject">Subject <span class="text-danger">*</span></label>
+                                    <label for="subject">{{ __('Subject') }} <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="subject" name="subject" required>
                                 </div>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="message">Message <span class="text-danger">*</span></label>
+                            <label for="message">{{ __('Message') }} <span class="text-danger">*</span></label>
                             <textarea class="form-control" id="message" name="message" rows="6" required></textarea>
                         </div>
                         <button type="submit" class="btn btn-contact">
-                            <i class="fas fa-paper-plane me-2"></i> Send Message
+                            <i class="fas fa-paper-plane me-2"></i> {{ __('Send Message') }}
                         </button>
                     </form>
                 </div>
@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!isValid) {
                 e.preventDefault();
-                alert('Please fill in all required fields.');
+                alert(@json(__('Please fill in all required fields.')));
             }
         });
     }

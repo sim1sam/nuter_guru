@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', $product->name . ' - ' . config('app.name', 'Nuter Guru'))
+@section('title', product_name($product) . ' - ' . config('app.name', 'Nuter Guru'))
 
 @section('content')
 @php
@@ -42,7 +42,7 @@
                 <div class="pd-gallery-card">
                     <div class="pd-main-image-wrap">
                         <img src="{{ $mainImage }}"
-                             alt="{{ $product->name }}"
+                             alt="{{ product_name($product) }}"
                              class="pd-main-image"
                              id="mainProductImage"
                              onerror="this.src='{{ asset('frontend/images/default-product.svg') }}'">
@@ -54,11 +54,11 @@
 
                     <div class="pd-thumbs">
                         <button type="button" class="pd-thumb active" data-image="{{ $mainImage }}">
-                            <img src="{{ $mainImage }}" alt="{{ $product->name }}" onerror="this.src='{{ asset('frontend/images/default-product.svg') }}'">
+                            <img src="{{ $mainImage }}" alt="{{ product_name($product) }}" onerror="this.src='{{ asset('frontend/images/default-product.svg') }}'">
                         </button>
                         @foreach($product->gallery as $gallery)
                         <button type="button" class="pd-thumb" data-image="{{ asset($gallery->image) }}">
-                            <img src="{{ asset($gallery->image) }}" alt="{{ $product->name }}">
+                            <img src="{{ asset($gallery->image) }}" alt="{{ product_name($product) }}">
                         </button>
                         @endforeach
                     </div>
@@ -74,7 +74,7 @@
                         @endif
                     </div>
 
-                    <h1 class="pd-title">{{ $product->name }}</h1>
+                    <h1 class="pd-title">{{ product_name($product) }}</h1>
 
                     <div class="pd-rating-row">
                         <span class="product-stars" aria-label="{{ number_format($rating, 1) }} out of 5">
@@ -103,25 +103,46 @@
                         <p class="pd-short-desc">{{ $product->short_description }}</p>
                     @endif
 
-                    @if($product->variants->count() > 0)
-                    <div class="pd-variants mb-3">
-                        @foreach($product->variants as $variant)
-                        <div class="pd-variant-group variant-group">
-                            <span class="pd-section-label">{{ $variant->name }}</span>
-                            <div class="pd-variant-options">
-                                @foreach($variant->variantItems as $item)
+                    @php
+                        $productVariants = $product->variants
+                            ->where('status', 1)
+                            ->filter(fn ($variant) => $variant->variantItems->where('status', 1)->isNotEmpty())
+                            ->values();
+                    @endphp
+
+                    @if($productVariants->count() > 0)
+                    <div class="pd-variants mb-3" id="pdVariants">
+                        <div class="pd-variants__head">
+                            <span class="pd-section-label mb-0">{{ __('Select Options') }}</span>
+                            <small class="pd-variants__hint text-muted">{{ __('Please choose your preferred options') }}</small>
+                        </div>
+                        @foreach($productVariants as $variant)
+                        @php
+                            $activeItems = $variant->variantItems->where('status', 1)->values();
+                            $defaultItem = $activeItems->firstWhere('is_default', 1) ?: $activeItems->first();
+                        @endphp
+                        <div class="pd-variant-group variant-group" data-variant-id="{{ $variant->id }}">
+                            <span class="pd-section-label">{{ $variant->name }} <span class="text-danger">*</span></span>
+                            <div class="pd-variant-options" role="radiogroup" aria-label="{{ $variant->name }}">
+                                @foreach($activeItems as $item)
+                                @php
+                                    $variantDisplayPrice = (float) $item->price > 0
+                                        ? (float) $item->price
+                                        : (float) $basePrice;
+                                @endphp
                                 <label class="pd-variant-chip">
                                     <input class="variant-option"
                                            type="radio"
                                            name="variant_{{ $variant->id }}"
                                            id="variant_{{ $item->id }}"
                                            value="{{ $item->id }}"
-                                           data-price="{{ $item->price }}">
+                                           data-name="{{ $item->name }}"
+                                           data-price="{{ $item->price }}"
+                                           {{ $defaultItem && $defaultItem->id === $item->id ? 'checked' : '' }}
+                                           required>
                                     <span class="pd-variant-chip__label">
-                                        {{ $item->name }}
-                                        @if($item->price > 0)
-                                            (+{{ $setting->currency_icon }}{{ number_format($item->price, 2) }})
-                                        @endif
+                                        <span class="pd-variant-chip__name">{{ $item->name }}</span>
+                                        <span class="pd-variant-chip__price">{{ $setting->currency_icon }}{{ number_format($variantDisplayPrice, 2) }}</span>
                                     </span>
                                 </label>
                                 @endforeach
@@ -145,7 +166,7 @@
 
                         @php
                             $whatsappNumber = preg_replace('/\D+/', '', $setting->topbar_phone ?? '');
-                            $waText = rawurlencode(__('Hello, I want to order:') . ' ' . $product->name);
+                            $waText = rawurlencode(__('Hello, I want to order:') . ' ' . product_name($product));
                         @endphp
 
                         <div class="pd-actions">
@@ -420,6 +441,9 @@
 </div>
 @endif
 
+@endsection
+
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const currencyIcon = @json($setting->currency_icon);
@@ -524,17 +548,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Variant selection does not change product price
     variantOptions.forEach(function (option) {
         option.addEventListener('change', updatePrice);
     });
 
-    function updatePrice() {
-        let totalPrice = basePrice;
+    updatePrice();
+
+    function getSelectedVariantPrice() {
+        let variantTotal = 0;
+        let hasVariantPrice = false;
+
         document.querySelectorAll('.variant-option:checked').forEach(function (variant) {
-            totalPrice += parseFloat(variant.dataset.price || 0);
+            const price = parseFloat(variant.dataset.price || 0);
+            if (price > 0) {
+                variantTotal += price;
+                hasVariantPrice = true;
+            }
         });
 
-        const formatted = currencyIcon + totalPrice.toFixed(2);
+        // Variant item price is the selling price for that option (not added on top of main price)
+        return hasVariantPrice ? variantTotal : Number(basePrice);
+    }
+
+    function updatePrice() {
+        const totalPrice = getSelectedVariantPrice();
+        const formatted = currencyIcon + Number(totalPrice).toFixed(2);
         if (detailCurrentPrice) {
             detailCurrentPrice.textContent = formatted;
         }
@@ -566,7 +605,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const selectedVariants = document.querySelectorAll('.variant-option:checked');
         if (selectedVariants.length < variantGroups.length) {
-            showNotification('Please select all required product options before proceeding.', 'danger');
+            showNotification(@json(__('Please select all required product options before proceeding.')), 'danger');
+            const box = document.getElementById('pdVariants');
+            if (box) {
+                box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                box.classList.add('pd-variants--attention');
+                setTimeout(function () { box.classList.remove('pd-variants--attention'); }, 1200);
+            }
             return false;
         }
 
@@ -590,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            addToCart(this.dataset.productId, quantityInput.value, collectSelectedVariants());
+            pdAddToCart(this.dataset.productId, quantityInput.value, collectSelectedVariants());
         });
     }
 
@@ -600,7 +645,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            buyNow(this.dataset.productId, quantityInput.value, collectSelectedVariants());
+            pdBuyNow(this.dataset.productId, quantityInput.value, collectSelectedVariants());
         });
     }
 
@@ -609,7 +654,7 @@ document.addEventListener('DOMContentLoaded', function() {
             addToWishlist(this.dataset.productId);
         });
     });
-    function addToCart(productId, quantity, variants) {
+    function pdAddToCart(productId, quantity, variants) {
         if (!addToCartBtn) {
             return;
         }
@@ -684,7 +729,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    function buyNow(productId, quantity, variants) {
+    function pdBuyNow(productId, quantity, variants) {
         if (!buyNowBtn) {
             return;
         }
@@ -736,8 +781,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (variants && variants.length > 0) {
                 variants.forEach((variant, index) => {
-                    cartFormData.append(`variants[${index}]`, variant.variant_id);
-                    cartFormData.append(`items[${index}]`, variant.variant_item_id);
+                    cartFormData.append(`variants[${index}][variant_id]`, variant.variant_id);
+                    cartFormData.append(`variants[${index}][variant_item_id]`, variant.variant_item_id);
                 });
             }
             
@@ -794,4 +839,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-@endsection
+@endpush

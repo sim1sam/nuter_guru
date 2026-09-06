@@ -9,7 +9,7 @@
 @endphp
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     @include('frontend.partials.gtm_head')
@@ -939,6 +939,18 @@
 
                         <div class="col-auto col-lg-3 ms-auto ms-lg-0">
                             <div class="d-flex align-items-center justify-content-end gap-2 gap-md-3 organic-header__actions">
+                                @php $currentLocale = app()->getLocale(); @endphp
+                                <div class="organic-lang" role="group" aria-label="{{ __('Language') }}">
+                                    <a href="{{ route('locale.switch', 'bn') }}"
+                                       class="organic-lang__btn {{ $currentLocale === 'bn' ? 'is-active' : '' }}"
+                                       hreflang="bn"
+                                       lang="bn">বাংলা</a>
+                                    <a href="{{ route('locale.switch', 'en') }}"
+                                       class="organic-lang__btn {{ $currentLocale === 'en' ? 'is-active' : '' }}"
+                                       hreflang="en"
+                                       lang="en">EN</a>
+                                </div>
+
                                 <button type="button"
                                         class="organic-search-toggle d-lg-none"
                                         id="organicSearchToggle"
@@ -1171,6 +1183,55 @@
         window.__guestModeEnabled = @json((int) ($setting->enable_guest_mode ?? 0) === 1);
         window.__isAuthenticated = @json(auth()->check());
         window.__loginUrl = @json(route('login'));
+        window.__locale = @json(app()->getLocale());
+        window.I18N = {
+            'Please login to continue.': @json(__('Please login to continue.')),
+            'Please login to add products to cart.': @json(__('Please login to add products to cart.')),
+            'Please login to view your cart.': @json(__('Please login to view your cart.')),
+            'An error occurred. Please try again.': @json(__('An error occurred. Please try again.')),
+            'Failed to update cart': @json(__('Failed to update cart')),
+            'Error updating cart': @json(__('Error updating cart')),
+            'Failed to remove item': @json(__('Failed to remove item')),
+            'Item removed from cart': @json(__('Item removed from cart')),
+            'Added to wishlist!': @json(__('Added to wishlist!')),
+            'Removed from wishlist': @json(__('Removed from wishlist')),
+            'Failed to add to wishlist': @json(__('Failed to add to wishlist')),
+            'Failed to remove from wishlist': @json(__('Failed to remove from wishlist')),
+            'Product already in wishlist': @json(__('Product already in wishlist')),
+            'Success': @json(__('Success')),
+            'Error': @json(__('Error')),
+            'Warning': @json(__('Warning')),
+            'Info': @json(__('Info')),
+            'Close': @json(__('Close')),
+            'Loading...': @json(__('Loading...')),
+            'Your cart is empty': @json(__('Your cart is empty')),
+            'Continue Shopping': @json(__('Continue Shopping')),
+            'View Cart': @json(__('View Cart')),
+            'Checkout': @json(__('Checkout')),
+            'Subtotal': @json(__('Subtotal')),
+            'Total': @json(__('Total')),
+            'Add to Cart': @json(__('Add to Cart')),
+            'Out of Stock': @json(__('Out of Stock')),
+            'Uncategorized': @json(__('Uncategorized')),
+            'Cart updated successfully!': @json(__('Cart updated successfully!')),
+            'Item removed from cart!': @json(__('Item removed from cart!')),
+            'No recommendations right now.': @json(__('No recommendations right now.')),
+            'each': @json(__('each')),
+            'Line total': @json(__('Line total')),
+            'Qty:': @json(__('Qty:')),
+            'No items in cart': @json(__('No items in cart')),
+            'Placing Order...': @json(__('Placing Order...')),
+            'Please enter a coupon code': @json(__('Please enter a coupon code')),
+            'Applying...': @json(__('Applying...')),
+            'Coupon removed': @json(__('Coupon removed')),
+            'Place Order': @json(__('Place Order')),
+        };
+        window.__t = function (key) {
+            if (window.I18N && Object.prototype.hasOwnProperty.call(window.I18N, key)) {
+                return window.I18N[key];
+            }
+            return key;
+        };
     </script>
     <script src="{{ asset('frontend/js/app.js') }}?v={{ filemtime(public_path('frontend/js/app.js')) }}"></script>
     <script>

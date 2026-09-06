@@ -1,5 +1,12 @@
 // Frontend JavaScript for Nuter Guru
 
+function __t(key) {
+    if (window.I18N && Object.prototype.hasOwnProperty.call(window.I18N, key)) {
+        return window.I18N[key];
+    }
+    return key;
+}
+
 // DOM Content Loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all components
@@ -149,7 +156,7 @@ function redirectToLogin(message) {
 
 function handleCartLoginRequired(data) {
     if (data && data.login_required) {
-        redirectToLogin(data.message || 'Please login to continue.');
+        redirectToLogin(data.message || __t('Please login to continue.'));
         return true;
     }
     return false;
@@ -189,7 +196,7 @@ function addToCart(product, buttonEl) {
     if (requiresCartLogin()) {
         button.innerHTML = originalText;
         button.disabled = false;
-        redirectToLogin('Please login to add products to cart.');
+        redirectToLogin(__t('Please login to add products to cart.'));
         return;
     }
 
@@ -230,7 +237,7 @@ function addToCart(product, buttonEl) {
     })
     .catch(error => {
         console.error('Error:', error);
-        showNotification('An error occurred. Please try again.', 'danger');
+        showNotification(__t('An error occurred. Please try again.'), 'danger');
     })
     .finally(() => {
         // Restore button state
@@ -279,7 +286,7 @@ function initCartDrawer() {
         }
         e.preventDefault();
         if (requiresCartLogin()) {
-            redirectToLogin('Please login to view your cart.');
+            redirectToLogin(__t('Please login to view your cart.'));
             return;
         }
         window.openCartDrawer();
@@ -323,7 +330,7 @@ function initCartDrawer() {
 
 window.openCartDrawer = function openCartDrawer() {
     if (requiresCartLogin()) {
-        redirectToLogin('Please login to view your cart.');
+        redirectToLogin(__t('Please login to view your cart.'));
         return;
     }
 
@@ -361,10 +368,18 @@ function renderCartDrawerItemHtml(item) {
     const productImage = product.thumb_image
         ? (product.thumb_image.startsWith('http') ? product.thumb_image : '/' + product.thumb_image.replace(/^\//, ''))
         : defaultImage;
-    const unitPrice = parseFloat(product.offer_price || product.price || 0);
-    const lineTotal = unitPrice * quantity;
+    const unitPrice = parseFloat(item.unit_price ?? product.offer_price ?? product.price ?? 0);
+    const lineTotal = parseFloat(item.line_total ?? (unitPrice * quantity));
     const productSlug = product.slug || '';
     const productUrl = productSlug ? '/product/' + productSlug : '/products';
+    const variantsLabel = Array.isArray(item.variants) && item.variants.length
+        ? item.variants.map(function (v) {
+            return v.name || ((v.variant_name || '') + ': ' + (v.variant_value || ''));
+        }).filter(Boolean).join(' · ')
+        : '';
+    const variantsHtml = variantsLabel
+        ? '<div class="cart-drawer__item-variants">' + escapeHtml(variantsLabel) + '</div>'
+        : '';
 
     return (
         '<article class="cart-drawer__item" data-id="' + escapeHtml(String(itemId)) + '" data-unit-price="' + unitPrice + '">' +
@@ -375,6 +390,7 @@ function renderCartDrawerItemHtml(item) {
                 '<h3 class="cart-drawer__item-title">' +
                     '<a href="' + escapeHtml(productUrl) + '" data-bs-dismiss="offcanvas">' + escapeHtml(product.name || '') + '</a>' +
                 '</h3>' +
+                variantsHtml +
                 '<div class="cart-drawer__item-price">' + formatCartDrawerMoney(unitPrice) + '</div>' +
                 '<div class="cart-drawer__item-actions">' +
                     '<div class="cart-drawer__qty">' +
@@ -534,7 +550,7 @@ function loadCartDrawerItems(options) {
             }
 
             if (data.login_required) {
-                redirectToLogin('Please login to view your cart.');
+                redirectToLogin(__t('Please login to view your cart.'));
                 return;
             }
 
@@ -602,7 +618,7 @@ function updateCartDrawerQuantity(itemId, quantity) {
                 refreshCartDrawerSummary(data.cart_count, data.cart_total);
             } else {
                 updateCartDrawerItemDom(itemId, domState.previousQty);
-                showNotification(data.message || 'Failed to update cart', 'danger');
+                showNotification(data.message || __t('Failed to update cart'), 'danger');
             }
         })
         .catch(function (error) {
@@ -651,7 +667,7 @@ function removeCartDrawerItem(itemId) {
                 showNotification(data.message || 'Item removed from cart', 'success');
             } else {
                 loadCartDrawerItems({ silent: true });
-                showNotification(data.message || 'Failed to remove item', 'danger');
+                showNotification(data.message || __t('Failed to remove item'), 'danger');
             }
         })
         .catch(function (error) {
@@ -702,7 +718,7 @@ function initWishlistFunctionality() {
                 addToWishlist(productId);
                 this.classList.add('wishlisted');
                 this.innerHTML = '<i class="fas fa-heart"></i>';
-                showNotification('Added to wishlist!', 'success');
+                showNotification(__t('Added to wishlist!'), 'success');
             }
             
             updateWishlistCount();
@@ -731,14 +747,14 @@ function addToWishlist(productId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showNotification(data.message || 'Added to wishlist!', 'success');
-            } else {
-                showNotification(data.message || 'Failed to add to wishlist', 'error');
+                showNotification(data.message || __t('Added to wishlist!'), 'success');
+                } else {
+                showNotification(data.message || __t('Failed to add to wishlist'), 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showNotification('Failed to add to wishlist', 'error');
+            showNotification(__t('Failed to add to wishlist'), 'error');
         });
     } else {
         // User is not authenticated, use localStorage
@@ -774,12 +790,12 @@ function removeFromWishlist(productId) {
             if (data.success) {
                 showNotification(data.message || 'Removed from wishlist', 'info');
             } else {
-                showNotification(data.message || 'Failed to remove from wishlist', 'error');
+                showNotification(data.message || __t('Failed to remove from wishlist'), 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showNotification('Failed to remove from wishlist', 'error');
+            showNotification(__t('Failed to remove from wishlist'), 'error');
         });
     } else {
         // User is not authenticated, use localStorage
@@ -1147,11 +1163,11 @@ function initSmoothScrolling() {
     };
 
     const TOAST_TITLES = {
-        success: 'Success',
-        error: 'Error',
-        danger: 'Error',
-        warning: 'Warning',
-        info: 'Info'
+        success: __t('Success'),
+        error: __t('Error'),
+        danger: __t('Error'),
+        warning: __t('Warning'),
+        info: __t('Info')
     };
 
     function ensureToastContainer() {
@@ -1304,7 +1320,7 @@ function initSmoothScrolling() {
                 <p class="app-toast__title">${TOAST_TITLES[normalized]}</p>
                 <p class="app-toast__message">${safeMessage}</p>
             </div>
-            <button type="button" class="app-toast__close" aria-label="Close"><i class="fas fa-times"></i></button>
+            <button type="button" class="app-toast__close" aria-label="${__t('Close')}"><i class="fas fa-times"></i></button>
             <span class="app-toast__progress" style="animation-duration:${duration}ms"></span>
         `;
 

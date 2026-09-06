@@ -36,14 +36,24 @@
                                     <input type="file" class="form-control-file"  name="thumb_image" onchange="previewThumnailImage(event)">
                                 </div>
 
-                                <div class="form-group col-12">
-                                    <label>{{__('admin.Short Name')}} <span class="text-danger">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <label>{{__('admin.Short Name')}} (EN) <span class="text-danger">*</span></label>
                                     <input type="text" id="short_name" class="form-control"  name="short_name" value="{{ old('short_name') }}">
                                 </div>
 
-                                <div class="form-group col-12">
-                                    <label>{{__('admin.Name')}} <span class="text-danger">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <label>{{__('admin.Short Name')}} (বাংলা)</label>
+                                    <input type="text" id="short_name_bn" class="form-control"  name="short_name_bn" value="{{ old('short_name_bn') }}" placeholder="বাংলা সংক্ষিপ্ত নাম">
+                                </div>
+
+                                <div class="form-group col-md-6">
+                                    <label>{{__('admin.Name')}} (EN) <span class="text-danger">*</span></label>
                                     <input type="text" id="name" class="form-control"  name="name" value="{{ old('name') }}">
+                                </div>
+
+                                <div class="form-group col-md-6">
+                                    <label>{{__('admin.Name')}} (বাংলা)</label>
+                                    <input type="text" id="name_bn" class="form-control"  name="name_bn" value="{{ old('name_bn') }}" placeholder="বাংলা পণ্যের নাম">
                                 </div>
 
                                 <div class="form-group col-12">

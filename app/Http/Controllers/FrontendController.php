@@ -376,7 +376,12 @@ class FrontendController extends Controller
                 'reviews' => function($query) {
                     $query->with('user')->latest();
                 },
-                'variants.variantItems'
+                'variants' => function ($query) {
+                    $query->where('status', 1)
+                        ->with(['variantItems' => function ($itemQuery) {
+                            $itemQuery->where('status', 1)->orderBy('id');
+                        }]);
+                }
             ])
             ->firstOrFail();
         

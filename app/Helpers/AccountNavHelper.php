@@ -13,31 +13,31 @@ class AccountNavHelper
                 'url' => 'dashboard',
                 'routes' => ['dashboard', 'user.dashboard'],
                 'icon' => 'fa-tachometer-alt',
-                'label' => 'Dashboard',
+                'label' => __('Dashboard'),
             ],
             'profile' => [
                 'url' => 'profile',
                 'routes' => ['profile', 'user.profile'],
                 'icon' => 'fa-user',
-                'label' => 'Profile',
+                'label' => __('Profile'),
             ],
             'orders' => [
                 'url' => 'orders',
                 'routes' => ['orders', 'orders.show', 'user.orders', 'user.orders.show'],
                 'icon' => 'fa-shopping-bag',
-                'label' => 'Orders',
+                'label' => __('Orders'),
             ],
             'wishlist' => [
                 'url' => 'wishlist',
                 'routes' => ['wishlist', 'user.wishlist'],
                 'icon' => 'fa-heart',
-                'label' => 'Wishlist',
+                'label' => __('Wishlist'),
             ],
             'addresses' => [
                 'url' => 'addresses.index',
                 'routes' => ['addresses.index', 'addresses.create', 'addresses.edit', 'addresses.show'],
                 'icon' => 'fa-map-marker-alt',
-                'label' => 'Addresses',
+                'label' => __('Addresses'),
             ],
         ];
     }

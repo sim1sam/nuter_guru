@@ -1,6 +1,6 @@
 @extends('frontend.layouts.app')
 
-@section('title', 'Checkout')
+@section('title', __('Checkout'))
 
 @section('content')
 <div class="container my-5">
@@ -23,8 +23,8 @@
                 <div class="card checkout-section-card mb-4">
                     <div class="card-header checkout-section-header">
                         <div>
-                            <h5 class="mb-0">Billing Address</h5>
-                            <small class="text-muted">Select a delivery address or add a new one</small>
+                            <h5 class="mb-0">{{ __('Billing Address') }}</h5>
+                            <small class="text-muted">{{ __('Select a delivery address or add a new one') }}</small>
                         </div>
                     </div>
                     <div class="card-body">
@@ -50,7 +50,7 @@
                             @foreach($addresses as $index => $address)
                                 @php
                                     $isSelected = (string)$index === (string)$defaultIdx;
-                                    $areaLabel = ($address->delivery_area ?? 'inside') === 'outside' ? 'Outside' : 'Inside';
+                                    $areaLabel = ($address->delivery_area ?? 'inside') === 'outside' ? __('Outside') : __('Inside');
                                 @endphp
                                 <button type="button"
                                         class="checkout-address-card {{ $isSelected ? 'is-selected' : '' }}"
@@ -65,10 +65,10 @@
                                         </span>
                                     </div>
                                     <div class="checkout-address-card__body">
-                                        <div class="checkout-address-card__name">{{ $address->name ?? 'Address' }}</div>
+                                        <div class="checkout-address-card__name">{{ $address->name ?? __('Address') }}</div>
                                         <div class="checkout-address-card__badges">
                                             @if($address->default_billing)
-                                                <span class="checkout-chip checkout-chip--primary">Default</span>
+                                                <span class="checkout-chip checkout-chip--primary">{{ __('Default') }}</span>
                                             @endif
                                             <span class="checkout-chip">{{ $areaLabel }}</span>
                                         </div>
@@ -77,7 +77,7 @@
                                             @if($address->phone)
                                                 <span><i class="fas fa-phone-alt"></i> {{ $address->phone }}</span>
                                             @endif
-                                            <span><i class="fas fa-flag"></i> Bangladesh</span>
+                                            <span><i class="fas fa-flag"></i> {{ __('Bangladesh') }}</span>
                                         </div>
                                     </div>
                                 </button>
@@ -86,8 +86,8 @@
                             <button type="button" class="checkout-address-card checkout-address-card--add" id="btn-add-new-address">
                                 <div class="checkout-address-card__add-inner">
                                     <span class="checkout-address-card__add-icon"><i class="fas fa-plus"></i></span>
-                                    <strong>Add new address</strong>
-                                    <small>Use a different delivery location</small>
+                                    <strong>{{ __('Add new address') }}</strong>
+                                    <small>{{ __('Use a different delivery location') }}</small>
                                 </div>
                             </button>
                         </div>
@@ -96,55 +96,55 @@
 
                         <div id="billing-form-fields" class="checkout-address-form @if($hasSavedAddresses) d-none @endif">
                             <div class="checkout-form-title">
-                                <h6 class="mb-1">{{ $hasSavedAddresses ? 'New address details' : 'Enter billing address' }}</h6>
-                                <small class="text-muted">Country is fixed to Bangladesh</small>
+                                <h6 class="mb-1">{{ $hasSavedAddresses ? __('New address details') : __('Enter billing address') }}</h6>
+                                <small class="text-muted">{{ __('Country is fixed to Bangladesh') }}</small>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="first_name" class="form-label">First Name *</label>
+                                    <label for="first_name" class="form-label">{{ __('First Name') }} *</label>
                                     <input type="text" class="form-control" id="first_name" name="billing_first_name" value="{{ old('billing_first_name', $defaultNameParts[0] ?? '') }}" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="last_name" class="form-label">Last Name *</label>
+                                    <label for="last_name" class="form-label">{{ __('Last Name') }} *</label>
                                     <input type="text" class="form-control" id="last_name" name="billing_last_name" value="{{ old('billing_last_name', $defaultNameParts[1] ?? '') }}">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="email" class="form-label">Email Address *</label>
+                                    <label for="email" class="form-label">{{ __('Email Address') }} *</label>
                                     <input type="email" class="form-control" id="email" name="billing_email" value="{{ old('billing_email', $defaultAddress->email ?? (auth()->user()->email ?? '')) }}" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="phone" class="form-label">Phone Number *</label>
+                                    <label for="phone" class="form-label">{{ __('Phone Number') }} *</label>
                                     <input type="tel" class="form-control" id="phone" name="billing_phone" value="{{ old('billing_phone', $defaultAddress->phone ?? '') }}" required>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="address" class="form-label">Full Address *</label>
-                                <textarea class="form-control" id="address" name="billing_address" rows="3" placeholder="House, road, area, landmark" required>{{ old('billing_address', $defaultAddress->address ?? '') }}</textarea>
+                                <label for="address" class="form-label">{{ __('Full Address') }} *</label>
+                                <textarea class="form-control" id="address" name="billing_address" rows="3" placeholder="{{ __('House, road, area, landmark') }}" required>{{ old('billing_address', $defaultAddress->address ?? '') }}</textarea>
                             </div>
                             <div class="row align-items-end">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Country</label>
+                                    <label class="form-label">{{ __('Country') }}</label>
                                     <div class="checkout-readonly-field">
-                                        <i class="fas fa-globe-asia me-2"></i> Bangladesh
+                                        <i class="fas fa-globe-asia me-2"></i> {{ __('Bangladesh') }}
                                     </div>
                                     <input type="hidden" id="country" name="billing_country" value="{{ $bdCountryId }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label d-block">Delivery Area *</label>
+                                    <label class="form-label d-block">{{ __('Delivery Area') }} *</label>
                                     @php $billingArea = old('billing_delivery_area', $defaultAddress->delivery_area ?? 'inside'); @endphp
                                     <div class="checkout-area-toggle">
                                         <input type="radio" class="btn-check" name="billing_delivery_area" id="billing_area_inside" value="inside" {{ $billingArea === 'inside' ? 'checked' : '' }}>
-                                        <label class="checkout-area-btn" for="billing_area_inside">Inside</label>
+                                        <label class="checkout-area-btn" for="billing_area_inside">{{ __('Inside') }}</label>
                                         <input type="radio" class="btn-check" name="billing_delivery_area" id="billing_area_outside" value="outside" {{ $billingArea === 'outside' ? 'checked' : '' }}>
-                                        <label class="checkout-area-btn" for="billing_area_outside">Outside</label>
+                                        <label class="checkout-area-btn" for="billing_area_outside">{{ __('Outside') }}</label>
                                     </div>
                                 </div>
                             </div>
                             @if($hasSavedAddresses)
                             <div class="text-end">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-cancel-new-address">Cancel</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-cancel-new-address">{{ __('Cancel') }}</button>
                             </div>
                             @endif
                         </div>
@@ -156,13 +156,13 @@
                     <div class="card-header checkout-section-header">
                         <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
                             <div>
-                                <h5 class="mb-0">Shipping Information</h5>
-                                <small class="text-muted">Deliver to a different address if needed</small>
+                                <h5 class="mb-0">{{ __('Shipping Information') }}</h5>
+                                <small class="text-muted">{{ __('Deliver to a different address if needed') }}</small>
                             </div>
                             <div class="form-check form-switch m-0">
                                 <input class="form-check-input" type="checkbox" id="same-as-billing" checked>
                                 <label class="form-check-label" for="same-as-billing">
-                                    Same as billing
+                                    {{ __('Same as billing') }}
                                 </label>
                             </div>
                         </div>
@@ -170,43 +170,43 @@
                     <div class="card-body" id="shipping-form" style="display: none;">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="ship_first_name" class="form-label">First Name *</label>
+                                <label for="ship_first_name" class="form-label">{{ __('First Name') }} *</label>
                                 <input type="text" class="form-control" id="ship_first_name" name="shipping_first_name">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="ship_last_name" class="form-label">Last Name *</label>
+                                <label for="ship_last_name" class="form-label">{{ __('Last Name') }} *</label>
                                 <input type="text" class="form-control" id="ship_last_name" name="shipping_last_name">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="ship_email" class="form-label">Email Address *</label>
+                                <label for="ship_email" class="form-label">{{ __('Email Address') }} *</label>
                                 <input type="email" class="form-control" id="ship_email" name="shipping_email">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="ship_phone" class="form-label">Phone Number *</label>
+                                <label for="ship_phone" class="form-label">{{ __('Phone Number') }} *</label>
                                 <input type="tel" class="form-control" id="ship_phone" name="shipping_phone">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="ship_address" class="form-label">Full Address *</label>
-                            <textarea class="form-control" id="ship_address" name="shipping_address" rows="3" placeholder="House, road, area, landmark"></textarea>
+                            <label for="ship_address" class="form-label">{{ __('Full Address') }} *</label>
+                            <textarea class="form-control" id="ship_address" name="shipping_address" rows="3" placeholder="{{ __('House, road, area, landmark') }}"></textarea>
                         </div>
                         <div class="row align-items-end">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Country</label>
+                                <label class="form-label">{{ __('Country') }}</label>
                                 <div class="checkout-readonly-field">
-                                    <i class="fas fa-globe-asia me-2"></i> Bangladesh
+                                    <i class="fas fa-globe-asia me-2"></i> {{ __('Bangladesh') }}
                                 </div>
                                 <input type="hidden" id="ship_country" name="shipping_country" value="{{ $bdCountryId }}">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label d-block">Delivery Area *</label>
+                                <label class="form-label d-block">{{ __('Delivery Area') }} *</label>
                                 <div class="checkout-area-toggle">
                                     <input type="radio" class="btn-check" name="shipping_delivery_area" id="ship_area_inside" value="inside" checked>
-                                    <label class="checkout-area-btn" for="ship_area_inside">Inside</label>
+                                    <label class="checkout-area-btn" for="ship_area_inside">{{ __('Inside') }}</label>
                                     <input type="radio" class="btn-check" name="shipping_delivery_area" id="ship_area_outside" value="outside">
-                                    <label class="checkout-area-btn" for="ship_area_outside">Outside</label>
+                                    <label class="checkout-area-btn" for="ship_area_outside">{{ __('Outside') }}</label>
                                 </div>
                             </div>
                         </div>
@@ -216,7 +216,7 @@
                 <!-- Shipping Method -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0">Shipping Method</h5>
+                        <h5 class="mb-0">{{ __('Shipping Method') }}</h5>
                     </div>
                     <div class="card-body shipping-methods">
                         @if($shippingMethods && $shippingMethods->count() > 0)
@@ -229,14 +229,14 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <strong>{{ $shipping->shipping_rule }}</strong>
-                                            <small class="d-block text-muted">{{ $shipping->shipping_fee > 0 ? 'Delivery time: 3-5 business days' : 'Free shipping' }}</small>
+                                            <small class="d-block text-muted">{{ $shipping->shipping_fee > 0 ? __('Delivery time: 3-5 business days') : __('Free shipping') }}</small>
                                         </div>
                                         <div class="text-end">
                                             <strong class="text-success">
                                                 @if($shipping->shipping_fee > 0)
                                                     {{ format_currency($shipping->shipping_fee) }}
                                                 @else
-                                                    Free
+                                                    {{ __('Free') }}
                                                 @endif
                                             </strong>
                                         </div>
@@ -247,7 +247,7 @@
                         @else
                             <div class="alert alert-warning" role="alert">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
-                                No shipping methods available. Please contact support.
+                                {{ __('No shipping methods available. Please contact support.') }}
                             </div>
                         @endif
                     </div>
@@ -256,7 +256,7 @@
                 <!-- Payment Method -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0">Payment Method</h5>
+                        <h5 class="mb-0">{{ __('Payment Method') }}</h5>
                     </div>
                     <div class="card-body">
                         <div id="payment-methods-container">
@@ -268,8 +268,8 @@
                                     <div class="d-flex align-items-center">
                                         <i class="fas fa-money-bill-wave me-3 text-success" style="font-size: 1.5rem;"></i>
                                         <div>
-                                            <strong>Cash on Delivery</strong>
-                                            <small class="d-block text-muted">Pay when you receive your order</small>
+                                            <strong>{{ __('Cash on Delivery') }}</strong>
+                                            <small class="d-block text-muted">{{ __('Pay when you receive your order') }}</small>
                                         </div>
                                     </div>
                                 </label>
@@ -284,8 +284,8 @@
                                     <div class="d-flex align-items-center">
                                         <i class="fab fa-stripe me-3 text-primary" style="font-size: 1.5rem;"></i>
                                         <div>
-                                            <strong>Credit/Debit Card (Stripe)</strong>
-                                            <small class="d-block text-muted">Pay securely with your credit or debit card</small>
+                                            <strong>{{ __('Credit/Debit Card (Stripe)') }}</strong>
+                                            <small class="d-block text-muted">{{ __('Pay securely with your credit or debit card') }}</small>
                                         </div>
                                     </div>
                                 </label>
@@ -301,7 +301,7 @@
                                         <i class="fab fa-paypal me-3 text-primary" style="font-size: 1.5rem;"></i>
                                         <div>
                                             <strong>PayPal</strong>
-                                            <small class="d-block text-muted">Pay with your PayPal account</small>
+                                            <small class="d-block text-muted">{{ __('Pay with your PayPal account') }}</small>
                                         </div>
                                     </div>
                                 </label>
@@ -316,8 +316,8 @@
                                     <div class="d-flex align-items-center">
                                         <i class="fas fa-university me-3 text-secondary" style="font-size: 1.5rem;"></i>
                                         <div>
-                                            <strong>Bank Transfer</strong>
-                                            <small class="d-block text-muted">Transfer directly to our bank account</small>
+                                            <strong>{{ __('Bank Transfer') }}</strong>
+                                            <small class="d-block text-muted">{{ __('Transfer directly to our bank account') }}</small>
                                         </div>
                                     </div>
                                 </label>
@@ -333,7 +333,7 @@
                                         <i class="fas fa-credit-card me-3 text-primary" style="font-size: 1.5rem;"></i>
                                         <div>
                                             <strong>SSLCommerz</strong>
-                                            <small class="d-block text-muted">Pay with cards, mobile banking & internet banking</small>
+                                            <small class="d-block text-muted">{{ __('Pay with cards, mobile banking & internet banking') }}</small>
                                         </div>
                                     </div>
                                 </label>
@@ -346,7 +346,7 @@
                         <!-- Bank Payment Info (hidden by default) -->
                         <div id="bank-payment-info" style="display: none;">
                             <div class="alert alert-info">
-                                <h6>Bank Transfer Details:</h6>
+                                <h6>{{ __('Bank Transfer Details:') }}</h6>
                                 <div id="bank-account-details">
                                     <!-- Bank account information will be loaded dynamically -->
                                 </div>
@@ -358,10 +358,10 @@
                 <!-- Order Notes -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0">Order Notes (Optional)</h5>
+                        <h5 class="mb-0">{{ __('Order Notes (Optional)') }}</h5>
                     </div>
                     <div class="card-body">
-                        <textarea class="form-control" id="order_notes" name="order_notes" rows="3" placeholder="Notes about your order, e.g. special notes for delivery."></textarea>
+                        <textarea class="form-control" id="order_notes" name="order_notes" rows="3" placeholder="{{ __('Notes about your order, e.g. special notes for delivery.') }}"></textarea>
                     </div>
                 </div>
                 
@@ -374,7 +374,7 @@
             <!-- Order Summary -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">Order Summary</h5>
+                    <h5 class="mb-0">{{ __('Order Summary') }}</h5>
                 </div>
                 <div class="card-body">
                     <div id="order-items">
@@ -384,54 +384,54 @@
                     <hr>
                     
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal:</span>
+                        <span>{{ __('Subtotal:') }}</span>
                         <span id="subtotal">{{ currency_icon() }}0.00</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Shipping:</span>
+                        <span>{{ __('Shipping:') }}</span>
                         <span id="shipping-cost">{{ currency_icon() }}0.00</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Tax:</span>
+                        <span>{{ __('Tax:') }}</span>
                         <span id="tax">{{ currency_icon() }}0.00</span>
                     </div>
                     
                     <!-- Coupon Section -->
                     <div class="mb-3">
                         <div class="input-group">
-                            <input type="text" class="form-control" id="coupon-code" placeholder="Enter coupon code">
+                            <input type="text" class="form-control" id="coupon-code" placeholder="{{ __('Enter coupon code') }}">
                             <button class="btn btn-outline-secondary" type="button" id="apply-coupon-btn">
-                                Apply Coupon
+                                {{ __('Apply Coupon') }}
                             </button>
                         </div>
                         <div id="coupon-info" class="mt-2" style="display: none;">
                             <div class="alert alert-success py-2 mb-0">
                                 <small id="coupon-info-text"></small>
-                                <button type="button" class="btn-close btn-sm float-end" id="remove-coupon" aria-label="Remove coupon"></button>
+                                <button type="button" class="btn-close btn-sm float-end" id="remove-coupon" aria-label="{{ __('Remove coupon') }}"></button>
                             </div>
                         </div>
                     </div>
                     
                     <hr>
                     <div class="d-flex justify-content-between mb-2" id="coupon-discount" style="display: none;">
-                        <span>Coupon Discount:</span>
+                        <span>{{ __('Coupon Discount:') }}</span>
                         <span id="coupon-discount-amount" class="text-success">-{{ currency_icon() }}0.00</span>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
-                        <strong>Total:</strong>
+                        <strong>{{ __('Total:') }}</strong>
                         <strong id="total">{{ currency_icon() }}0.00</strong>
                     </div>
                     
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary btn-lg" id="place-order-btn" form="checkout-form">
-                            <i class="fas fa-lock me-2"></i>Place Order
+                            <i class="fas fa-lock me-2"></i>{{ __('Place Order') }}
                         </button>
                     </div>
                     
                     <div class="text-center mt-3">
                         <small class="text-muted">
                             <i class="fas fa-shield-alt me-1"></i>
-                            Your payment information is secure and encrypted
+                            {{ __('Your payment information is secure and encrypted') }}
                         </small>
                     </div>
                 </div>
@@ -440,7 +440,7 @@
             <!-- Security Badges -->
             <div class="card">
                 <div class="card-body text-center">
-                    <h6 class="mb-3">Secure Checkout</h6>
+                    <h6 class="mb-3">{{ __('Secure Checkout') }}</h6>
                     <div class="d-flex justify-content-center gap-3">
                         <i class="fab fa-cc-visa fa-2x text-muted"></i>
                         <i class="fab fa-cc-mastercard fa-2x text-muted"></i>
@@ -998,14 +998,14 @@ class Checkout {
                     if (formWrap && formWrap.classList.contains('d-none') && (missing.includes('name') || missing.includes('email') || missing.includes('phone') || missing.includes('address'))) {
                         showBillingFormFields(true);
                     }
-                    this.showNotification('Please fill: ' + missing.join(', '), 'error');
+                    this.showNotification(@json(__('Please fill: ')) + missing.join(', '), 'error');
                     return false;
                 }
 
                 const btn = document.getElementById('place-order-btn');
                 if (btn) {
                     btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Placing Order...';
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>' + @json(__('Placing Order...'));
                 }
             });
         }
@@ -1101,11 +1101,11 @@ class Checkout {
                     }
                 }
             } else {
-                this.showNotification('Failed to load checkout data', 'error');
+                this.showNotification(@json(__('Failed to load checkout data')), 'error');
             }
         } catch (error) {
             console.error('Error loading checkout data:', error);
-            this.showNotification('Failed to load checkout data', 'error');
+            this.showNotification(@json(__('Failed to load checkout data')), 'error');
         }
     }
     
@@ -1139,8 +1139,8 @@ class Checkout {
         addresses.forEach((address, index) => {
             const option = document.createElement('option');
             option.value = index;
-            const labelBits = [address.name || 'Address'];
-            if (Number(address.default_billing) === 1) labelBits.push('(Default)');
+            const labelBits = [address.name || @json(__('Address'))];
+            if (Number(address.default_billing) === 1) labelBits.push(@json(__('(Default)')));
             option.textContent = labelBits.join(' ') + ' — ' + (address.address || '');
             option.dataset.name = address.name || '';
             option.dataset.email = address.email || '';
@@ -1176,25 +1176,29 @@ class Checkout {
         const orderItemsContainer = document.getElementById('order-items');
         
         if (this.cart.length === 0) {
-            orderItemsContainer.innerHTML = '<p class="text-muted">No items in cart</p>';
+            orderItemsContainer.innerHTML = '<p class="text-muted">' + @json(__('No items in cart')) + '</p>';
             return;
         }
 
         orderItemsContainer.innerHTML = this.cart.map(item => {
-            const itemPrice = parseFloat(item.product_price || (item.product && item.product.price) || 0);
-            const variantPrice = item.variants ? item.variants.reduce((sum, variant) => {
-                return sum + (parseFloat(variant.variant_price) || 0);
-            }, 0) : 0;
-            const totalItemPrice = (itemPrice + variantPrice) * item.quantity;
+            const variants = item.variants || [];
+            let itemPrice = parseFloat(item.product_price || (item.product && (item.product.offer_price || item.product.price)) || 0);
+            const variantPrices = variants
+                .map(function (v) { return parseFloat(v.variant_price || v.price || 0); })
+                .filter(function (p) { return p > 0; });
+            if (variantPrices.length) {
+                itemPrice = variantPrices.reduce(function (sum, p) { return sum + p; }, 0);
+            }
+            const totalItemPrice = itemPrice * item.quantity;
             
             return '<div class="order-item">' +
                     '<img src="' + (item.product_image || (item.product && item.product.thumb_image)) + '" alt="' + (item.product_name || (item.product && item.product.name)) + '">' +
                     '<div class="order-item-info">' +
                         '<div class="order-item-name">' + (item.product_name || (item.product && item.product.name)) + '</div>' +
-                        '<div class="order-item-details">Qty: ' + item.quantity + '</div>' +
-                        (item.variants && item.variants.length > 0 ? 
+                        '<div class="order-item-details">' + @json(__('Qty:')) + ' ' + item.quantity + '</div>' +
+                        (variants.length > 0 ? 
                             '<div class="order-item-variants">' + 
-                            item.variants.map(function(v) { return v.variant_name + ': ' + v.variant_value; }).join(', ') + 
+                            variants.map(function(v) { return (v.variant_name || '') + ': ' + (v.variant_value || v.name || ''); }).join(', ') + 
                             '</div>' : '') +
                     '</div>' +
                     '<div class="order-item-price">' + this.formatMoney(totalItemPrice) + '</div>' +
@@ -1231,7 +1235,7 @@ class Checkout {
             shippingContainer.innerHTML = `
                 <div class="alert alert-warning" role="alert">
                     <i class="fas fa-exclamation-triangle me-2"></i>
-                    No shipping methods available. Please contact support.
+                    ${@json(__('No shipping methods available. Please contact support.'))}
                 </div>
             `;
         }
@@ -1255,8 +1259,8 @@ class Checkout {
             paymentMethodsHtml += '<div class="form-check mb-3">' +
                 '<input class="form-check-input" type="radio" name="payment_method" id="cash_on_delivery" value="cash_on_delivery" ' + (!firstActiveMethod || firstActiveMethod === 'cash_on_delivery' ? 'checked' : '') + '>' +
                 '<label class="form-check-label" for="cash_on_delivery">' +
-                    '<i class="fas fa-money-bill-wave me-2"></i>Cash on Delivery' +
-                    '<small class="d-block text-muted mt-1">Pay when you receive your order</small>' +
+                    '<i class="fas fa-money-bill-wave me-2"></i>' + @json(__('Cash on Delivery')) +
+                    '<small class="d-block text-muted mt-1">' + @json(__('Pay when you receive your order')) + '</small>' +
                 '</label>' +
             '</div>';
         }
@@ -1267,8 +1271,8 @@ class Checkout {
             paymentMethodsHtml += '<div class="form-check mb-3">' +
                 '<input class="form-check-input" type="radio" name="payment_method" id="stripe" value="stripe" ' + (firstActiveMethod === 'stripe' ? 'checked' : '') + '>' +
                 '<label class="form-check-label" for="stripe">' +
-                    '<i class="fab fa-stripe me-2"></i>Credit/Debit Card (Stripe)' +
-                    '<small class="d-block text-muted mt-1">Pay securely with your credit or debit card</small>' +
+                    '<i class="fab fa-stripe me-2"></i>' + @json(__('Credit/Debit Card (Stripe)')) +
+                    '<small class="d-block text-muted mt-1">' + @json(__('Pay securely with your credit or debit card')) + '</small>' +
                 '</label>' +
             '</div>';
         }
@@ -1280,7 +1284,7 @@ class Checkout {
                 '<input class="form-check-input" type="radio" name="payment_method" id="paypal" value="paypal" ' + (firstActiveMethod === 'paypal' ? 'checked' : '') + '>' +
                 '<label class="form-check-label" for="paypal">' +
                     '<i class="fab fa-paypal me-2"></i>PayPal' +
-                    '<small class="d-block text-muted mt-1">Pay with your PayPal account</small>' +
+                    '<small class="d-block text-muted mt-1">' + @json(__('Pay with your PayPal account')) + '</small>' +
                 '</label>' +
             '</div>';
         }
@@ -1352,7 +1356,7 @@ class Checkout {
                     '<input class="form-check-input" type="radio" name="payment_method" id="sslcommerz" value="sslcommerz" ' + (firstActiveMethod === 'sslcommerz' ? 'checked' : '') + '>' +
                     '<label class="form-check-label" for="sslcommerz">' +
                         '<i class="fas fa-credit-card me-2"></i>SSLCommerz' +
-                        '<small class="d-block text-muted mt-1">Pay with cards, mobile banking & internet banking</small>' +
+                        '<small class="d-block text-muted mt-1">' + @json(__('Pay with cards, mobile banking & internet banking')) + '</small>' +
                     '</label>' +
                 '</div>';
             }
@@ -1363,8 +1367,8 @@ class Checkout {
                 paymentMethodsHtml += '<div class="form-check mb-3">' +
                     '<input class="form-check-input" type="radio" name="payment_method" id="bank_payment" value="bank_payment" ' + (firstActiveMethod === 'bank_payment' ? 'checked' : '') + '>' +
                     '<label class="form-check-label" for="bank_payment">' +
-                        '<i class="fas fa-university me-2"></i>Bank Transfer' +
-                        '<small class="d-block text-muted mt-1">Transfer directly to our bank account</small>' +
+                        '<i class="fas fa-university me-2"></i>' + @json(__('Bank Transfer')) +
+                        '<small class="d-block text-muted mt-1">' + @json(__('Transfer directly to our bank account')) + '</small>' +
                     '</label>' +
                 '</div>';
             }
@@ -1380,10 +1384,10 @@ class Checkout {
                 const otherPaymentMethods = document.getElementById('other-payment-methods');
                 if (otherPaymentMethods.style.display === 'none') {
                     otherPaymentMethods.style.display = 'block';
-                    showOtherPaymentsBtn.innerHTML = '<i class="fas fa-eye-slash me-2"></i>Hide Other Payment Methods';
+                    showOtherPaymentsBtn.innerHTML = '<i class="fas fa-eye-slash me-2"></i>' + @json(__('Hide Other Payment Methods'));
                 } else {
                     otherPaymentMethods.style.display = 'none';
-                    showOtherPaymentsBtn.innerHTML = '<i class="fas fa-credit-card me-2"></i>Pay Now (Other Payment Methods)';
+                    showOtherPaymentsBtn.innerHTML = '<i class="fas fa-credit-card me-2"></i>' + @json(__('Pay Now (Other Payment Methods)'));
                     // Reset to Cash on Delivery when hiding other methods
                     const codRadio = document.getElementById('cash_on_delivery');
                     if (codRadio) {
@@ -1439,12 +1443,16 @@ class Checkout {
         }
         
         const subtotal = this.cart.reduce(function(sum, item) {
-            const itemPrice = parseFloat(item.product_price || (item.product && item.product.price) || 0);
-            const variantPrice = item.variants ? item.variants.reduce(function(vSum, variant) {
-                return vSum + (parseFloat(variant.variant_price) || 0);
-            }, 0) : 0;
+            const variants = item.variants || [];
+            let itemPrice = parseFloat(item.product_price || (item.product && (item.product.offer_price || item.product.price)) || 0);
+            const variantPrices = variants
+                .map(function (v) { return parseFloat(v.variant_price || v.price || 0); })
+                .filter(function (p) { return p > 0; });
+            if (variantPrices.length) {
+                itemPrice = variantPrices.reduce(function (s, p) { return s + p; }, 0);
+            }
             const quantity = parseInt(item.quantity || 0);
-            const itemTotal = (itemPrice + variantPrice) * quantity;
+            const itemTotal = itemPrice * quantity;
             return sum + (isNaN(itemTotal) ? 0 : itemTotal);
         }, 0);
         
@@ -1492,13 +1500,13 @@ class Checkout {
         
         const couponCode = couponInput.value.trim();
         if (!couponCode) {
-            this.showNotification('Please enter a coupon code', 'error');
+            this.showNotification(@json(__('Please enter a coupon code')), 'error');
             return;
         }
         
         const applyCouponBtn = document.getElementById('apply-coupon-btn');
         const originalText = applyCouponBtn.innerHTML;
-        applyCouponBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Applying...';
+        applyCouponBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>' + @json(__('Applying...'));
         applyCouponBtn.disabled = true;
         
         try {
@@ -1525,9 +1533,9 @@ class Checkout {
                 const couponInfoText = document.getElementById('coupon-info-text');
                 if (couponInfo && couponInfoText) {
                     const discountText = data.coupon.discount_type === 'percentage' 
-                    ? data.coupon.discount + '% off'
-                    : this.formatMoney(data.coupon.discount) + ' off';
-                couponInfoText.textContent = 'Coupon "' + data.coupon.code + '" applied - ' + discountText;
+                    ? data.coupon.discount + '% ' + @json(__('off'))
+                    : this.formatMoney(data.coupon.discount) + ' ' + @json(__('off'));
+                couponInfoText.textContent = @json(__('Coupon')) + ' "' + data.coupon.code + '" ' + @json(__('applied')) + ' - ' + discountText;
                     couponInfo.style.display = 'block';
                 }
                 
@@ -1544,7 +1552,7 @@ class Checkout {
             }
         } catch (error) {
             console.error('Error applying coupon:', error);
-            this.showNotification('Failed to apply coupon', 'error');
+            this.showNotification(@json(__('Failed to apply coupon')), 'error');
         } finally {
             applyCouponBtn.innerHTML = originalText;
             applyCouponBtn.disabled = false;
@@ -1577,7 +1585,7 @@ class Checkout {
             couponDiscountRow.style.display = 'none';
         }
         
-        this.showNotification('Coupon removed', 'info');
+        this.showNotification(@json(__('Coupon removed')), 'info');
     }
     
     loadBankAccountDetails(bankPaymentInfo) {
@@ -1590,7 +1598,7 @@ class Checkout {
              bankAccountDetails.innerHTML = '<div class="bank-details">' +
                 formattedInfo +
             '</div>' +
-            '<p class="text-muted mt-3 mb-0"><small>Please use the order number as reference when making the transfer.</small></p>';
+            '<p class="text-muted mt-3 mb-0"><small>' + @json(__('Please use the order number as reference when making the transfer.')) + '</small></p>';
          }
      }
 
