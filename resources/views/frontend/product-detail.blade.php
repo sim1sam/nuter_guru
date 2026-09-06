@@ -11,7 +11,7 @@
     $rating = (float) ($product->averageRating ?? 0);
     $fullStars = floor($rating);
     $hasHalfStar = ($rating - $fullStars) >= 0.5;
-    $reviewCount = $product->reviews->count();
+    $reviewCount = $product->reviews->where('status', 1)->count();
     $basePrice = $product->offer_price ?? $product->price;
 
     $tags = [];
@@ -275,8 +275,84 @@
                 @endif
 
                 <div class="tab-pane fade pd-tab-panel" id="reviews" role="tabpanel">
-                    @if($product->reviews->where('status', 1)->count() > 0)
-                        @foreach($product->reviews->where('status', 1) as $review)
+                    @php
+                        $approvedReviews = $product->reviews->where('status', 1);
+                        $userReview = auth()->check()
+                            ? $product->reviews->where('user_id', auth()->id())->first()
+                            : null;
+                        $canReview = false;
+                        if (auth()->check() && ! $userReview) {
+                            $canReview = \App\Models\OrderProduct::where('product_id', $product->id)
+                                ->whereHas('order', function ($q) {
+                                    $q->where('user_id', auth()->id());
+                                })
+                                ->exists();
+                        }
+                    @endphp
+
+                    @auth
+                        @if($userReview)
+                            <div class="alert alert-info mb-4">
+                                You already submitted a review for this product
+                                @if((int) $userReview->status !== 1)
+                                    (pending approval)
+                                @endif.
+                            </div>
+                        @elseif($canReview)
+                            <div class="pd-review-form card mb-4">
+                                <div class="card-body">
+                                    <h5 class="mb-3">Write a Review</h5>
+                                    <form action="{{ route('product-review.store') }}" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="product_id" value="{{ $product->id }}">
+
+                                        <div class="mb-3">
+                                            <label class="form-label d-block">Your Rating <span class="text-danger">*</span></label>
+                                            <div class="pd-rating-input">
+                                                @for($i = 5; $i >= 1; $i--)
+                                                    <input type="radio" name="rating" id="rating_{{ $i }}" value="{{ $i }}" {{ (int) old('rating', 5) === $i ? 'checked' : '' }} required>
+                                                    <label for="rating_{{ $i }}" title="{{ $i }} star{{ $i > 1 ? 's' : '' }}"><i class="fas fa-star"></i></label>
+                                                @endfor
+                                            </div>
+                                            @error('rating')
+                                                <div class="text-danger small mt-1">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="review" class="form-label">Your Review <span class="text-danger">*</span></label>
+                                            <textarea class="form-control @error('review') is-invalid @enderror"
+                                                      id="review"
+                                                      name="review"
+                                                      rows="4"
+                                                      minlength="10"
+                                                      maxlength="2000"
+                                                      placeholder="Share your experience with this product..."
+                                                      required>{{ old('review') }}</textarea>
+                                            @error('review')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-paper-plane me-1"></i> Submit Review
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @else
+                            <div class="alert alert-light border mb-4">
+                                Purchase this product to leave a review.
+                            </div>
+                        @endif
+                    @else
+                        <div class="alert alert-light border mb-4">
+                            Please <a href="{{ route('login', ['redirect' => url()->current()]) }}">login</a> to write a review.
+                        </div>
+                    @endauth
+
+                    @if($approvedReviews->count() > 0)
+                        @foreach($approvedReviews as $review)
                         <article class="pd-review-card">
                             <div class="pd-review-head">
                                 <div>

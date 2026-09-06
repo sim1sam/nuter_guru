@@ -374,14 +374,14 @@ class FrontendController extends Controller
                 'gallery', 
                 'specifications.key', 
                 'reviews' => function($query) {
-                    $query->where('status', 1)->with('user')->latest();
+                    $query->with('user')->latest();
                 },
                 'variants.variantItems'
             ])
             ->firstOrFail();
         
-        // Calculate average rating
-        $product->averageRating = $product->reviews->avg('rating') ?? 0;
+        // Average rating from approved reviews only
+        $product->averageRating = $product->reviews->where('status', 1)->avg('rating') ?? 0;
         
         // Get related products from same category
         $relatedProducts = Product::where('category_id', $product->category_id)

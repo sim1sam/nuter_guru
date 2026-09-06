@@ -415,6 +415,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/addresses/{state}/cities', [App\Http\Controllers\Frontend\AddressController::class, 'getCitiesByState'])->name('addresses.cities');
     Route::post('/addresses/{id}/set-default-shipping', [App\Http\Controllers\Frontend\AddressController::class, 'setDefaultShipping'])->name('addresses.set-default-shipping');
     Route::post('/addresses/{id}/set-default-billing', [App\Http\Controllers\Frontend\AddressController::class, 'setDefaultBilling'])->name('addresses.set-default-billing');
+    Route::post('/product-review', [App\Http\Controllers\Frontend\ProductReviewController::class, 'store'])->name('product-review.store');
 });
     
     // Admin access route

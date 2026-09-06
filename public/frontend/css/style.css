@@ -1401,6 +1401,34 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-light);
 }
 
+.pd-review-form .card-body {
+    padding: 1.25rem;
+}
+
+.pd-rating-input {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    gap: 0.25rem;
+}
+
+.pd-rating-input input {
+    display: none;
+}
+
+.pd-rating-input label {
+    cursor: pointer;
+    color: #d0d0d0;
+    font-size: 1.35rem;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.pd-rating-input label:hover,
+.pd-rating-input label:hover ~ label,
+.pd-rating-input input:checked ~ label {
+    color: #f5b301;
+}
+
 .pd-related {
     margin-top: 3rem;
 }
