@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="{{ asset('backend/pos/assets/css/style.css') }}">
 <link rel="stylesheet" href="{{ asset('backend/pos/assets/css/respondive.css') }}">
 <link rel="stylesheet" href="{{ asset('backend/pos/assets/css/pos-modern.css') }}">
+<script>document.documentElement.classList.add('pos-fullscreen');</script>
 <style>
     .pos-customer-bar { display: flex; gap: 10px; align-items: stretch; width: 100%; }
     .pos-customer-search-wrap { flex: 1; min-width: 0; position: relative; }
@@ -59,25 +60,17 @@
 @endsection
 @section('admin-content')
 <!-- Main Content -->
-<div class="main-content">
+<div class="main-content pos-main-content">
     <section class="section pos-wrapper-section">
-        <div class="section-header">
-            <h1>{{__('admin.Pos')}}</h1>
-            <div class="section-header-breadcrumb">
-                <div class="breadcrumb-item active text-primary"><a href="{{ route('admin.dashboard') }}">{{__('admin.Dashboard')}}</a>
-                </div>
-                <div class="breadcrumb-item">{{__('admin.Pos')}}</div>
-            </div>
-        </div>
         <div class="section-body">
 
-            <section class="">
+            <section class="pos-fullscreen-shell">
                 <div class="container-fluid">
                     <div class="row pos-layout-row">
-                        <div class="col-lg-12 col-xl-8 pos-products-column product-bg">
+                        <div class="col-lg-12 col-xl-7 pos-products-column product-bg">
                             <div class="pos-toolbar">
                                 <div class="pos-toolbar__left">
-                                    <a href="{{ route('admin.pos.index') }}" class="pos-back-link">
+                                    <a href="{{ route('admin.dashboard') }}" class="pos-back-link">
                                         <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M5 1L1 5M1 5L5 9M1 5L13 5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                                         </svg>
@@ -89,6 +82,7 @@
                                     {{__('Add Product') }}
                                 </button>
                             </div>
+                            <div class="pos-products-scroll">
                              <!-- Modal -->
                              <div class="modal fade" id="exampleModalLong-2"  role="dialog"
                              aria-labelledby="exampleModalLongTitle" aria-hidden="true">
@@ -533,12 +527,13 @@
                                 </div>
 
                             </div>
+                            </div>
                         </div>
 
-                        <div class="col-lg-12 col-xl-4 pos-cart-column col-lg-pl-30px">
+                        <div class="col-lg-12 col-xl-5 pos-cart-column col-lg-pl-30px">
                             <div class="row billing-main-box">
-                                <div class="col-lg-12 product-padding ">
-                                    <div>
+                                <div class="col-lg-12 product-padding pos-cart-inner">
+                                    <div class="pos-cart-top">
                                         <div class="billing-section-taitel">
                                             <h3>{{__('admin.Billing Section') }}</h3>
                                             <span class="pos-cart-count" id="posCartCount">{{ $cart_products->count() }}</span>
@@ -568,12 +563,12 @@
                                         </div>
                                     </div>
 
-                                <div class="delivery-information">
+                                <div class="delivery-information pos-cart-body">
                                     <div class="delivery-information-taitel">
                                         <h3>{{__('admin.Selected Product')}}</h3>
                                     </div>
 
-                                    <div id="posCartPanel">
+                                    <div id="posCartPanel" class="pos-cart-scroll">
                                         @include('admin.pos.partials.cart_refresh', [
                                             'setting' => $setting,
                                             'cart_products' => $cart_products,
@@ -582,7 +577,7 @@
                                         ])
                                     </div>
 
-                                    <div class="sub-total-btn">
+                                    <div class="sub-total-btn pos-cart-actions">
                                         <div class="sub-total-btn-one">
 
 
@@ -633,185 +628,13 @@
 
 
                                         <div class="sub-total-btn-two">
-                                            <!-- Button trigger modal -->
-
-
                                             <button type="button" class="place-order" data-toggle="modal"
-                                                data-target="#exampleModal-4" onclick="receiveSubmitView()">
+                                                data-target="#exampleModal-4">
                                                 {{__('admin.Place Order') }}
                                             </button>
-
-
-
-                                            <!-- Modal -->
-                                            <div class="modal fade" id="exampleModal-4" role="dialog"
-                                                aria-labelledby="exampleModal-4" aria-hidden="true">
-                                                <div class="modal-dialog modal-dialog-two modal-dialog-seven ">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="exampleModalLabel-00">
-                                                                {{__('admin.Payment')}}
-                                                            </h5>
-                                                            <button type="button" class="close" data-dismiss="modal"
-                                                                aria-label="Close">
-                                                                <span aria-hidden="true">&times;</span>
-                                                            </button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <div class="modal-from">
-                                                                <div class="from-item-main">
-                                                                    <form action="{{ route('admin.pos.order.submit')}}" method="post">
-                                                                        @csrf
-                                                                        <input type="hidden" name="sub_total" id="posOrderSubTotal" value="{{ $grandTotal ?? 0 }}">
-
-                                                                        @if(($grandTotal ?? 0) == 0)
-                                                                        <input type="hidden" name="cupon" id="posOrderCoupon" value="0">
-                                                                        <input type="hidden" name="tax" id="posOrderTax" value="0">
-                                                                        <input type="hidden" name="discount" id="posOrderDiscount" value="0">
-                                                                        @else
-                                                                        <input type="hidden" name="tax" id="posOrderTax" value="{{ $tax ?? 0 }}">
-                                                                        <input type="hidden" name="cupon" id="posOrderCoupon" value="{{ $couponValue ?? '' }}">
-                                                                        <input type="hidden" name="discount" id="posOrderDiscount" value="{{ $discount ?? 0 }}">
-                                                                        @endif
-
-                                                                        <div class="form-group">
-                                                                            <label for="">{{__('admin.Select Customer')}}</label>
-                                                                            <select name="customer_id" id="posOrderCustomerSelect" class="form-control select2" required>
-                                                                                <option value="">{{ __('admin.Select a Customer') }}</option>
-                                                                                @foreach ($customers as $customer)
-                                                                                    <option value="{{$customer->id}}" {{ ($selected_customer->id ?? null) == $customer->id ? 'selected' : '' }}>
-                                                                                        {{ $customer->name }}{{ $customer->phone ? ' ('.$customer->phone.')' : '' }}
-                                                                                    </option>
-                                                                                @endforeach
-                                                                            </select>
-                                                                        </div>
-
-                                                                        <div id="posCustomerAddressBox" class="pos-address-box mb-3" style="display:none;">
-                                                                            <div id="posAddressCard" class="pos-address-card" style="display:none;">
-                                                                                <div class="pos-address-card__head">
-                                                                                    <span class="pos-address-card__icon"><i class="fas fa-map-marker-alt"></i></span>
-                                                                                    <div>
-                                                                                        <strong id="posAddressCardTitle">{{ __('admin.Delivery Address') }}</strong>
-                                                                                        <div id="posAddressCardMeta" class="pos-address-card__meta"></div>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <p id="posAddressCardText" class="pos-address-card__text mb-0"></p>
-                                                                                <small class="text-muted d-block mt-2">{{ __('admin.You can edit address for this order only.') }}</small>
-                                                                            </div>
-                                                                            <div id="posAddressMissing" class="pos-address-card pos-address-card--warn" style="display:none;">
-                                                                                <strong>{{ __('admin.No address found') }}.</strong>
-                                                                                <span class="d-block small mt-1">{{ __('admin.Please enter full address for this order.') }}</span>
-                                                                            </div>
-                                                                            <p class="text-muted small mb-2 mt-2">{{ __('admin.This address is saved only for this order') }}</p>
-                                                                            <div id="posAddressForm">
-                                                                                <div class="form-group mb-2">
-                                                                                    <label>{{ __('admin.Country') }}</label>
-                                                                                    <input type="text" class="form-control" value="Bangladesh" readonly>
-                                                                                </div>
-                                                                                <div class="form-group mb-2">
-                                                                                    <label>{{ __('admin.Address') }} <span class="text-danger">*</span></label>
-                                                                                    <textarea name="address_line" id="posAddressLine" class="form-control" rows="3" placeholder="{{ __('admin.House, road, area, landmark') }}" required></textarea>
-                                                                                </div>
-                                                                                <div class="form-group mb-2">
-                                                                                    <label class="d-block">{{ __('admin.Delivery Area') }} <span class="text-danger">*</span></label>
-                                                                                    <div class="form-check form-check-inline">
-                                                                                        <input class="form-check-input" type="radio" name="delivery_area" id="posAreaInside" value="inside" checked>
-                                                                                        <label class="form-check-label" for="posAreaInside">{{ __('admin.Inside') }}</label>
-                                                                                    </div>
-                                                                                    <div class="form-check form-check-inline">
-                                                                                        <input class="form-check-input" type="radio" name="delivery_area" id="posAreaOutside" value="outside">
-                                                                                        <label class="form-check-label" for="posAreaOutside">{{ __('admin.Outside') }}</label>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-
-                                                                        <div class="form-group">
-                                                                            <label for="">{{__('admin.Add Shipping')}}</label>
-                                                                            <select name="shipping_id" id="" class="form-control select2" required>
-                                                                                <option value="" disabled selected>{{ __('admin.Select a shipping rule') }}</option>
-                                                                                @php
-                                                                                $shippingsCount = count($shippings);
-                                                                                @endphp
-                                                                                @foreach ($shippings as $key => $shipping)
-                                                                                    @if ($key < $shippingsCount - 0)
-                                                                                        <option value="{{ $shipping->id }}">{{ $shipping->shipping_rule }}</option>
-                                                                                    @endif
-                                                                                @endforeach
-                                                                            </select>
-                                                                        </div>
-
-                                                                        <div class="from-select-main">
-                                                                            <label for="">{{__('admin.Payment Method')}}</label>
-                                                                            <select name="payment_method" id="" class="form-control" required>
-                                                                                <option value="" disabled selected>{{ __('Select Payment Method') }}</option>
-                                                                                <option value="Cash">{{__('admin.Cash')}}</option>
-                                                                                <option value="Cash on Delivery">{{__('admin.Cash on Delivery')}}</option>
-                                                                            </select>
-                                                                        </div>
-
-                                                                        <div class="form-group">
-                                                                        <label for="">{{__('admin.Order')}}</label>
-                                                                        <select name="order_status" id="" class="form-control" required>
-                                                                            <option value="" disabled selected>{{ __('admin.Select Order Status') }}</option>
-                                                                            <option value="0">{{__('admin.Pending')}}</option>
-                                                                            <option value="1">{{__('admin.In Progress')}}</option>
-                                                                            <option value="2">{{__('admin.Delivered')}}</option>
-                                                                            <option value="3">{{__('admin.Completed')}}</option>
-                                                                            <option value="4">{{__('admin.Declined')}}</option>
-                                                                        </select>
-                                                                        </div>
-                                                                        <button type="submit"class="modal-from-btm-btn">{{ __('admin.Submit')}}</button>
-                                                                    </form>
-
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-dialog modal-dialog-six">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="exampleModalLabel01">
-                                                                <span class="icon">
-                                                                    <svg width="32" height="32" viewBox="0 0 32 32"
-                                                                        fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                        <path
-                                                                            d="M28.6667 24H24.6667C24.2987 24 24 23.7014 24 23.3334C24 22.9654 24.2987 22.6667 24.6667 22.6667H28.6667C29.7694 22.6667 30.6667 21.7694 30.6667 20.6667V11.3333C30.6667 10.2307 29.7694 9.33334 28.6667 9.33334H3.33334C2.23067 9.33334 1.33334 10.2307 1.33334 11.3333V20.6667C1.33334 21.7694 2.23067 22.6667 3.33334 22.6667H7.33334C7.70135 22.6667 8.00001 22.9654 8.00001 23.3334C8.00001 23.7014 7.70135 24 7.33334 24H3.33334C1.49467 24 0 22.504 0 20.6667V11.3333C0 9.496 1.49467 8 3.33334 8H28.6667C30.5054 8 32 9.496 32 11.3333V20.6667C32 22.504 30.5054 24 28.6667 24Z"
-                                                                            fill="black" />
-                                                                        <path
-                                                                            d="M19.3347 28.0003H11.3346C10.9666 28.0003 10.668 27.7017 10.668 27.3337C10.668 26.9657 10.9666 26.667 11.3346 26.667H19.3347C19.7027 26.667 20.0013 26.9657 20.0013 27.3337C20.0013 27.7017 19.7027 28.0003 19.3347 28.0003Z"
-                                                                            fill="black" />
-                                                                        <path
-                                                                            d="M19.3347 25.3333H11.3346C10.9666 25.3333 10.668 25.0347 10.668 24.6667C10.668 24.2987 10.9666 24 11.3346 24H19.3347C19.7027 24 20.0013 24.2987 20.0013 24.6667C20.0013 25.0347 19.7027 25.3333 19.3347 25.3333Z"
-                                                                            fill="black" />
-                                                                        <path
-                                                                            d="M14.0013 22.6663H11.3346C10.9666 22.6663 10.668 22.3677 10.668 21.9997C10.668 21.6317 10.9666 21.333 11.3346 21.333H14.0013C14.3693 21.333 14.668 21.6317 14.668 21.9997C14.668 22.3677 14.3693 22.6663 14.0013 22.6663Z"
-                                                                            fill="black" />
-                                                                        <path
-                                                                            d="M24.668 9.33335C24.3 9.33335 24.0013 9.03468 24.0013 8.66668V3.33334C24.0013 2.23067 23.104 1.33334 22.0013 1.33334H10.0013C8.89864 1.33334 8.0013 2.23067 8.0013 3.33334V8.66668C8.0013 9.03468 7.70264 9.33335 7.33464 9.33335C6.96664 9.33335 6.66797 9.03468 6.66797 8.66668V3.33334C6.66797 1.496 8.16264 0 10.0013 0H22.0013C23.84 0 25.3347 1.496 25.3347 3.33334V8.66668C25.3347 9.03468 25.036 9.33335 24.668 9.33335Z"
-                                                                            fill="black" />
-                                                                        <path
-                                                                            d="M22.0013 31.9997H10.0013C8.16264 31.9997 6.66797 30.5037 6.66797 28.6664V17.9997C6.66797 17.6317 6.96664 17.333 7.33464 17.333H24.668C25.036 17.333 25.3347 17.6317 25.3347 17.9997V28.6664C25.3347 30.5037 23.84 31.9997 22.0013 31.9997ZM8.0013 18.6663V28.6664C8.0013 29.769 8.89864 30.6664 10.0013 30.6664H22.0013C23.104 30.6664 24.0013 29.769 24.0013 28.6664V18.6663H8.0013Z"
-                                                                            fill="black" />
-                                                                    </svg>
-                                                                </span>
-                                                            </h5>
-
-
-                                                            <button type="button" class="close" data-dismiss="modal"
-                                                                aria-label="Close">
-                                                                <span aria-hidden="true">&times;</span>
-                                                            </button>
-                                                        </div>
-
-                                                    </div>
-                                                </div>
-                                            </div>
-
                                         </div>
                                     </div>
+                                </div>
                                 </div>
                             </div>
                         </div>
@@ -820,7 +643,127 @@
             </section>
 
 
+        </div>
     </section>
+</div>
+
+{{-- Payment / Place Order modal — outside cart so overlay covers full screen --}}
+<div class="modal fade pos-payment-modal" id="exampleModal-4" tabindex="-1" role="dialog"
+    aria-labelledby="exampleModalLabel-00" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered pos-payment-modal__dialog" role="document">
+        <div class="modal-content pos-payment-modal__content">
+            <div class="modal-header pos-payment-modal__header">
+                <h5 class="modal-title" id="exampleModalLabel-00">{{ __('admin.Payment') }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body pos-payment-modal__body">
+                <form action="{{ route('admin.pos.order.submit') }}" method="post" id="posPlaceOrderForm">
+                    @csrf
+                    <input type="hidden" name="sub_total" id="posOrderSubTotal" value="{{ $grandTotal ?? 0 }}">
+
+                    @if(($grandTotal ?? 0) == 0)
+                    <input type="hidden" name="cupon" id="posOrderCoupon" value="0">
+                    <input type="hidden" name="tax" id="posOrderTax" value="0">
+                    <input type="hidden" name="discount" id="posOrderDiscount" value="0">
+                    @else
+                    <input type="hidden" name="tax" id="posOrderTax" value="{{ $tax ?? 0 }}">
+                    <input type="hidden" name="cupon" id="posOrderCoupon" value="{{ $couponValue ?? '' }}">
+                    <input type="hidden" name="discount" id="posOrderDiscount" value="{{ $discount ?? 0 }}">
+                    @endif
+
+                    <div class="form-group">
+                        <label for="posOrderCustomerSelect">{{ __('admin.Select Customer') }}</label>
+                        <select name="customer_id" id="posOrderCustomerSelect" class="form-control select2" required>
+                            <option value="">{{ __('admin.Select a Customer') }}</option>
+                            @foreach ($customers as $customer)
+                                <option value="{{ $customer->id }}" {{ ($selected_customer->id ?? null) == $customer->id ? 'selected' : '' }}>
+                                    {{ $customer->name }}{{ $customer->phone ? ' ('.$customer->phone.')' : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div id="posCustomerAddressBox" class="pos-address-box mb-3" style="display:none;">
+                        <div id="posAddressCard" class="pos-address-card" style="display:none;">
+                            <div class="pos-address-card__head">
+                                <span class="pos-address-card__icon"><i class="fas fa-map-marker-alt"></i></span>
+                                <div>
+                                    <strong id="posAddressCardTitle">{{ __('admin.Delivery Address') }}</strong>
+                                    <div id="posAddressCardMeta" class="pos-address-card__meta"></div>
+                                </div>
+                            </div>
+                            <p id="posAddressCardText" class="pos-address-card__text mb-0"></p>
+                            <small class="text-muted d-block mt-2">{{ __('admin.You can edit address for this order only.') }}</small>
+                        </div>
+                        <div id="posAddressMissing" class="pos-address-card pos-address-card--warn" style="display:none;">
+                            <strong>{{ __('admin.No address found') }}.</strong>
+                            <span class="d-block small mt-1">{{ __('admin.Please enter full address for this order.') }}</span>
+                        </div>
+                        <p class="text-muted small mb-2 mt-2">{{ __('admin.This address is saved only for this order') }}</p>
+                        <div id="posAddressForm">
+                            <div class="form-group mb-2">
+                                <label>{{ __('admin.Country') }}</label>
+                                <input type="text" class="form-control" value="Bangladesh" readonly>
+                            </div>
+                            <div class="form-group mb-2">
+                                <label>{{ __('admin.Address') }} <span class="text-danger">*</span></label>
+                                <textarea name="address_line" id="posAddressLine" class="form-control" rows="3" placeholder="{{ __('admin.House, road, area, landmark') }}" required></textarea>
+                            </div>
+                            <div class="form-group mb-2">
+                                <label class="d-block">{{ __('admin.Delivery Area') }} <span class="text-danger">*</span></label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="delivery_area" id="posAreaInside" value="inside" checked>
+                                    <label class="form-check-label" for="posAreaInside">{{ __('admin.Inside') }}</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="delivery_area" id="posAreaOutside" value="outside">
+                                    <label class="form-check-label" for="posAreaOutside">{{ __('admin.Outside') }}</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="posOrderShippingSelect">{{ __('admin.Add Shipping') }}</label>
+                        <select name="shipping_id" id="posOrderShippingSelect" class="form-control select2" required>
+                            <option value="" disabled selected>{{ __('admin.Select a shipping rule') }}</option>
+                            @foreach ($shippings as $shipping)
+                                <option value="{{ $shipping->id }}">{{ $shipping->shipping_rule }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="posOrderPaymentSelect">{{ __('admin.Payment Method') }}</label>
+                        <select name="payment_method" id="posOrderPaymentSelect" class="form-control" required>
+                            <option value="" disabled selected>{{ __('Select Payment Method') }}</option>
+                            <option value="Cash">{{ __('admin.Cash') }}</option>
+                            <option value="Cash on Delivery">{{ __('admin.Cash on Delivery') }}</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="posOrderStatusSelect">{{ __('admin.Order') }}</label>
+                        <select name="order_status" id="posOrderStatusSelect" class="form-control" required>
+                            <option value="" disabled selected>{{ __('admin.Select Order Status') }}</option>
+                            <option value="0">{{ __('admin.Pending') }}</option>
+                            <option value="1">{{ __('admin.In Progress') }}</option>
+                            <option value="2">{{ __('admin.Delivered') }}</option>
+                            <option value="3">{{ __('admin.Completed') }}</option>
+                            <option value="4">{{ __('admin.Declined') }}</option>
+                        </select>
+                    </div>
+
+                    <div class="pos-payment-modal__footer">
+                        <button type="button" class="btn btn-light" data-dismiss="modal">{{ __('admin.Cancel') }}</button>
+                        <button type="submit" class="btn btn-primary pos-payment-modal__submit">{{ __('admin.Submit') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- Add Customer modal — outside cart panel so overlay covers full screen --}}
@@ -1031,6 +974,21 @@
 
         $('#exampleModalLong-1').on('show.bs.modal', function () {
             $(this).appendTo('body');
+        });
+
+        $('#exampleModal-4').on('show.bs.modal', function () {
+            $(this).appendTo('body');
+            var $modal = $(this);
+            $modal.find('.select2').each(function () {
+                var $el = $(this);
+                if ($el.hasClass('select2-hidden-accessible')) {
+                    $el.select2('destroy');
+                }
+                $el.select2({
+                    width: '100%',
+                    dropdownParent: $modal
+                });
+            });
         });
 
         $('#exampleModal-4').on('shown.bs.modal', function () {

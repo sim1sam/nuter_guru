@@ -15,23 +15,68 @@
     --pos-font: "Roboto", system-ui, sans-serif;
 }
 
+/* Full-screen POS shell */
+html.pos-fullscreen,
+html.pos-fullscreen body {
+    height: 100%;
+    overflow: hidden;
+}
+
+html.pos-fullscreen body .main-footer {
+    display: none !important;
+}
+
+html.pos-fullscreen body .pos-main-content.main-content {
+    padding-top: 70px;
+    padding-bottom: 0 !important;
+    padding-right: 0 !important;
+    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--pos-bg, #f4f2f8);
+}
+
+html.pos-fullscreen body.sidebar-mini .pos-main-content.main-content {
+    padding-left: 90px;
+}
+
+.pos-wrapper-section {
+    height: calc(100vh - 70px);
+    max-height: calc(100vh - 70px);
+    display: flex;
+    flex-direction: column;
+    margin: 0 !important;
+    overflow: hidden;
+}
+
+.pos-wrapper-section > .section-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 8px 0 0 0 !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.pos-wrapper-section .pos-fullscreen-shell,
+.pos-wrapper-section .pos-fullscreen-shell > .container-fluid {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 .pos-wrapper-section .section-header-breadcrumb {
     display: none;
 }
 
 .pos-wrapper-section .section-header {
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
-
-.pos-wrapper-section .section-header h1 {
-    font-size: 1.35rem;
-    font-weight: 600;
-    color: var(--pos-text);
+    display: none;
 }
 
 .pos-wrapper-section .section-body {
-    padding-top: 0.75rem;
+    padding-top: 0;
 }
 
 .pos-wrapper-section .container-fluid {
@@ -42,23 +87,94 @@
 /* Layout shell */
 .pos-wrapper-section .pos-layout-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0;
-    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: 12px;
+    align-items: stretch;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    margin: 0 !important;
+    padding-left: 12px;
 }
 
 .pos-wrapper-section .pos-products-column {
-    flex: 1 1 0;
+    flex: 1 1 0 !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    flex-basis: 0 !important;
+    width: auto !important;
+    max-width: none !important;
     min-width: 0;
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--pos-radius);
 }
 
 .pos-wrapper-section .pos-cart-column {
-    flex: 0 0 380px;
-    max-width: 380px;
-    position: sticky;
-    top: 80px;
-    align-self: flex-start;
+    flex: 0 0 38% !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: 38% !important;
+    width: 38% !important;
+    max-width: 38% !important;
+    min-width: 420px;
+    height: 100%;
+    max-height: 100%;
+    position: relative;
+    top: auto;
+    align-self: stretch;
     z-index: 5;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.pos-wrapper-section .pos-products-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pos-wrapper-section .pos-cart-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding: 0 !important;
+}
+
+.pos-wrapper-section .pos-cart-top {
+    flex-shrink: 0;
+}
+
+.pos-wrapper-section .pos-cart-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.pos-wrapper-section .pos-cart-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pos-wrapper-section .pos-cart-actions {
+    flex-shrink: 0;
+    margin-top: auto;
+    padding-top: 10px;
 }
 
 /* Product panel */
@@ -78,6 +194,7 @@
     padding: 16px 20px;
     border-bottom: 1px solid var(--pos-border);
     background: linear-gradient(180deg, #fff 0%, #faf8fc 100%);
+    flex-shrink: 0;
 }
 
 .pos-wrapper-section .pos-toolbar__left {
@@ -387,12 +504,20 @@
 /* Cart panel */
 .pos-wrapper-section .billing-main-box {
     width: 100% !important;
-    max-width: 100%;
-    border-radius: var(--pos-radius);
+    max-width: 100% !important;
+    height: 100%;
+    margin: 0 !important;
+    border-radius: var(--pos-radius) 0 0 0;
     border: 1px solid var(--pos-border);
+    border-right: 0;
+    border-bottom: 0;
     background: var(--pos-surface);
-    box-shadow: var(--pos-shadow);
-    overflow: visible;
+    box-shadow: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .pos-wrapper-section .billing-section-taitel {
@@ -908,6 +1033,101 @@
     font-weight: 600;
 }
 
+/* Payment / Place Order modal */
+.pos-payment-modal {
+    z-index: 1055;
+}
+
+.pos-payment-modal__dialog {
+    max-width: 560px !important;
+    margin: 1rem auto;
+}
+
+.pos-payment-modal__content {
+    border: 0;
+    border-radius: 16px;
+    box-shadow: 0 24px 48px rgba(45, 42, 58, 0.18);
+    overflow: hidden;
+}
+
+.pos-payment-modal__header {
+    background: linear-gradient(135deg, var(--pos-primary) 0%, var(--pos-primary-dark) 100%);
+    border: 0;
+    padding: 16px 20px;
+}
+
+.pos-payment-modal__header .modal-title {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.pos-payment-modal__header .close {
+    color: #fff;
+    opacity: 0.85;
+    text-shadow: none;
+    font-size: 1.5rem;
+}
+
+.pos-payment-modal__header .close:hover {
+    opacity: 1;
+    color: #fff;
+}
+
+.pos-payment-modal__body {
+    padding: 20px !important;
+    background: #fff;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+}
+
+.pos-payment-modal__body .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--pos-text);
+    margin-bottom: 6px;
+}
+
+.pos-payment-modal__body .form-control {
+    border-radius: 10px;
+    border-color: var(--pos-border);
+    min-height: 44px;
+    font-size: 14px;
+}
+
+.pos-payment-modal__body .form-control:focus {
+    border-color: var(--pos-primary);
+    box-shadow: 0 0 0 3px var(--pos-primary-soft);
+}
+
+.pos-payment-modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--pos-border);
+}
+
+.pos-payment-modal__submit {
+    background: var(--pos-primary) !important;
+    border-color: var(--pos-primary) !important;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 10px 22px;
+}
+
+.pos-payment-modal__submit:hover {
+    background: var(--pos-primary-dark) !important;
+    border-color: var(--pos-primary-dark) !important;
+}
+
+.pos-payment-modal__footer .btn-light {
+    border-radius: 10px;
+    border-color: var(--pos-border);
+    font-weight: 600;
+}
+
 /* Modals — light touch */
 .pos-wrapper-section .modal-from-btm-btn,
 .pos-wrapper-section ~ .modal .modal-from-btm-btn {
@@ -918,15 +1138,53 @@
 
 /* Responsive */
 @media (max-width: 1199px) {
+    html.pos-fullscreen,
+    html.pos-fullscreen body {
+        height: auto;
+        overflow: auto;
+    }
+
+    html.pos-fullscreen body .pos-main-content.main-content {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+
+    .pos-wrapper-section {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+
     .pos-wrapper-section .pos-cart-column {
-        flex: 0 0 100%;
-        max-width: 100%;
+        flex: 0 0 100% !important;
+        flex-basis: 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        min-width: 0;
+        height: auto;
+        max-height: none;
         position: static;
-        margin-top: 20px;
+        margin-top: 12px;
+    }
+
+    .pos-wrapper-section .pos-products-column {
+        height: auto;
+        max-height: none;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    .pos-wrapper-section .pos-products-scroll,
+    .pos-wrapper-section .pos-cart-scroll {
+        overflow: visible;
     }
 
     .pos-wrapper-section .pos-layout-row {
         flex-direction: column;
+        flex-wrap: wrap;
+        height: auto;
     }
 }
 
