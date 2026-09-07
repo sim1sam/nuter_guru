@@ -175,6 +175,8 @@ class PaymentMethodController extends Controller
         $bank = BankPayment::first();
         $bank->account_info = $request->account_info;
         $bank->status = $request->status ? 1 : 0;
+        $bank->manual_payment_status = $request->manual_payment_status ? 1 : 0;
+        $bank->manual_payment_info = $request->manual_payment_info;
         $bank->save();
 
         $notification=trans('admin_validation.Update Successfully');

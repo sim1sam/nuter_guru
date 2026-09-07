@@ -15,6 +15,11 @@
           </div>
 
           <div class="section-body">
+            <p class="text-muted mb-3">
+                For KG products: <strong>first 1 KG = full rate</strong>; extra weight is proportional.
+                Example Inside ৳70: 0.5 KG → ৳70; <strong>1.5 KG → ৳70+৳35 = ৳105</strong>; 2 KG → ৳140.
+                Outside ৳100: 1.5 KG → ৳150.
+            </p>
             <a href="javascript:;" data-toggle="modal" data-target="#modelId" class="btn btn-primary"><i class="fas fa-plus"></i> {{__('admin.Add New')}}</a>
 
             <a href="{{ route('admin.shipping-import-page') }}" class="btn btn-success"><i class="fas fa-plus"></i> {{__('admin.Bulk Upload')}}</a>
@@ -48,11 +53,7 @@
                                                     {{ $setting->currency_icon. $shipping->condition_from }} - {{ $setting->currency_icon. $shipping->condition_to }}
                                                 @endif
                                             @elseif($shipping->type == 'base_on_weight')
-                                                @if ($shipping->condition_to == -1)
-                                                {{  $shipping->condition_from.'g' }} - {{__('admin.Unlimited')}}
-                                                @else
-                                                    {{  $shipping->condition_from.'g' }} - {{ $shipping->condition_to.'g' }}
-                                                @endif
+                                                {{__('admin.Per KG rate')}} (× cart KG)
                                             @elseif($shipping->type == 'base_on_qty')
                                                 @if ($shipping->condition_to == -1)
                                                     {{  $shipping->condition_from.'qty' }} - {{__('admin.Unlimited')}}
@@ -63,7 +64,11 @@
                                             @endif
                                         </td>
                                         <td>
-                                            {{ $setting->currency_icon }}{{ $shipping->shipping_fee }}
+                                            @if($shipping->type == 'base_on_weight')
+                                                {{ $setting->currency_icon }}{{ $shipping->shipping_fee }} / KG
+                                            @else
+                                                {{ $setting->currency_icon }}{{ $shipping->shipping_fee }}
+                                            @endif
 
                                         </td>
                                         <td>
@@ -124,35 +129,37 @@
                                 <div class="form-group col-12">
                                     <label>{{__('admin.Type')}} <span class="text-danger">*</span></label>
                                     <select name="type" id="type_id" class="form-control">
+                                        <option value="base_on_weight">{{__('admin.Based on product weight (per KG)')}}</option>
                                         <option value="base_on_price">{{__('admin.Based on product price')}}</option>
-                                        <option value="base_on_weight">{{__('admin.Based on product weight (g)')}}</option>
                                         <option value="base_on_qty">{{__('admin.Based on product quantity')}}</option>
-
                                     </select>
+                                    <small class="text-muted">For Inside/Outside Dhaka KG shipping, choose <strong>per KG</strong>. Fee field = rate per 1 KG.</small>
                                 </div>
 
                                 <div class="form-group col-6">
                                     <label>{{__('admin.Condition From')}} <span class="text-danger">*</span></label>
                                     <div class="input-group mb-3">
-                                        <span class="input-group-text type_class"> {{ $setting->currency_icon }}</span>
-                                        <input type="text" class="form-control" name="condition_from" autocomplete="off">
+                                        <span class="input-group-text type_class">g</span>
+                                        <input type="text" class="form-control" name="condition_from" autocomplete="off" value="0">
                                     </div>
+                                    <small class="text-muted weight-hint">For per KG, use 0 (all weights).</small>
                                 </div>
 
                                 <div class="form-group col-6">
-                                    <label>{{__('admin.Condition To')}} <span class="text-danger">*Unlimitd Quantity Use It = -1</span></label>
+                                    <label>{{__('admin.Condition To')}} <span class="text-danger">*</span> <small>(-1 = unlimited)</small></label>
                                     <div class="input-group mb-3">
-                                        <span class="input-group-text type_class"> {{ $setting->currency_icon }}</span>
-                                        <input type="text" class="form-control" name="condition_to" autocomplete="off">
+                                        <span class="input-group-text type_class">g</span>
+                                        <input type="text" class="form-control" name="condition_to" autocomplete="off" value="-1">
                                     </div>
                                 </div>
 
                                 <div class="form-group col-12">
-                                    <label>{{__('admin.Shipping Fee')}} <span class="text-danger">*</span></label>
+                                    <label id="shipping_fee_label">{{__('admin.Shipping Fee')}} (৳ / KG) <span class="text-danger">*</span></label>
                                     <div class="input-group mb-3">
                                         <span class="input-group-text"> {{ $setting->currency_icon }}</span>
-                                        <input type="text" class="form-control" name="shipping_fee" autocomplete="off">
+                                        <input type="text" class="form-control" name="shipping_fee" autocomplete="off" placeholder="e.g. 70">
                                     </div>
+                                    <small class="text-muted">Example: 70 → up to 1 KG = ৳70; 1.5 KG = ৳105 (70+35)</small>
                                 </div>
                             </div>
                             <div class="row">
@@ -213,14 +220,18 @@
         $("#type_id").on("change", function(){
             if($("#type_id").val() == 'base_on_price'){
                 $(".type_class").html('{{ $setting->currency_icon }}');
+                $("#shipping_fee_label").html("{{__('admin.Shipping Fee')}} <span class=\"text-danger\">*</span>");
             }else if($("#type_id").val() == 'base_on_weight'){
                 $(".type_class").html('g');
+                $("#shipping_fee_label").html("{{__('admin.Shipping Fee')}} (৳ / KG) <span class=\"text-danger\">*</span>");
             }else if($("#type_id").val() == 'base_on_qty'){
                 $(".type_class").html('qty');
+                $("#shipping_fee_label").html("{{__('admin.Shipping Fee')}} <span class=\"text-danger\">*</span>");
             }
 
 
         })
+        $("#type_id").trigger('change');
     });
 })(jQuery);
 

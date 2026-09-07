@@ -9,7 +9,7 @@
             @if ($errors->any())
                 {{-- validation toasts are shown from layout --}}
             @endif
-            <form id="checkout-form" action="{{ route('checkout.place-order') }}" method="POST" novalidate>
+            <form id="checkout-form" action="{{ route('checkout.place-order') }}" method="POST" enctype="multipart/form-data" novalidate>
                 @csrf
                 
                 <!-- Billing Information -->
@@ -218,23 +218,31 @@
                     <div class="card-header">
                         <h5 class="mb-0">{{ __('Shipping Method') }}</h5>
                     </div>
-                    <div class="card-body shipping-methods">
+                    <div class="card-body">
+                    <div class="shipping-methods">
                         @if($shippingMethods && $shippingMethods->count() > 0)
                             @foreach($shippingMethods as $index => $shipping)
+                            @php
+                                $rate = $shipping->rate_per_kg ?? $shipping->getRawOriginal('shipping_fee') ?? $shipping->shipping_fee;
+                                $fee = $shipping->resolved_fee ?? $shipping->cost ?? $shipping->shipping_fee;
+                            @endphp
                             <div class="form-check mb-3">
                                 <input class="form-check-input" type="radio" name="shipping_method" id="shipping_{{ $shipping->id }}" 
                                        value="{{ $shipping->id }}" {{ $index == 0 ? 'checked' : '' }}
-                                       data-cost="{{ $shipping->shipping_fee }}">
+                                       data-cost="{{ $fee }}"
+                                       data-rate="{{ $rate }}">
                                 <label class="form-check-label w-100" for="shipping_{{ $shipping->id }}">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <strong>{{ $shipping->shipping_rule }}</strong>
-                                            <small class="d-block text-muted">{{ $shipping->shipping_fee > 0 ? __('Delivery time: 3-5 business days') : __('Free shipping') }}</small>
+                                            <small class="d-block text-muted">
+                                                {{ $fee > 0 ? __('Delivery time: 3-5 business days') : __('Free shipping') }}
+                                            </small>
                                         </div>
                                         <div class="text-end">
                                             <strong class="text-success">
-                                                @if($shipping->shipping_fee > 0)
-                                                    {{ format_currency($shipping->shipping_fee) }}
+                                                @if($fee > 0)
+                                                    {{ format_currency($fee) }}
                                                 @else
                                                     {{ __('Free') }}
                                                 @endif
@@ -250,6 +258,7 @@
                                 {{ __('No shipping methods available. Please contact support.') }}
                             </div>
                         @endif
+                    </div>
                     </div>
                 </div>
 
@@ -324,6 +333,22 @@
                             </div>
                             @endif
 
+                            {{-- Manual bKash / Nagad --}}
+                            @if(isset($bank_payment_setting) && (int)($bank_payment_setting->manual_payment_status ?? 0) === 1)
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="payment_method" id="manual_payment" value="manual_payment">
+                                <label class="form-check-label w-100" for="manual_payment">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-mobile-alt me-3 text-danger" style="font-size: 1.5rem;"></i>
+                                        <div>
+                                            <strong>ম্যানুয়াল পেমেন্ট (bKash/Nagad)</strong>
+                                            <small class="d-block text-muted">স্ক্রিনশট আপলোড করে পেমেন্ট নিশ্চিত করুন</small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            @endif
+
                             {{-- SSLCommerz --}}
                             @if(isset($sslcommerz_setting) && $sslcommerz_setting->status == 1)
                             <div class="form-check mb-3">
@@ -368,6 +393,43 @@
                 <!-- Hidden field for same_as_billing -->
                 <input type="hidden" name="same_as_billing" id="same_as_billing_hidden" value="1">
             </form>
+
+            {{-- Manual payment (bKash/Nagad) modal --}}
+            <div class="modal fade" id="manualPaymentModal" tabindex="-1" aria-labelledby="manualPaymentModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="manualPaymentModalLabel">ম্যানুয়াল পেমেন্ট (bKash/Nagad)</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info py-2">
+                                <strong>অর্ডার অ্যামাউন্ট:</strong>
+                                <span id="manual-payment-amount">{{ currency_icon() }}0.00</span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">bKash / Nagad নম্বর</label>
+                                <div class="border rounded p-2 bg-light small" id="manual-payment-info" style="white-space: pre-line;">
+                                    {{ $bank_payment_setting->manual_payment_info ?? 'bKash / Nagad নম্বর অ্যাডমিন সেটিংস থেকে সেট করুন' }}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="payment_screenshot" class="form-label">পেমেন্ট স্ক্রিনশট <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" id="payment_screenshot" name="payment_screenshot" form="checkout-form" accept="image/jpeg,image/png,image/jpg,image/webp">
+                                <div class="form-text">JPG/PNG, সর্বোচ্চ 5MB</div>
+                            </div>
+                            <div class="mb-0">
+                                <label for="manual_transaction_no" class="form-label">ট্রানজেকশন নম্বর <span class="text-muted">(ঐচ্ছিক)</span></label>
+                                <input type="text" class="form-control" id="manual_transaction_no" name="manual_transaction_no" form="checkout-form" placeholder="TrxID">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">বাতিল</button>
+                            <button type="button" class="btn btn-primary" id="manual-payment-submit-btn">সাবমিট করুন</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="col-lg-4">
@@ -904,9 +966,12 @@ class Checkout {
     constructor() {
         this.cart = [];
         this.shippingMethods = [];
+        this.cartWeightKg = {{ (float) ($cartWeightKg ?? 0) }};
         this.appliedCoupon = null;
         this.userData = null; // Store user data without auto-populating
         this.currencyIcon = STORE_CURRENCY;
+        this.manualPaymentReady = false;
+        this.manualPaymentInfo = @json($bank_payment_setting->manual_payment_info ?? '');
         this.init();
     }
 
@@ -973,6 +1038,27 @@ class Checkout {
         });
 
         const checkoutForm = document.getElementById('checkout-form');
+
+        const openManualPaymentModal = () => {
+            const amountEl = document.getElementById('manual-payment-amount');
+            const totalEl = document.getElementById('total');
+            if (amountEl && totalEl) {
+                amountEl.textContent = totalEl.textContent;
+            }
+            const infoEl = document.getElementById('manual-payment-info');
+            if (infoEl && this.manualPaymentInfo) {
+                infoEl.textContent = this.manualPaymentInfo;
+            }
+            const modalEl = document.getElementById('manualPaymentModal');
+            if (window.bootstrap && bootstrap.Modal) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            } else if (window.jQuery) {
+                jQuery(modalEl).modal('show');
+            } else {
+                modalEl.style.display = 'block';
+            }
+        };
+
         if (checkoutForm) {
             checkoutForm.addEventListener('submit', (e) => {
                 ensureBillingFieldsFromSelection();
@@ -1002,6 +1088,12 @@ class Checkout {
                     return false;
                 }
 
+                if (payment && payment.value === 'manual_payment' && !this.manualPaymentReady) {
+                    e.preventDefault();
+                    openManualPaymentModal();
+                    return false;
+                }
+
                 const btn = document.getElementById('place-order-btn');
                 if (btn) {
                     btn.disabled = true;
@@ -1009,6 +1101,33 @@ class Checkout {
                 }
             });
         }
+
+        const manualSubmitBtn = document.getElementById('manual-payment-submit-btn');
+        if (manualSubmitBtn && checkoutForm) {
+            manualSubmitBtn.addEventListener('click', () => {
+                const shot = document.getElementById('payment_screenshot');
+                if (!shot || !shot.files || !shot.files.length) {
+                    this.showNotification('পেমেন্ট স্ক্রিনশট আপলোড করুন', 'error');
+                    return;
+                }
+                this.manualPaymentReady = true;
+                const modalEl = document.getElementById('manualPaymentModal');
+                if (window.bootstrap && bootstrap.Modal) {
+                    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                } else if (window.jQuery) {
+                    jQuery(modalEl).modal('hide');
+                }
+                if (typeof checkoutForm.requestSubmit === 'function') {
+                    checkoutForm.requestSubmit();
+                } else {
+                    checkoutForm.submit();
+                }
+            });
+        }
+
+        document.querySelectorAll('input[name="payment_method"]').forEach((radio) => {
+            radio.addEventListener('change', () => { this.manualPaymentReady = false; });
+        });
 
         const placeOrderBtn = document.getElementById('place-order-btn');
         if (placeOrderBtn && checkoutForm) {
@@ -1068,6 +1187,7 @@ class Checkout {
             if (data.success) {
                 this.cart = data.cart_items;
                 this.shippingMethods = data.shipping_methods;
+                this.cartWeightKg = parseFloat(data.cart_weight_kg || 0);
                 this.paymentGateways = {
                     cash_on_delivery: { status: (data.bankPaymentInfo && data.bankPaymentInfo.cash_on_delivery_status) || 0 },
                     stripe: data.stripePaymentInfo,
@@ -1078,8 +1198,13 @@ class Checkout {
                     instamojo: data.instamojo,
                     paystack: data.paystack,
                     sslcommerz: data.sslcommerz,
-                    bank_payment: data.bankPaymentInfo
+                    bank_payment: data.bankPaymentInfo,
+                    manual_payment: {
+                        status: (data.bankPaymentInfo && data.bankPaymentInfo.manual_payment_status) || 0,
+                        info: (data.bankPaymentInfo && data.bankPaymentInfo.manual_payment_info) || ''
+                    }
                 };
+                this.manualPaymentInfo = (data.bankPaymentInfo && data.bankPaymentInfo.manual_payment_info) || '';
                 console.log('Payment gateways:', this.paymentGateways);
                 this.loadOrderSummary();
                 this.loadShippingMethods();
@@ -1210,13 +1335,17 @@ class Checkout {
     
     loadShippingMethods() {
         const shippingContainer = document.querySelector('.shipping-methods');
+        const weightKg = parseFloat(this.cartWeightKg || 0);
+
         if (shippingContainer && this.shippingMethods.length > 0) {
             shippingContainer.innerHTML = this.shippingMethods.map((method, index) => {
+                const rate = parseFloat(method.rate_per_kg != null ? method.rate_per_kg : method.shipping_fee) || 0;
+                const fee = parseFloat(method.resolved_fee != null ? method.resolved_fee : (method.cost != null ? method.cost : method.shipping_fee)) || 0;
                 return '<div class="form-check mb-2">' +
-                    '<input class="form-check-input" type="radio" name="shipping_method" id="shipping_' + method.id + '" value="' + method.id + '" ' + (index === 0 ? 'checked' : '') + '>' +
+                    '<input class="form-check-input" type="radio" name="shipping_method" id="shipping_' + method.id + '" value="' + method.id + '" data-cost="' + fee + '" data-rate="' + rate + '" ' + (index === 0 ? 'checked' : '') + '>' +
                     '<label class="form-check-label d-flex justify-content-between" for="shipping_' + method.id + '">' +
                         '<span>' + method.shipping_rule + '</span>' +
-                        '<span class="fw-bold">' + this.formatMoney(parseFloat(method.shipping_fee || 0)) + '</span>' +
+                        '<span class="fw-bold">' + this.formatMoney(fee) + '</span>' +
                     '</label>' +
                 '</div>';
             }).join('');
@@ -1372,6 +1501,18 @@ class Checkout {
                     '</label>' +
                 '</div>';
             }
+
+            // Manual bKash / Nagad
+            if (this.paymentGateways.manual_payment && this.paymentGateways.manual_payment.status == 1) {
+                if (!firstActiveMethod) firstActiveMethod = 'manual_payment';
+                paymentMethodsHtml += '<div class="form-check mb-3">' +
+                    '<input class="form-check-input" type="radio" name="payment_method" id="manual_payment" value="manual_payment" ' + (firstActiveMethod === 'manual_payment' ? 'checked' : '') + '>' +
+                    '<label class="form-check-label" for="manual_payment">' +
+                        '<i class="fas fa-mobile-alt me-2 text-danger"></i>ম্যানুয়াল পেমেন্ট (bKash/Nagad)' +
+                        '<small class="d-block text-muted mt-1">স্ক্রিনশট পাঠিয়ে পেমেন্ট করুন</small>' +
+                    '</label>' +
+                '</div>';
+            }
             
             paymentMethodsHtml += '</div>';
         
@@ -1410,6 +1551,7 @@ class Checkout {
         // Re-bind payment method change events
         document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
             radio.addEventListener('change', () => {
+                this.manualPaymentReady = false;
                 this.togglePaymentForms();
             });
         });
@@ -1420,7 +1562,12 @@ class Checkout {
         const selectedShippingId = selectedShippingElement ? selectedShippingElement.value : null;
         if (selectedShippingId) {
             const selectedShipping = this.shippingMethods.find(function(method) { return method.id == selectedShippingId; });
-            const shippingCost = selectedShipping ? parseFloat(selectedShipping.shipping_fee) : 0;
+            let shippingCost = 0;
+            if (selectedShippingElement && selectedShippingElement.dataset.cost) {
+                shippingCost = parseFloat(selectedShippingElement.dataset.cost) || 0;
+            } else if (selectedShipping) {
+                shippingCost = parseFloat(selectedShipping.resolved_fee != null ? selectedShipping.resolved_fee : (selectedShipping.cost != null ? selectedShipping.cost : selectedShipping.shipping_fee)) || 0;
+            }
             
             document.getElementById('shipping-cost').textContent = this.formatMoney(shippingCost);
             this.updateOrderSummary();
@@ -1459,7 +1606,12 @@ class Checkout {
         const selectedShippingElement = document.querySelector('input[name="shipping_method"]:checked');
         const selectedShippingId = selectedShippingElement ? selectedShippingElement.value : null;
         const selectedShipping = this.shippingMethods.find(method => method.id == selectedShippingId);
-        const shipping = selectedShipping ? parseFloat(selectedShipping.shipping_fee) || 0 : 0;
+        let shipping = 0;
+        if (selectedShippingElement && selectedShippingElement.dataset.cost) {
+            shipping = parseFloat(selectedShippingElement.dataset.cost) || 0;
+        } else if (selectedShipping) {
+            shipping = parseFloat(selectedShipping.resolved_fee != null ? selectedShipping.resolved_fee : (selectedShipping.cost != null ? selectedShipping.cost : selectedShipping.shipping_fee)) || 0;
+        }
         
         const couponDiscount = this.appliedCoupon ? this.calculateCouponDiscount(subtotal) : 0;
         const tax = 0; // No tax calculation

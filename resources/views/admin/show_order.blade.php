@@ -180,7 +180,16 @@
                 @else
                   <span class="inv-badge inv-badge-danger">{{__('admin.Pending')}}</span>
                 @endif<br>
-                @if($order->transection_id){{__('admin.Transaction')}}: {{ $order->transection_id }}@endif
+                @if($order->transection_id){{__('admin.Transaction')}}: {{ $order->transection_id }}<br>@endif
+                @if($order->payment_screenshot)
+                  Payment Screenshot:<br>
+                  <a href="{{ asset($order->payment_screenshot) }}" target="_blank">
+                    <img src="{{ asset($order->payment_screenshot) }}" alt="Payment proof" style="max-width:220px;max-height:220px;border:1px solid #ddd;border-radius:6px;margin-top:6px;">
+                  </a>
+                  @if($order->payment_status == 0)
+                    <br><small class="text-warning">Review screenshot, then set Payment = Success to approve.</small>
+                  @endif
+                @endif
               </p>
             </div>
             <div class="inv-card">

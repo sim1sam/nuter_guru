@@ -286,6 +286,8 @@
   'Type' => 'Type',
   'Based on product price' => 'Based on product price',
   'Based on product weight (g)' => 'Based on product weight (g)',
+  'Based on product weight (per KG)' => 'Based on product weight (per KG)',
+  'Per KG rate' => 'Per KG rate',
   'Based on product quantity' => 'Based on product quantity',
   'Condition From' => 'Condition From',
   'Condition To' => 'Condition To',

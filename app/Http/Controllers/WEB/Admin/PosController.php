@@ -32,6 +32,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use App\Mail\OrderSuccessfully;
 use App\Mail\UserRegistrationFromAdmin;
+use App\Services\ShippingCalculationService;
 use DB;
 
 
@@ -531,9 +532,8 @@ class PosController extends Controller
             $paymetn_status = 0;
         }
 
-        $cartProducts = ShoppingCart::with("product", "variants.variantItem")
+        $cartProducts = ShoppingCart::with("product", "variants.variantItem", "weightVariant")
         ->where("user_id", $admin_id)
-        ->select("id", "product_id", "qty")
         ->get();
 
     if ($cartProducts->count() == 0) {
@@ -557,11 +557,9 @@ class PosController extends Controller
             $notification = array('messege'=>$notification,'alert-type'=>'error');
             return redirect()->back()->with($notification);
         }
-        if($shipping->shipping_fee == 0){
-            $shipping_fee = 0;
-        }else{
-            $shipping_fee = $shipping->shipping_fee;
-        }
+        $shippingService = app(ShippingCalculationService::class);
+        $resolved = $shippingService->resolveFee($shipping, $cartProducts);
+        $shipping_fee = $resolved !== null ? $resolved : 0;
 
         $total_price = ($sub_total - $discount) + $shipping_fee + $tax;
 

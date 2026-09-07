@@ -18,6 +18,7 @@ class Order extends Model
         'payment_status',
         'payment_approval_date',
         'transection_id',
+        'payment_screenshot',
         'shipping_method',
         'shipping_cost',
         'coupon_coast',

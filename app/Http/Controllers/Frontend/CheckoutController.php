@@ -41,6 +41,8 @@ use App\Models\ShoppingCartVariant;
 use App\Models\FlashSaleProduct;
 use App\Models\FlashSale;
 use App\Models\SmsTemplate;
+use App\Services\ShippingCalculationService;
+use Intervention\Image\Laravel\Facades\Image;
 use App\Models\TwilioSms;
 use Cart;
 use Str;
@@ -64,6 +66,7 @@ class CheckoutController extends Controller
     public function calculateCheckoutTotals(Request $request)
     {
         $user = Auth::user();
+        $shippingService = app(ShippingCalculationService::class);
         
         // Get cart items and calculate totals
         $cartItems = [];
@@ -72,12 +75,12 @@ class CheckoutController extends Controller
         
         if ($user) {
             // Get cart items from database for authenticated users
-            $cartItems = ShoppingCart::with(['product'])
+            $cartItems = ShoppingCart::with(['product', 'weightVariant', 'variants.variantItem'])
                 ->where('user_id', $user->id)
                 ->get();
                 
             foreach ($cartItems as $item) {
-                $price = $item->product->price ?? 0;
+                $price = product_unit_price($item->product, $item->variants);
                 $subtotal += $price * $item->qty;
                 $totalQty += $item->qty;
             }
@@ -87,19 +90,21 @@ class CheckoutController extends Controller
             foreach ($sessionCart as $item) {
                 $product = Product::find($item['product_id']);
                 if ($product) {
-                    $price = $product->price;
                     $quantity = $item['quantity'] ?? 1;
+                    $price = product_unit_price($product, $item['variants'] ?? []);
                     $subtotal += $price * $quantity;
                     $totalQty += $quantity;
+                    $cartItems[] = array_merge($item, ['product' => $product, 'qty' => $quantity]);
                 }
             }
         }
         
-        // Calculate shipping fee
+        // Calculate shipping fee (weight slabs for KG carts)
         $shipping_fee = 0;
         if ($request->has('shipping_method')) {
             $shipping = Shipping::find($request->shipping_method);
-            $shipping_fee = $shipping ? $shipping->shipping_fee : 0;
+            $resolved = $shippingService->resolveFee($shipping, $cartItems);
+            $shipping_fee = $resolved !== null ? $resolved : 0;
         }
         
         // Calculate coupon discount
@@ -120,7 +125,9 @@ class CheckoutController extends Controller
             'total_amount' => $total_amount,
             'total_qty' => $totalQty,
             'shipping_fee' => $shipping_fee,
-            'coupon_discount' => $coupon_discount
+            'coupon_discount' => $coupon_discount,
+            'cart_weight_kg' => $shippingService->cartWeightKg($cartItems),
+            'cart_weight_grams' => $shippingService->cartWeightGrams($cartItems),
         ];
     }
 
@@ -132,12 +139,18 @@ class CheckoutController extends Controller
             }
 
             $user = Auth::user();
-            
-            // Get shipping methods
-            $shippingMethods = Shipping::all();
-            // Add cost property for frontend compatibility
-            $shippingMethods->each(function($shipping) {
-                $shipping->cost = $shipping->shipping_fee;
+            $shippingService = app(ShippingCalculationService::class);
+            $cartCollection = $this->getCartItems($user);
+
+            // Get shipping methods (weight-aware when KG cart)
+            $shippingMethods = $shippingService->decorateMethods(
+                $shippingService->availableMethods($cartCollection),
+                $cartCollection
+            );
+            $shippingMethods->each(function ($shipping) {
+                $fee = $shipping->resolved_fee ?? $shipping->shipping_fee;
+                $shipping->cost = $fee;
+                $shipping->shipping_fee = $fee;
             });
             
             // Get countries for address form
@@ -157,7 +170,7 @@ class CheckoutController extends Controller
             $cartItems = [];
             if ($user) {
                 // Get cart items from database for authenticated users
-                $cartItems = ShoppingCart::with(['product', 'variants.variantItem'])
+                $cartItems = ShoppingCart::with(['product', 'variants.variantItem', 'weightVariant'])
                     ->where('user_id', $user->id)
                     ->get()
                     ->map(function ($item) {
@@ -184,6 +197,9 @@ class CheckoutController extends Controller
                             'quantity' => $item->qty,
                             'variants' => $variants,
                             'product' => $item->product,
+                            'weight_variant_id' => $item->weight_variant_id,
+                            'base_quantity' => $item->base_quantity,
+                            'unit_weight_kg' => $item->unit_weight_kg,
                         ];
                     });
             } else {
@@ -217,6 +233,9 @@ class CheckoutController extends Controller
                             'quantity' => $item['quantity'] ?? 1,
                             'variants' => $variants,
                             'product' => $product,
+                            'weight_variant_id' => $item['weight_variant_id'] ?? null,
+                            'base_quantity' => $item['base_quantity'] ?? null,
+                            'unit_weight_kg' => $item['unit_weight_kg'] ?? null,
                         ];
                     }
                 }
@@ -243,6 +262,7 @@ class CheckoutController extends Controller
                 'success' => true,
                 'cart_items' => $cartItems,
                 'shipping_methods' => $shippingMethods,
+                'cart_weight_kg' => $totals['cart_weight_kg'] ?? $shippingService->cartWeightKg($cartCollection),
                 'addresses' => $addresses,
                 'countries' => $countries,
                 'user' => $user ? [
@@ -444,7 +464,7 @@ class CheckoutController extends Controller
             'billing_delivery_area' => 'required|in:inside,outside',
             'billing_country' => 'nullable|integer|exists:countries,id',
             'shipping_method' => 'required|exists:shippings,id',
-            'payment_method' => 'required|in:cash_on_delivery,credit_card,paypal,stripe,pay_later,razorpay,flutterwave,mollie,instamojo,paystack,sslcommerz,bank_payment',
+            'payment_method' => 'required|in:cash_on_delivery,credit_card,paypal,stripe,pay_later,razorpay,flutterwave,mollie,instamojo,paystack,sslcommerz,bank_payment,manual_payment',
             'same_as_billing' => 'nullable|boolean',
             'shipping_first_name' => 'nullable|string|max:255',
             'shipping_last_name' => 'nullable|string|max:255',
@@ -453,8 +473,18 @@ class CheckoutController extends Controller
             'shipping_address' => 'nullable|string|max:1000',
             'shipping_delivery_area' => 'nullable|in:inside,outside',
             'shipping_country' => 'nullable|integer|exists:countries,id',
-            'order_notes' => 'nullable|string|max:1000'
+            'order_notes' => 'nullable|string|max:1000',
+            'manual_transaction_no' => 'nullable|string|max:255',
+            'payment_screenshot' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
         ]);
+
+        if ($validatedData['payment_method'] === 'manual_payment') {
+            $request->validate([
+                'payment_screenshot' => 'required|image|mimes:jpeg,jpg,png,webp|max:5120',
+            ], [
+                'payment_screenshot.required' => 'পেমেন্ট স্ক্রিনশট আপলোড করুন / Please upload payment screenshot',
+            ]);
+        }
         
         try {
             $user = Auth::user();
@@ -482,22 +512,46 @@ class CheckoutController extends Controller
             }
             
             // Use the webOrderStore method that follows API pattern
+            $txnId = null;
+            $paymentMethodLabel = $validatedData['payment_method'];
+            $screenshotPath = null;
+
+            if ($validatedData['payment_method'] === 'manual_payment') {
+                $paymentMethodLabel = 'bKash/Nagad';
+                $txnId = $request->input('manual_transaction_no') ?: null;
+                if ($request->hasFile('payment_screenshot')) {
+                    $file = $request->file('payment_screenshot');
+                    $imageName = 'payment-'.date('Y-m-d-H-i-s').'-'.rand(1000, 9999).'.'.$file->getClientOriginalExtension();
+                    $relative = 'uploads/custom-images/'.$imageName;
+                    if (! is_dir(public_path('uploads/custom-images'))) {
+                        mkdir(public_path('uploads/custom-images'), 0755, true);
+                    }
+                    Image::read($file)->save(public_path($relative));
+                    $screenshotPath = $relative;
+                }
+            }
+
             $orderResult = $this->webOrderStore(
                 $request,
                 $total_price,
                 $totalProduct,
-                $validatedData['payment_method'],
-                null, // transaction_id
-                $validatedData['payment_method'] === 'cash_on_delivery' ? 0 : 0, // payment_status
+                $paymentMethodLabel,
+                $txnId,
+                0, // payment_status pending until admin approves (manual) or COD
                 $shipping,
                 $shipping_fee,
                 $coupon_price,
-                $validatedData['payment_method'] === 'cash_on_delivery' ? 1 : 0, // cash_on_delivery
-                null, // billing_address_id - will create from form data
-                null  // shipping_address_id - will create from form data
+                $validatedData['payment_method'] === 'cash_on_delivery' ? 1 : 0,
+                null,
+                null
             );
+
+            if ($screenshotPath) {
+                $orderResult['order']->payment_screenshot = $screenshotPath;
+                $orderResult['order']->save();
+            }
             
-            if ($validatedData['payment_method'] === 'cash_on_delivery') {
+            if (in_array($validatedData['payment_method'], ['cash_on_delivery', 'manual_payment'], true)) {
                 try {
                     $this->sendWebOrderSuccessEmail($orderResult['order'], $orderResult['order_details']);
                 } catch (\Throwable $emailError) {
@@ -507,8 +561,12 @@ class CheckoutController extends Controller
                     ]);
                 }
 
+                $msg = $validatedData['payment_method'] === 'manual_payment'
+                    ? 'অর্ডার সম্পন্ন হয়েছে। অ্যাডমিন পেমেন্ট যাচাই করে অনুমোদন করবে। / Order placed. Waiting for admin payment approval.'
+                    : 'Order placed successfully!';
+
                 return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])
-                    ->with('success', 'Order placed successfully!');
+                    ->with('success', $msg);
             } else {
                 // For other payment methods, redirect to payment gateway
                 return $this->getPaymentRedirectUrl($orderResult['order'], $validatedData['payment_method'], $request);
@@ -859,7 +917,7 @@ class CheckoutController extends Controller
     private function getCartItems($user)
     {
         if ($user) {
-            return ShoppingCart::with(['product', 'variants.variantItem'])
+            return ShoppingCart::with(['product', 'variants.variantItem', 'weightVariant'])
                 ->where('user_id', $user->id)
                 ->get();
         }
@@ -874,7 +932,10 @@ class CheckoutController extends Controller
                     'product_id' => $item['product_id'],
                     'qty' => $item['quantity'], // Fixed: session cart uses 'quantity' not 'qty'
                     'product' => $product,
-                    'variants' => collect($item['variants'] ?? [])
+                    'variants' => collect($item['variants'] ?? []),
+                    'weight_variant_id' => $item['weight_variant_id'] ?? null,
+                    'base_quantity' => $item['base_quantity'] ?? null,
+                    'unit_weight_kg' => $item['unit_weight_kg'] ?? null,
                 ];
             }
         }
@@ -887,6 +948,8 @@ class CheckoutController extends Controller
      */
     private function calculateOrderTotals($cartItems, $shippingMethodId)
     {
+        $shippingService = app(ShippingCalculationService::class);
+
         // Calculate subtotal
         $subtotal = 0;
         foreach ($cartItems as $item) {
@@ -895,9 +958,10 @@ class CheckoutController extends Controller
             $subtotal += $itemPrice * $item->qty;
         }
         
-        // Get shipping cost
+        // Get shipping cost (weight slabs for KG)
         $shipping = Shipping::find($shippingMethodId);
-        $shippingCost = $shipping ? $shipping->cost : 0;
+        $resolved = $shippingService->resolveFee($shipping, $cartItems);
+        $shippingCost = $resolved !== null ? $resolved : 0;
         
         // Apply coupon discount
         $couponDiscount = 0;
@@ -920,7 +984,8 @@ class CheckoutController extends Controller
             'shipping' => $shipping,
             'coupon_discount' => $couponDiscount,
             'tax' => $tax,
-            'total' => $total
+            'total' => $total,
+            'cart_weight_kg' => $shippingService->cartWeightKg($cartItems),
         ];
     }
 
@@ -1813,10 +1878,11 @@ class CheckoutController extends Controller
 
      private function calculateCartTotal($user, $coupon_code, $shipping_method_id)
     {
+        $shippingService = app(ShippingCalculationService::class);
+
         if ($user) {
-            $cartProducts = ShoppingCart::with('product', 'variants.variantItem')
+            $cartProducts = ShoppingCart::with('product', 'variants.variantItem', 'weightVariant')
                 ->where('user_id', $user->id)
-                ->select('id', 'product_id', 'qty')
                 ->get();
         } else {
             // Handle guest cart from session
@@ -1827,11 +1893,14 @@ class CheckoutController extends Controller
                 $product = Product::find($item['product_id']);
                 if ($product) {
                     $cartItem = (object) [
-                        'id' => $item['id'],
+                        'id' => $item['id'] ?? null,
                         'product_id' => $item['product_id'],
                         'qty' => $item['quantity'], // Fixed: session cart uses 'quantity' not 'qty'
                         'product' => $product,
-                        'variants' => collect($item['variants'] ?? [])
+                        'variants' => collect($item['variants'] ?? []),
+                        'weight_variant_id' => $item['weight_variant_id'] ?? null,
+                        'base_quantity' => $item['base_quantity'] ?? null,
+                        'unit_weight_kg' => $item['unit_weight_kg'] ?? null,
                     ];
                     $cartProducts->push($cartItem);
                 }
@@ -1839,11 +1908,11 @@ class CheckoutController extends Controller
         }
 
         $total_price = 0;
-        $productWeight = 0;
+        $productWeight = $shippingService->cartWeightGrams($cartProducts);
 
         foreach ($cartProducts as $cartProduct) {
-            $product = Product::select('id', 'price', 'offer_price', 'weight')
-                ->find($cartProduct->product_id);
+            $product = $cartProduct->product
+                ?? Product::select('id', 'price', 'offer_price', 'weight', 'unit_type')->find($cartProduct->product_id);
 
             $price = product_unit_price($product, $cartProduct->variants ?? []);
 
@@ -1865,7 +1934,6 @@ class CheckoutController extends Controller
             }
 
             $total_price += $price * $cartProduct->qty;
-            $productWeight += $product->weight * $cartProduct->qty;
         }
 
         // Apply coupon
@@ -1895,7 +1963,8 @@ class CheckoutController extends Controller
             throw new Exception(trans('Shipping method not found'));
         }
 
-        $shipping_fee = $shipping->shipping_fee == 0 ? 0 : $shipping->shipping_fee;
+        $resolved = $shippingService->resolveFee($shipping, $cartProducts);
+        $shipping_fee = $resolved !== null ? $resolved : 0;
         $total_price = $total_price - $coupon_price + $shipping_fee;
         $total_price = number_format($total_price, 2, '.', '');
 
@@ -1905,6 +1974,7 @@ class CheckoutController extends Controller
             'shipping_fee' => $shipping_fee,
             'productWeight' => $productWeight,
             'shipping' => $shipping,
+            'cart_weight_kg' => $shippingService->cartWeightKg($cartProducts),
         ];
     }
 

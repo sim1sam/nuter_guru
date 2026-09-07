@@ -716,7 +716,29 @@ class FrontendController extends Controller
             return redirect()->route('login')->with('error', 'Please login to checkout.');
         }
 
-        $shippingMethods = \App\Models\Shipping::all();
+        $cartItems = collect();
+        if (auth()->check()) {
+            $cartItems = \App\Models\ShoppingCart::with(['product', 'weightVariant'])
+                ->where('user_id', auth()->id())
+                ->get();
+        } else {
+            foreach (session('guest_cart', []) as $item) {
+                $product = \App\Models\Product::find($item['product_id'] ?? 0);
+                if ($product) {
+                    $cartItems->push((object) array_merge($item, [
+                        'product' => $product,
+                        'qty' => $item['quantity'] ?? 1,
+                    ]));
+                }
+            }
+        }
+
+        $shippingService = app(\App\Services\ShippingCalculationService::class);
+        $shippingMethods = $shippingService->decorateMethods(
+            $shippingService->availableMethods($cartItems),
+            $cartItems
+        );
+        $cartWeightKg = $shippingService->cartWeightKg($cartItems);
         $bangladeshCountryId = \App\Models\Country::where('name', 'like', 'Bangladesh%')->value('id');
 
         // Get user addresses if authenticated (default billing/shipping first)
@@ -750,6 +772,7 @@ class FrontendController extends Controller
 
         return view('frontend.checkout', compact(
             'shippingMethods',
+            'cartWeightKg',
             'addresses',
             'defaultAddressIndex',
             'bangladeshCountryId',

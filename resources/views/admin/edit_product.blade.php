@@ -165,6 +165,16 @@
                                 </div>
 
                                 <div class="form-group col-12 kg-only-fields" style="display:none;">
+                                    <div class="alert alert-info py-2 mb-0">
+                                        <small>
+                                            Shipping is weight-wise: first 1 KG full rate, then proportional
+                                            (e.g. 1.5 KG Inside = ৳70+৳35 = ৳105). Configure under
+                                            <a href="{{ route('admin.shipping.index') }}" target="_blank">Location → Shipping Rule</a>.
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="form-group col-12 kg-only-fields" style="display:none;">
                                     <label class="d-flex justify-content-between align-items-center">
                                         <span>{{__('admin.Weight Variants')}}</span>
                                         <button type="button" class="btn btn-sm btn-outline-primary" onclick="openQuickWeightVariantModal()">

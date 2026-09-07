@@ -730,9 +730,12 @@
                         <select name="shipping_id" id="posOrderShippingSelect" class="form-control select2" required>
                             <option value="" disabled selected>{{ __('admin.Select a shipping rule') }}</option>
                             @foreach ($shippings as $shipping)
-                                <option value="{{ $shipping->id }}">{{ $shipping->shipping_rule }}</option>
+                                <option value="{{ $shipping->id }}" data-rate="{{ $shipping->shipping_fee }}">
+                                    {{ $shipping->shipping_rule }} ({{ currency_icon() }}{{ $shipping->shipping_fee }}/KG)
+                                </option>
                             @endforeach
                         </select>
+                        <small class="text-muted">KG cart: first 1 KG full rate, then proportional (1.5 KG = 70+35)</small>
                     </div>
 
                     <div class="form-group">

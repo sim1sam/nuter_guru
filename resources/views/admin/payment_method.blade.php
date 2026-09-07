@@ -634,6 +634,24 @@
                                                                 <textarea name="account_info" id="" cols="30" rows="10" class="text-area-5 form-control">{{ $bank->account_info }}</textarea>
                                                             </div>
 
+                                                            <hr>
+                                                            <h6>ম্যানুয়াল পেমেন্ট (bKash/Nagad)</h6>
+                                                            <div class="form-group">
+                                                                <label>Manual Payment Status</label>
+                                                                <div>
+                                                                    @if (($bank->manual_payment_status ?? 0) == 1)
+                                                                        <input type="checkbox" checked data-toggle="toggle" data-on="{{__('admin.Enable')}}" data-off="{{__('admin.Disable')}}" data-onstyle="success" data-offstyle="danger" name="manual_payment_status">
+                                                                    @else
+                                                                        <input type="checkbox" data-toggle="toggle" data-on="{{__('admin.Enable')}}" data-off="{{__('admin.Disable')}}" data-onstyle="success" data-offstyle="danger" name="manual_payment_status">
+                                                                    @endif
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label>bKash / Nagad Information</label>
+                                                                <textarea name="manual_payment_info" cols="30" rows="5" class="form-control" placeholder="bKash: 01...&#10;Nagad: 01...">{{ $bank->manual_payment_info }}</textarea>
+                                                                <small class="text-muted">Shown in checkout popup for customers.</small>
+                                                            </div>
+
                                                             <button class="btn btn-primary">Update</button>
                                                         </form>
                                                     </div>

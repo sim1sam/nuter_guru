@@ -21,10 +21,11 @@
         <div class="form-group col-12">
             <label>{{__('admin.Type')}} <span class="text-danger">*</span></label>
             <select name="type" id="edit_type_id" class="form-control">
+                <option {{ $shipping->type == 'base_on_weight' ? 'selected' : '' }} value="base_on_weight">{{__('admin.Based on product weight (per KG)')}}</option>
                 <option {{ $shipping->type == 'base_on_price' ? 'selected' : '' }} value="base_on_price">{{__('admin.Based on product price')}}</option>
-                <option {{ $shipping->type == 'base_on_weight' ? 'selected' : '' }} value="base_on_weight">{{__('admin.Based on product weight (g)')}}</option>
                 <option {{ $shipping->type == 'base_on_qty' ? 'selected' : '' }} value="base_on_qty">{{__('admin.Based on product quantity')}}</option>
             </select>
+            <small class="text-muted">Per KG: fee field is rate for 1 KG (multiplied by cart KG at checkout).</small>
         </div>
 
         <div class="form-group col-6">
@@ -43,7 +44,7 @@
         </div>
 
         <div class="form-group col-6">
-            <label>{{__('admin.Condition To')}} <span class="text-danger">* Unlimitd Quantity Use It = -1</span></label>
+            <label>{{__('admin.Condition To')}} <span class="text-danger">*</span> <small>(-1 = unlimited)</small></label>
             <div class="input-group mb-3">
                 @if ($shipping->type == 'base_on_price')
                     <span class="input-group-text edit_type_class"> {{ $setting->currency_icon }}</span>
@@ -57,11 +58,19 @@
         </div>
 
         <div class="form-group col-12">
-            <label>{{__('admin.Shipping Fee')}} <span class="text-danger">*</span></label>
+            <label id="edit_shipping_fee_label">
+                @if($shipping->type == 'base_on_weight')
+                    {{__('admin.Shipping Fee')}} (৳ / KG)
+                @else
+                    {{__('admin.Shipping Fee')}}
+                @endif
+                <span class="text-danger">*</span>
+            </label>
             <div class="input-group mb-3">
                 <span class="input-group-text"> {{ $setting->currency_icon }}</span>
                 <input type="text" class="form-control" name="shipping_fee" autocomplete="off" value="{{ $shipping->shipping_fee }}">
             </div>
+            <small class="text-muted">Example: 70 → up to 1 KG = ৳70; 1.5 KG = ৳105 (70+35)</small>
         </div>
     </div>
     <div class="row">
@@ -81,10 +90,13 @@
         $("#edit_type_id").on("change", function(){
             if($("#edit_type_id").val() == 'base_on_price'){
                 $(".edit_type_class").html('{{ $setting->currency_icon }}');
+                $("#edit_shipping_fee_label").html("{{__('admin.Shipping Fee')}} <span class=\"text-danger\">*</span>");
             }else if($("#edit_type_id").val() == 'base_on_weight'){
                 $(".edit_type_class").html('g');
+                $("#edit_shipping_fee_label").html("{{__('admin.Shipping Fee')}} (৳ / KG) <span class=\"text-danger\">*</span>");
             }else if($("#edit_type_id").val() == 'base_on_qty'){
                 $(".edit_type_class").html('qty');
+                $("#edit_shipping_fee_label").html("{{__('admin.Shipping Fee')}} <span class=\"text-danger\">*</span>");
             }
         })
     });
