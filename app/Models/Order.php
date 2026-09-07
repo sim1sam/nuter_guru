@@ -19,6 +19,10 @@ class Order extends Model
         'payment_approval_date',
         'transection_id',
         'payment_screenshot',
+        'steadfast_consignment_id',
+        'steadfast_tracking_code',
+        'steadfast_status',
+        'steadfast_response',
         'shipping_method',
         'shipping_cost',
         'coupon_coast',
@@ -27,8 +31,15 @@ class Order extends Model
         'order_delivered_date',
         'order_completed_date',
         'order_declined_date',
+        'stock_deducted_at',
+        'stock_restored_at',
         'cash_on_delivery',
         'additional_info'
+    ];
+
+    protected $casts = [
+        'stock_deducted_at' => 'datetime',
+        'stock_restored_at' => 'datetime',
     ];
 
     public function user(){

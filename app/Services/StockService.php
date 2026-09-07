@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Order;
+use App\Models\OrderProduct;
 use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
@@ -397,6 +399,141 @@ class StockService
             if ($remaining > 0.0001) {
                 throw new InvalidArgumentException($this->weightCalc->availableStockMessage($product->fresh()));
             }
+        });
+    }
+
+    /**
+     * Put stock back when an order is cancelled (uses base_quantity / KG).
+     */
+    public function restoreForSale(
+        int $productId,
+        $qty,
+        ?string $referenceNo = null,
+        ?int $adminId = null,
+        string $referenceType = 'order',
+        ?int $referenceId = null,
+        array $meta = []
+    ): void {
+        $qty = $this->weightCalc->roundWeight($qty);
+        if ($qty <= 0) {
+            return;
+        }
+
+        $warehouseId = $this->getDefaultWarehouse()->id;
+
+        $this->stockIn(
+            $productId,
+            $warehouseId,
+            $qty,
+            'Order cancelled — stock restored',
+            $referenceNo,
+            $adminId,
+            'order_cancel',
+            $referenceType,
+            $referenceId,
+            null,
+            null,
+            $meta
+        );
+    }
+
+    /**
+     * Deduct stock when order moves to Processing (once per sale cycle).
+     */
+    public function deductStockFromOrder(Order $order, ?int $adminId = null): void
+    {
+        DB::transaction(function () use ($order, $adminId) {
+            $locked = Order::lockForUpdate()->find($order->id);
+            if (! $locked) {
+                return;
+            }
+
+            // Already deducted and not restored after a cancel
+            if ($locked->stock_deducted_at && ! $locked->stock_restored_at) {
+                return;
+            }
+
+            $items = OrderProduct::where('order_id', $locked->id)->get();
+            foreach ($items as $item) {
+                $baseQty = (float) ($item->base_quantity ?? $item->qty ?? 0);
+                if ($baseQty <= 0 || ! $item->product_id) {
+                    continue;
+                }
+
+                $this->deductForSale(
+                    (int) $item->product_id,
+                    $baseQty,
+                    $locked->order_id,
+                    $adminId,
+                    'order',
+                    (int) $locked->id,
+                    [
+                        'weight_variant_id' => $item->weight_variant_id,
+                        'variant_name' => $item->variant_name_snapshot,
+                        'unit_weight_kg' => $item->unit_weight_kg,
+                    ]
+                );
+
+                $product = Product::find($item->product_id);
+                if ($product && isset($product->sold_qty)) {
+                    $product->sold_qty = (float) $product->sold_qty + (float) $item->qty;
+                    $product->save();
+                }
+            }
+
+            $locked->stock_deducted_at = now();
+            $locked->stock_restored_at = null;
+            $locked->save();
+        });
+    }
+
+    /**
+     * Put stock back when an order is cancelled (only if previously deducted).
+     */
+    public function restoreStockFromOrder(Order $order, ?int $adminId = null): bool
+    {
+        if (! $order->stock_deducted_at || $order->stock_restored_at) {
+            return false;
+        }
+
+        return (bool) DB::transaction(function () use ($order, $adminId) {
+            $locked = Order::lockForUpdate()->find($order->id);
+            if (! $locked || ! $locked->stock_deducted_at || $locked->stock_restored_at) {
+                return false;
+            }
+
+            $items = OrderProduct::where('order_id', $locked->id)->get();
+            foreach ($items as $item) {
+                $baseQty = (float) ($item->base_quantity ?? $item->qty ?? 0);
+                if ($baseQty <= 0 || ! $item->product_id) {
+                    continue;
+                }
+
+                $this->restoreForSale(
+                    (int) $item->product_id,
+                    $baseQty,
+                    $locked->order_id,
+                    $adminId,
+                    'order',
+                    (int) $locked->id,
+                    [
+                        'weight_variant_id' => $item->weight_variant_id,
+                        'variant_name' => $item->variant_name_snapshot,
+                        'unit_weight_kg' => $item->unit_weight_kg,
+                    ]
+                );
+
+                $product = Product::find($item->product_id);
+                if ($product && isset($product->sold_qty) && (float) $product->sold_qty > 0) {
+                    $product->sold_qty = max(0, (float) $product->sold_qty - (float) $item->qty);
+                    $product->save();
+                }
+            }
+
+            $locked->stock_restored_at = now();
+            $locked->save();
+
+            return true;
         });
     }
 

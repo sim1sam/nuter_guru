@@ -1642,19 +1642,7 @@ class PaymentController extends Controller
             $orderProduct->qty = $cartProduct->qty;
             $orderProduct->save();
 
-            try {
-                app(\App\Services\StockService::class)->deductForSale(
-                    (int) $product->id,
-                    (int) $cartProduct->qty,
-                    $order->order_id,
-                    null,
-                    'order',
-                    (int) $order->id
-                );
-            } catch (\InvalidArgumentException $e) {
-                $product->qty = max(0, (int) $product->qty - (int) $cartProduct->qty);
-                $product->save();
-            }
+            // Stock is deducted later when order status becomes Processing
 
             // store prouct variant
 

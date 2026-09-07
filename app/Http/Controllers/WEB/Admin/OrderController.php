@@ -17,6 +17,9 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Footer;
 use App\Models\Address;
+use App\Services\SteadfastService;
+use App\Services\StockService;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
@@ -34,7 +37,7 @@ class OrderController extends Controller
         $topProducts = OrderProduct::query()
             ->join('orders', 'order_products.order_id', '=', 'orders.id')
             ->whereBetween('orders.created_at', [$from.' 00:00:00', $to.' 23:59:59'])
-            ->where('orders.order_status', '!=', 4)
+            ->whereNotIn('orders.order_status', [3, 4])
             ->groupBy('order_products.product_id', 'order_products.product_name')
             ->selectRaw('order_products.product_id, order_products.product_name, SUM(order_products.qty) as sold_qty, SUM(order_products.unit_price * order_products.qty) as sale_amount')
             ->orderByDesc('sold_qty')
@@ -64,7 +67,7 @@ class OrderController extends Controller
 
     public function pregressOrder(){
         $orders = Order::with('user')->orderBy('id','desc')->where('order_status',1)->get();
-        $title = trans('admin_validation.Pregress Orders');
+        $title = __('admin.Processing Orders');
         $setting = Setting::first();
 
         return view('admin.order', compact('orders','title','setting'));
@@ -78,16 +81,28 @@ class OrderController extends Controller
         return view('admin.order', compact('orders','title','setting'));
     }
 
+    public function shipmentOrder(){
+        $orders = Order::with('user')->orderBy('id','desc')->where('order_status', 5)->get();
+        $title = __('admin.Shipment Orders');
+        $setting = Setting::first();
+
+        return view('admin.order', compact('orders','title','setting'));
+    }
+
     public function completedOrder(){
-        $orders = Order::with('user')->orderBy('id','desc')->where('order_status',3)->get();
-        $title = trans('admin_validation.Completed Orders');
+        return $this->declinedOrder();
+    }
+
+    public function declinedOrder(){
+        $orders = Order::with('user')->orderBy('id','desc')->where('order_status', 3)->get();
+        $title = __('admin.Return Orders');
         $setting = Setting::first();
         return view('admin.order', compact('orders','title','setting'));
     }
 
-    public function declinedOrder(){
-        $orders = Order::with('user')->orderBy('id','desc')->where('order_status',4)->get();
-        $title = trans('admin_validation.Declined Orders');
+    public function cancelledOrder(){
+        $orders = Order::with('user')->orderBy('id','desc')->where('order_status', 4)->get();
+        $title = __('admin.Cancelled Orders');
         $setting = Setting::first();
         return view('admin.order', compact('orders','title','setting'));
     }
@@ -171,22 +186,29 @@ class OrderController extends Controller
         $this->validate($request, $rules);
 
         $order = Order::find($id);
-        if($request->order_status == 0){
+        $previousStatus = (int) $order->order_status;
+        $newStatus = (int) $request->order_status;
+
+        if($newStatus === 0){
             $order->order_status = 0;
             $order->save();
-        }else if($request->order_status == 1){
+        }else if($newStatus === 1){
             $order->order_status = 1;
             $order->order_approval_date = date('Y-m-d');
             $order->save();
-        }else if($request->order_status == 2){
+        }else if($newStatus === 5){
+            $order->order_status = 5;
+            $order->order_approval_date = $order->order_approval_date ?: date('Y-m-d');
+            $order->save();
+        }else if($newStatus === 2){
             $order->order_status = 2;
             $order->order_delivered_date = date('Y-m-d');
             $order->save();
-        }else if($request->order_status == 3){
+        }else if($newStatus === 3){
             $order->order_status = 3;
-            $order->order_completed_date = date('Y-m-d');
+            $order->order_declined_date = date('Y-m-d');
             $order->save();
-        }else if($request->order_status == 4){
+        }else if($newStatus === 4){
             $order->order_status = 4;
             $order->order_declined_date = date('Y-m-d');
             $order->save();
@@ -202,7 +224,64 @@ class OrderController extends Controller
         }
 
         $notification = trans('admin_validation.Order Status Updated successfully');
-        $notification = array('messege'=>$notification,'alert-type'=>'success');
+        $alertType = 'success';
+
+        // Deduct stock on Processing or Shipment (Pending does not deduct)
+        if (in_array($newStatus, [1, 5], true)) {
+            $fresh = $order->fresh();
+            $needsDeduct = ! ($fresh->stock_deducted_at && ! $fresh->stock_restored_at);
+            try {
+                app(StockService::class)->deductStockFromOrder(
+                    $fresh,
+                    Auth::guard('admin')->id()
+                );
+                if ($needsDeduct) {
+                    $notification .= ' | '.__('admin.Stock deducted');
+                }
+            } catch (\Throwable $e) {
+                if ($needsDeduct) {
+                    $order->order_status = $previousStatus;
+                    $order->save();
+                    $notification = array(
+                        'messege' => 'Stock deduct failed: '.$e->getMessage(),
+                        'alert-type' => 'error'
+                    );
+                    return redirect()->back()->with($notification);
+                }
+            }
+        }
+
+        // Steadfast consignment when moved to Processing
+        if ($newStatus === 1 && $previousStatus !== 1) {
+            $order->refresh();
+            $result = app(SteadfastService::class)->createConsignment($order);
+            if (! empty($result['already_sent'])) {
+                // keep success message
+            } elseif (! empty($result['success'])) {
+                $notification .= ' | Steadfast: '.$result['tracking_code'];
+            } else {
+                $notification .= ' | Steadfast failed: '.($result['message'] ?? 'Unknown error');
+                $alertType = 'warning';
+            }
+        }
+
+        // Restore stock once when cancelled (only if previously deducted)
+        if ($newStatus === 4) {
+            try {
+                $restored = app(StockService::class)->restoreStockFromOrder(
+                    $order->fresh(),
+                    Auth::guard('admin')->id()
+                );
+                if ($restored) {
+                    $notification .= ' | '.__('admin.Stock restored');
+                }
+            } catch (\Throwable $e) {
+                $notification .= ' | Stock restore failed: '.$e->getMessage();
+                $alertType = 'warning';
+            }
+        }
+
+        $notification = array('messege'=>$notification,'alert-type'=>$alertType);
         return redirect()->back()->with($notification);
     }
 
@@ -345,18 +424,20 @@ class OrderController extends Controller
             'total' => (clone $query)->count(),
             'pending' => (clone $query)->where('order_status', 0)->count(),
             'progress' => (clone $query)->where('order_status', 1)->count(),
+            'shipment' => (clone $query)->where('order_status', 5)->count(),
             'delivered' => (clone $query)->where('order_status', 2)->count(),
             'completed' => (clone $query)->where('order_status', 3)->count(),
-            'declined' => (clone $query)->where('order_status', 4)->count(),
+            'declined' => (clone $query)->where('order_status', 3)->count(),
+            'cancelled' => (clone $query)->where('order_status', 4)->count(),
             'cod' => (clone $query)->where('cash_on_delivery', 1)->count(),
-            'unpaid' => (clone $query)->where('payment_status', 0)->where('order_status', '!=', 4)->count(),
+            'unpaid' => (clone $query)->where('payment_status', 0)->whereNotIn('order_status', [3, 4])->count(),
             'paid' => (clone $query)->where('payment_status', 1)->count(),
-            'qty' => (int) (clone $query)->where('order_status', '!=', 4)->sum('product_qty'),
-            'sales' => (float) (clone $query)->where('order_status', '!=', 4)->sum('total_amount'),
-            'unpaid_amount' => (float) (clone $query)->where('payment_status', 0)->where('order_status', '!=', 4)->sum('total_amount'),
+            'qty' => (int) (clone $query)->whereNotIn('order_status', [3, 4])->sum('product_qty'),
+            'sales' => (float) (clone $query)->whereNotIn('order_status', [3, 4])->sum('total_amount'),
+            'unpaid_amount' => (float) (clone $query)->where('payment_status', 0)->whereNotIn('order_status', [3, 4])->sum('total_amount'),
             'today' => (clone $todayQuery)->count(),
             'today_pending' => (clone $todayQuery)->where('order_status', 0)->count(),
-            'today_sales' => (float) (clone $todayQuery)->where('order_status', '!=', 4)->sum('total_amount'),
+            'today_sales' => (float) (clone $todayQuery)->whereNotIn('order_status', [3, 4])->sum('total_amount'),
         ];
     }
 }

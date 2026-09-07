@@ -42,10 +42,11 @@
                                     <select name="order_status" id="" class="form-control">
                                       <option value="" disabled selected>{{ __('admin.Select a Order Status') }}</option>
                                       <option value="0">{{ __('admin.Pending') }}</option>
-                                      <option value="1">{{ __('admin.In Progress') }}</option>
+                                      <option value="1">{{ __('admin.Processing') }}</option>
+                                      <option value="5">{{ __('admin.Shipment') }}</option>
                                       <option value="2">{{ __('admin.Delivered') }}</option>
-                                      <option value="3">{{ __('admin.Completed') }}</option>
-                                      <option value="4">{{ __('admin.Declined') }}</option>
+                                      <option value="3">{{ __('admin.Return') }}</option>
+                                      <option value="4">{{ __('admin.Cancel') }}</option>
                                     </select>
                                   </div>
                             </div>

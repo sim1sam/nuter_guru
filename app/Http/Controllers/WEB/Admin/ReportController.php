@@ -595,10 +595,11 @@ class ReportController extends Controller
     {
         return [
             0 => trans('admin.Pending'),
-            1 => trans('admin.Pregress'),
+            1 => trans('admin.Processing'),
+            5 => trans('admin.Shipment'),
             2 => trans('admin.Delivered'),
-            3 => trans('admin.Completed'),
-            4 => trans('admin.Declined'),
+            3 => trans('admin.Return'),
+            4 => trans('admin.Cancel'),
         ];
     }
 }

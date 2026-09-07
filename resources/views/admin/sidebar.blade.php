@@ -41,13 +41,15 @@
 
               <li class="{{ Route::is('admin.pending-order') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.pending-order') }}">{{__('admin.Pending Orders')}}</a></li>
 
-              <li class="{{ Route::is('admin.pregress-order') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.pregress-order') }}">{{__('admin.Progress Orders')}}</a></li>
+              <li class="{{ Route::is('admin.pregress-order') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.pregress-order') }}">{{__('admin.Processing Orders')}}</a></li>
+
+              <li class="{{ Route::is('admin.shipment-order') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.shipment-order') }}">{{__('admin.Shipment Orders')}}</a></li>
 
               <li class="{{ Route::is('admin.delivered-order') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.delivered-order') }}">{{__('admin.Delivered Orders')}}</a></li>
 
-              <li class="{{ Route::is('admin.completed-order') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.completed-order') }}">{{__('admin.Completed Orders')}}</a></li>
+              <li class="{{ Route::is('admin.declined-order') || Route::is('admin.completed-order') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.declined-order') }}">{{__('admin.Return Orders')}}</a></li>
 
-              <li class="{{ Route::is('admin.declined-order') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.declined-order') }}">{{__('admin.Declined Orders')}}</a></li>
+              <li class="{{ Route::is('admin.cancelled-order') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.cancelled-order') }}">{{__('admin.Cancelled Orders')}}</a></li>
 
               <li class="{{ Route::is('admin.cash-on-delivery') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.cash-on-delivery') }}">{{__('admin.Cash On Delivery')}}</a></li>
 
@@ -216,7 +218,7 @@
             </ul>
           </li>
 
-          <li class="nav-item dropdown {{ Route::is('admin.flash-sale') || Route::is('admin.currency.*') || Route::is('admin.coupon.*') || Route::is('admin.payment-method') || Route::is('admin.flash-sale-product') ? 'active' : '' }}">
+          <li class="nav-item dropdown {{ Route::is('admin.flash-sale') || Route::is('admin.currency.*') || Route::is('admin.coupon.*') || Route::is('admin.payment-method') || Route::is('admin.flash-sale-product') || Route::is('admin.steadfast*') ? 'active' : '' }}">
           <p class="s-divide">{{__('admin.Shop Setup')}}</p>
             <a href="#" class="nav-link has-dropdown">
             <div class="icon">
@@ -232,6 +234,8 @@
                 <li class="{{ Route::is('admin.coupon.*') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.coupon.index') }}">{{__('admin.Coupon')}}</a></li>
 
                 <li class="{{ Route::is('admin.payment-method') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.payment-method') }}">{{__('admin.Payment Method')}}</a></li>
+
+                <li class="{{ Route::is('admin.steadfast*') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.steadfast.index') }}">Steadfast Courier</a></li>
             </ul>
 
           </li>

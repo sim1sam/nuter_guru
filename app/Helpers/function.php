@@ -112,6 +112,21 @@ function category_name($category): string
 }
 
 /**
+ * Order status label: Pending, Processing, Shipment, Delivered, Return, Cancel.
+ */
+function order_status_label($status): string
+{
+    return match ((int) $status) {
+        1 => __('admin.Processing'),
+        5 => __('admin.Shipment'),
+        2 => __('admin.Delivered'),
+        3 => __('admin.Return'),
+        4 => __('admin.Cancel'),
+        default => __('admin.Pending'),
+    };
+}
+
+/**
  * Slider title/description for the active locale.
  */
 function slider_text($slider, string $field = 'title_one'): string

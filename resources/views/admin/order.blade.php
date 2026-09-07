@@ -48,15 +48,17 @@
                                         <td>{{ $setting->currency_icon }}{{ round($order->total_amount) }}</td>
                                         <td>
                                             @if ($order->order_status == 1)
-                                            <span class="badge badge-success">{{__('admin.Pregress')}} </span>
+                                            <span class="badge badge-info">{{ order_status_label(1) }}</span>
+                                            @elseif ($order->order_status == 5)
+                                            <span class="badge badge-primary">{{ order_status_label(5) }}</span>
                                             @elseif ($order->order_status == 2)
-                                            <span class="badge badge-success">{{__('admin.Delivered')}} </span>
+                                            <span class="badge badge-success">{{ order_status_label(2) }}</span>
                                             @elseif ($order->order_status == 3)
-                                            <span class="badge badge-success">{{__('admin.Completed')}} </span>
+                                            <span class="badge badge-danger">{{ order_status_label(3) }}</span>
                                             @elseif ($order->order_status == 4)
-                                            <span class="badge badge-danger">{{__('admin.Declined')}} </span>
+                                            <span class="badge badge-dark">{{ order_status_label(4) }}</span>
                                             @else
-                                            <span class="badge badge-danger">{{__('admin.Pending')}}</span>
+                                            <span class="badge badge-warning">{{ order_status_label(0) }}</span>
                                             @endif
                                         </td>
                                         <td>
@@ -115,10 +117,11 @@
                                   <label for="">{{__('admin.Order')}}</label>
                                   <select name="order_status" id="" class="form-control">
                                     <option {{ $order->order_status == 0 ? 'selected' : '' }} value="0">{{__('admin.Pending')}}</option>
-                                    <option {{ $order->order_status == 1 ? 'selected' : '' }} value="1">{{__('admin.In Progress')}}</option>
+                                    <option {{ $order->order_status == 1 ? 'selected' : '' }} value="1">{{__('admin.Processing')}}</option>
+                                    <option {{ (int)$order->order_status === 5 ? 'selected' : '' }} value="5">{{__('admin.Shipment')}}</option>
                                     <option {{ $order->order_status == 2 ? 'selected' : '' }}  value="2">{{__('admin.Delivered')}}</option>
-                                    <option {{ $order->order_status == 3 ? 'selected' : '' }} value="3">{{__('admin.Completed')}}</option>
-                                    <option {{ $order->order_status == 4 ? 'selected' : '' }} value="4">{{__('admin.Declined')}}</option>
+                                    <option {{ (int)$order->order_status === 3 ? 'selected' : '' }} value="3">{{__('admin.Return')}}</option>
+                                    <option {{ (int)$order->order_status === 4 ? 'selected' : '' }} value="4">{{__('admin.Cancel')}}</option>
                                   </select>
                               </div>
 

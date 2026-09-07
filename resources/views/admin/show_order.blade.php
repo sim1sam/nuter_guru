@@ -114,15 +114,17 @@
               <div class="inv-date">{{__('admin.Date')}}: {{ $order->created_at->format('d M Y, h:i A') }}</div>
               <div class="mt-2">
                 @if ($order->order_status == 1)
-                  <span class="inv-badge inv-badge-info">{{__('admin.In Progress')}}</span>
+                  <span class="inv-badge inv-badge-info">{{ order_status_label(1) }}</span>
+                @elseif ($order->order_status == 5)
+                  <span class="inv-badge inv-badge-primary">{{ order_status_label(5) }}</span>
                 @elseif ($order->order_status == 2)
-                  <span class="inv-badge inv-badge-success">{{__('admin.Delivered')}}</span>
+                  <span class="inv-badge inv-badge-success">{{ order_status_label(2) }}</span>
                 @elseif ($order->order_status == 3)
-                  <span class="inv-badge inv-badge-success">{{__('admin.Completed')}}</span>
+                  <span class="inv-badge inv-badge-danger">{{ order_status_label(3) }}</span>
                 @elseif ($order->order_status == 4)
-                  <span class="inv-badge inv-badge-danger">{{__('admin.Declined')}}</span>
+                  <span class="inv-badge inv-badge-dark">{{ order_status_label(4) }}</span>
                 @else
-                  <span class="inv-badge inv-badge-warning">{{__('admin.Pending')}}</span>
+                  <span class="inv-badge inv-badge-warning">{{ order_status_label(0) }}</span>
                 @endif
                 @if ($order->payment_status == 1)
                   <span class="inv-badge inv-badge-success">{{__('admin.Paid')}}</span>
@@ -198,6 +200,12 @@
                 {{__('admin.Customer')}}: {{ optional($order->user)->name ?: ($orderAddress->billing_name ?? '-') }}<br>
                 {{__('admin.Shipping')}}: {{ $order->shipping_method }}<br>
                 {{__('admin.Items')}}: {{ $order->product_qty }}
+                @if($order->steadfast_tracking_code || $order->steadfast_consignment_id)
+                  <br><strong>Steadfast:</strong>
+                  @if($order->steadfast_tracking_code) Tracking: {{ $order->steadfast_tracking_code }}@endif
+                  @if($order->steadfast_consignment_id) · CID: {{ $order->steadfast_consignment_id }}@endif
+                  @if($order->steadfast_status) · {{ $order->steadfast_status }}@endif
+                @endif
               </p>
             </div>
           </div>
@@ -282,10 +290,11 @@
                   <label>{{__('admin.Order')}}</label>
                   <select name="order_status" class="form-control">
                     <option {{ $order->order_status == 0 ? 'selected' : '' }} value="0">{{__('admin.Pending')}}</option>
-                    <option {{ $order->order_status == 1 ? 'selected' : '' }} value="1">{{__('admin.In Progress')}}</option>
+                    <option {{ $order->order_status == 1 ? 'selected' : '' }} value="1">{{__('admin.Processing')}}</option>
+                    <option {{ (int)$order->order_status === 5 ? 'selected' : '' }} value="5">{{__('admin.Shipment')}}</option>
                     <option {{ $order->order_status == 2 ? 'selected' : '' }} value="2">{{__('admin.Delivered')}}</option>
-                    <option {{ $order->order_status == 3 ? 'selected' : '' }} value="3">{{__('admin.Completed')}}</option>
-                    <option {{ $order->order_status == 4 ? 'selected' : '' }} value="4">{{__('admin.Declined')}}</option>
+                    <option {{ (int)$order->order_status === 3 ? 'selected' : '' }} value="3">{{__('admin.Return')}}</option>
+                    <option {{ (int)$order->order_status === 4 ? 'selected' : '' }} value="4">{{__('admin.Cancel')}}</option>
                   </select>
                 </div>
                 <button class="btn btn-primary" type="submit">{{__('admin.Update Status')}}</button>

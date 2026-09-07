@@ -698,24 +698,7 @@ class CheckoutController extends Controller
             $orderProduct->unit_cost = $unitCost;
             $orderProduct->save();
 
-            try {
-                app(\App\Services\StockService::class)->deductForSale(
-                    (int) $product->id,
-                    $baseQty,
-                    $order->order_id,
-                    null,
-                    'order',
-                    (int) $order->id,
-                    [
-                        'weight_variant_id' => $weightVariantId,
-                        'variant_name' => $variantNameSnapshot,
-                        'unit_weight_kg' => $unitWeightKg,
-                        'unit' => $product->isKg() ? 'kg' : 'pcs',
-                    ]
-                );
-            } catch (\InvalidArgumentException $e) {
-                throw $e;
-            }
+            // Stock is deducted later when order status becomes Processing
 
             // Store product variants
             if ($variants && (is_array($variants) || $variants instanceof \Illuminate\Support\Collection)) {
@@ -2095,24 +2078,7 @@ class CheckoutController extends Controller
             $orderProduct->unit_cost = $unitCost;
             $orderProduct->save();
 
-            try {
-                app(\App\Services\StockService::class)->deductForSale(
-                    (int) $product->id,
-                    $baseQty,
-                    $order->order_id,
-                    null,
-                    'order',
-                    (int) $order->id,
-                    [
-                        'weight_variant_id' => $cartProduct->weight_variant_id ?? null,
-                        'variant_name' => $cartProduct->variant_name_snapshot ?? null,
-                        'unit_weight_kg' => $cartProduct->unit_weight_kg ?? null,
-                        'unit' => $product->isKg() ? 'kg' : 'pcs',
-                    ]
-                );
-            } catch (\InvalidArgumentException $e) {
-                throw $e;
-            }
+            // Stock is deducted later when order status becomes Processing
 
             // Store product variants
             if ($cartProduct->variants) {

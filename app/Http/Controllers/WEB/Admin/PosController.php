@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Mail\OrderSuccessfully;
 use App\Mail\UserRegistrationFromAdmin;
 use App\Services\ShippingCalculationService;
+use App\Services\StockService;
 use DB;
 
 
@@ -647,25 +648,7 @@ class PosController extends Controller
             $orderProduct->unit_cost = $product->cost_price;
             $orderProduct->save();
 
-            $baseQty = (float) ($cartProduct->base_quantity ?? $cartProduct->qty);
-            try {
-                app(\App\Services\StockService::class)->deductForSale(
-                    (int) $product->id,
-                    $baseQty,
-                    $order->order_id,
-                    Auth::guard('admin')->id(),
-                    'order',
-                    (int) $order->id,
-                    [
-                        'weight_variant_id' => $cartProduct->weight_variant_id,
-                        'variant_name' => $cartProduct->variant_name_snapshot,
-                        'unit_weight_kg' => $cartProduct->unit_weight_kg,
-                        'unit' => ($product->unit_type ?? 'pcs') === 'kg' ? 'kg' : 'pcs',
-                    ]
-                );
-            } catch (\InvalidArgumentException $e) {
-                throw $e;
-            }
+            // Stock deducted only when status is Processing (below or on later status update)
 
             // store prouct variant
 
@@ -687,6 +670,26 @@ class PosController extends Controller
                 $setting->currency_icon .
                 $cartProduct->qty * $price .
                 "<br>";
+        }
+
+        if ((int) $order_status === 1 || (int) $order_status === 5) {
+            try {
+                app(StockService::class)->deductStockFromOrder($order->fresh(), Auth::guard('admin')->id());
+            } catch (\InvalidArgumentException $e) {
+                $order->delete();
+                $notification = array('messege' => $e->getMessage(), 'alert-type' => 'error');
+                return redirect()->back()->with($notification);
+            }
+        }
+
+        $steadfastNote = '';
+        if ((int) $order_status === 1) {
+            $steadfast = app(\App\Services\SteadfastService::class)->createConsignment($order->fresh());
+            if (! empty($steadfast['success'])) {
+                $steadfastNote = ' | Steadfast: '.($steadfast['tracking_code'] ?? '');
+            } elseif (empty($steadfast['already_sent'])) {
+                $steadfastNote = ' | Steadfast failed: '.($steadfast['message'] ?? 'Unknown error');
+            }
         }
 
          // Order address only (does not change customer's saved address)
@@ -792,8 +795,11 @@ class PosController extends Controller
             }
 
         session()->forget('pos_customer_id');
-        $notification = trans('admin_validation.Order Created SuccesFully');
-        $notification = array('messege'=>$notification,'alert-type'=>'success');
+        $notification = trans('admin_validation.Order Created SuccesFully').($steadfastNote ?? '');
+        $notification = array(
+            'messege'=>$notification,
+            'alert-type'=> (!empty($steadfastNote) && str_contains($steadfastNote, 'failed')) ? 'warning' : 'success'
+        );
         return redirect()->route('admin.order-show', $order->id)->with($notification);
 
 
@@ -865,9 +871,64 @@ class PosController extends Controller
         $orderIds = $validatedData['orderIds'];
 
         try {
+            $orders = Order::whereIn('id', $orderIds)->get();
             Order::whereIn('id', $orderIds)->update(['order_status' => $newStatus]);
 
-            $notification = trans('admin_validation.Order statuses updated successfully');
+            $steadfastNote = '';
+            if (in_array((int) $newStatus, [1, 5], true)) {
+                $stock = app(StockService::class);
+                $adminId = Auth::guard('admin')->id();
+                $stockFail = 0;
+                foreach ($orders as $order) {
+                    try {
+                        $stock->deductStockFromOrder($order->fresh(), $adminId);
+                    } catch (\Throwable $e) {
+                        $stockFail++;
+                    }
+                }
+                if ($stockFail) {
+                    $steadfastNote .= " | Stock deduct failed: {$stockFail}";
+                } else {
+                    $steadfastNote .= ' | '.__('admin.Stock deducted');
+                }
+            }
+
+            if ((int) $newStatus === 1) {
+                $service = app(\App\Services\SteadfastService::class);
+                $ok = 0;
+                $fail = 0;
+                foreach ($orders as $order) {
+                    $order->refresh();
+                    if ($order->steadfast_consignment_id) {
+                        continue;
+                    }
+                    $result = $service->createConsignment($order);
+                    if (! empty($result['success'])) {
+                        $ok++;
+                    } else {
+                        $fail++;
+                    }
+                }
+                if ($ok || $fail) {
+                    $steadfastNote .= " | Steadfast: {$ok} sent".($fail ? ", {$fail} failed" : '');
+                }
+            }
+
+            if ((int) $newStatus === 4) {
+                $stock = app(StockService::class);
+                $adminId = Auth::guard('admin')->id();
+                $restored = 0;
+                foreach ($orders as $order) {
+                    if ($stock->restoreStockFromOrder($order->fresh(), $adminId)) {
+                        $restored++;
+                    }
+                }
+                if ($restored) {
+                    $steadfastNote .= ' | '.__('admin.Stock restored');
+                }
+            }
+
+            $notification = trans('admin_validation.Order statuses updated successfully').$steadfastNote;
             $notification = array('messege'=>$notification,'alert-type'=>'success');
             return redirect()->route('admin.pos.bulk.order')->with($notification);
         } catch (\Exception $e) {

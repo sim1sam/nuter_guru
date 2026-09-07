@@ -27,19 +27,19 @@
         <div class="card card-statistic-1">
             <div class="card-icon bg-info"><i class="fas fa-spinner"></i></div>
             <div class="card-wrap">
-                <div class="card-header"><h4>{{__('admin.Progress Orders')}}</h4></div>
+                <div class="card-header"><h4>{{__('admin.Processing Orders')}}</h4></div>
                 <div class="card-body">{{ $stats['progress'] }}</div>
             </div>
         </div>
         </a>
     </div>
     <div class="col-lg-3 col-md-6">
-        <a href="{{ route('admin.completed-order') }}">
+        <a href="{{ route('admin.shipment-order') }}">
         <div class="card card-statistic-1">
-            <div class="card-icon bg-success"><i class="fas fa-check"></i></div>
+            <div class="card-icon bg-primary"><i class="fas fa-shipping-fast"></i></div>
             <div class="card-wrap">
-                <div class="card-header"><h4>{{__('admin.Completed Orders')}}</h4></div>
-                <div class="card-body">{{ $stats['completed'] }}</div>
+                <div class="card-header"><h4>{{__('admin.Shipment Orders')}}</h4></div>
+                <div class="card-body">{{ $stats['shipment'] ?? 0 }}</div>
             </div>
         </div>
         </a>
@@ -58,10 +58,21 @@
     <div class="col-lg-3 col-md-6">
         <a href="{{ route('admin.declined-order') }}">
         <div class="card card-statistic-1">
-            <div class="card-icon bg-danger"><i class="fas fa-times"></i></div>
+            <div class="card-icon bg-danger"><i class="fas fa-undo"></i></div>
             <div class="card-wrap">
-                <div class="card-header"><h4>{{__('admin.Declined Orders')}}</h4></div>
+                <div class="card-header"><h4>{{__('admin.Return Orders')}}</h4></div>
                 <div class="card-body">{{ $stats['declined'] }}</div>
+            </div>
+        </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <a href="{{ route('admin.cancelled-order') }}">
+        <div class="card card-statistic-1">
+            <div class="card-icon bg-dark"><i class="fas fa-ban"></i></div>
+            <div class="card-wrap">
+                <div class="card-header"><h4>{{__('admin.Cancelled Orders')}}</h4></div>
+                <div class="card-body">{{ $stats['cancelled'] ?? 0 }}</div>
             </div>
         </div>
         </a>

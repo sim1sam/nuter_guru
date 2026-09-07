@@ -815,6 +815,9 @@ Route::group(['as'=> 'admin.', 'prefix' => 'admin'],function (){
     Route::put('update-cash-on-delivery',[PaymentMethodController::class,'updateCashOnDelivery'])->name('update-cash-on-delivery');
     Route::put('update-sslcommerz',[PaymentMethodController::class,'updateSslcommerz'])->name('update-sslcommerz');
 
+    Route::get('steadfast',[App\Http\Controllers\WEB\Admin\SteadfastSettingController::class,'index'])->name('steadfast.index');
+    Route::put('steadfast',[App\Http\Controllers\WEB\Admin\SteadfastSettingController::class,'update'])->name('steadfast.update');
+
     Route::resource('mega-menu-category', MegaMenuController::class);
     Route::put('mega-menu-category-status/{id}',[MegaMenuController::class,'changeStatus'])->name('mega-menu-category-status');
 
@@ -872,9 +875,11 @@ Route::group(['as'=> 'admin.', 'prefix' => 'admin'],function (){
     Route::get('all-order', [OrderController::class, 'index'])->name('all-order');
     Route::get('pending-order', [OrderController::class, 'pendingOrder'])->name('pending-order');
     Route::get('pregress-order', [OrderController::class, 'pregressOrder'])->name('pregress-order');
+    Route::get('shipment-order', [OrderController::class, 'shipmentOrder'])->name('shipment-order');
     Route::get('delivered-order', [OrderController::class, 'deliveredOrder'])->name('delivered-order');
     Route::get('completed-order', [OrderController::class, 'completedOrder'])->name('completed-order');
     Route::get('declined-order', [OrderController::class, 'declinedOrder'])->name('declined-order');
+    Route::get('cancelled-order', [OrderController::class, 'cancelledOrder'])->name('cancelled-order');
     Route::get('cash-on-delivery', [OrderController::class, 'cashOnDelivery'])->name('cash-on-delivery');
     Route::get('order-show/{id}', [OrderController::class, 'show'])->name('order-show');
     Route::put('order-address/{id}', [OrderController::class, 'updateOrderAddress'])->name('order-address.update');
