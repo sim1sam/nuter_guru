@@ -33,7 +33,12 @@ class PurchaseOrderController extends Controller
         $suppliers = Supplier::where('status', 1)->orderBy('name')->get();
         $warehouses = Warehouse::where('status', 1)->get();
         $categories = Category::orderBy('name')->get(['id', 'name']);
-        $products = Product::orderBy('name')->get(['id', 'name', 'short_name', 'sku', 'barcode', 'cost_price', 'qty', 'category_id', 'pcs_per_box', 'purchase_unit']);
+        $products = Product::with(['weightVariants' => function ($q) {
+            $q->where('weight_variants.status', 1);
+        }])->orderBy('name')->get([
+            'id', 'name', 'short_name', 'sku', 'barcode', 'cost_price', 'qty',
+            'category_id', 'pcs_per_box', 'purchase_unit', 'unit_type',
+        ]);
         $units = Unit::activeUnits();
         return view('admin.purchase.create_order', compact('suppliers', 'warehouses', 'products', 'categories', 'units'));
     }
@@ -47,9 +52,11 @@ class PurchaseOrderController extends Controller
             'product_id' => 'required|array|min:1',
             'product_id.*' => 'exists:products,id',
             'ordered_qty' => 'required|array',
-            'unit_cost' => 'required|array',
+            'unit_cost' => 'nullable|array',
             'unit' => 'nullable|array',
             'pcs_per_box' => 'nullable|array',
+            'weight_variant_id' => 'nullable|array',
+            'weight_variant_id.*' => 'nullable|integer|exists:weight_variants,id',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -67,22 +74,45 @@ class PurchaseOrderController extends Controller
             ]);
 
             foreach ($request->product_id as $i => $productId) {
-                $qty = (int) ($request->ordered_qty[$i] ?? 0);
-                $cost = (float) ($request->unit_cost[$i] ?? 0);
+                $qty = (float) ($request->ordered_qty[$i] ?? 0);
                 if ($qty <= 0) {
                     continue;
                 }
-                $unit = Product::resolvePurchaseUnit($request->unit[$i] ?? 'pc');
-                $pcsPerBox = max(1, (int) ($request->pcs_per_box[$i] ?? 1));
-                PurchaseOrderItem::create([
-                    'purchase_order_id' => $order->id,
-                    'product_id' => $productId,
-                    'unit' => $unit,
-                    'pcs_per_box' => $pcsPerBox,
-                    'ordered_qty' => $qty,
-                    'unit_cost' => $cost,
-                    'line_total' => $qty * $cost,
-                ]);
+
+                $product = Product::with('weightVariants')->findOrFail($productId);
+                $rawCost = $request->unit_cost[$i] ?? null;
+                $unitCost = ($rawCost === null || $rawCost === '') ? null : (float) $rawCost;
+                $weightVariantId = ! empty($request->weight_variant_id[$i])
+                    ? (int) $request->weight_variant_id[$i]
+                    : null;
+
+                if ($product->isKg()) {
+                    if ($weightVariantId && ! $product->weightVariants->contains('id', $weightVariantId)) {
+                        continue;
+                    }
+                    $payload = $this->purchaseService->buildLinePayload(
+                        $product,
+                        $qty,
+                        $weightVariantId,
+                        $unitCost
+                    );
+                } else {
+                    $unit = Product::resolvePurchaseUnit($request->unit[$i] ?? 'pc');
+                    $pcsPerBox = max(1, (int) ($request->pcs_per_box[$i] ?? 1));
+                    $payload = $this->purchaseService->buildLinePayload(
+                        $product,
+                        $qty,
+                        null,
+                        $unitCost,
+                        $unit,
+                        $pcsPerBox
+                    );
+                }
+
+                PurchaseOrderItem::create(array_merge(
+                    ['purchase_order_id' => $order->id],
+                    $payload
+                ));
             }
 
             $this->purchaseService->recalculateOrder($order);
@@ -93,7 +123,7 @@ class PurchaseOrderController extends Controller
 
     public function show($id)
     {
-        $order = PurchaseOrder::with(['supplier', 'warehouse', 'items.product', 'receipts.items'])->findOrFail($id);
+        $order = PurchaseOrder::with(['supplier', 'warehouse', 'items.product', 'items.weightVariant', 'receipts.items'])->findOrFail($id);
         return view('admin.purchase.show_order', compact('order'));
     }
 

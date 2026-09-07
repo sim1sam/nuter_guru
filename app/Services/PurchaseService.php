@@ -9,13 +9,17 @@ use App\Models\PurchaseReceiptItem;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnItem;
 use App\Models\Product;
+use App\Models\WeightVariant;
+use App\Services\Inventory\WeightCalculationService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class PurchaseService
 {
-    public function __construct(protected StockService $stockService)
-    {
+    public function __construct(
+        protected StockService $stockService,
+        protected WeightCalculationService $weightCalc
+    ) {
     }
 
     public function generateNumber(string $prefix): string
@@ -37,12 +41,12 @@ class PurchaseService
     public function refreshOrderStatus(PurchaseOrder $order): void
     {
         $order->load('items');
-        $ordered = $order->items->sum('ordered_qty');
-        $received = $order->items->sum('received_qty');
+        $ordered = (float) $order->items->sum('ordered_qty');
+        $received = (float) $order->items->sum('received_qty');
 
         if ($received <= 0) {
             $status = in_array($order->status, ['submitted', 'partial']) ? 'submitted' : $order->status;
-        } elseif ($received >= $ordered) {
+        } elseif ($received + 0.0001 >= $ordered) {
             $status = 'received';
         } else {
             $status = 'partial';
@@ -53,9 +57,58 @@ class PurchaseService
         }
     }
 
+    public function buildLinePayload(Product $product, float $quantity, ?int $weightVariantId = null, ?float $unitCost = null, ?string $unit = null, ?int $pcsPerBox = null): array
+    {
+        $weightVariant = null;
+        $variantName = null;
+        $unitWeightKg = null;
+        $weightInGram = null;
+        $lineUnit = $unit ?: ($product->isKg() ? 'kg' : ($product->defaultPurchaseUnit() ?: 'pc'));
+        $pcs = max(1, (int) ($pcsPerBox ?: $product->pcsPerBox()));
+
+        if ($product->isKg() && $weightVariantId) {
+            $weightVariant = WeightVariant::findOrFail($weightVariantId);
+            $variantName = $weightVariant->name;
+            $unitWeightKg = (float) $weightVariant->weight_in_kg;
+            $weightInGram = (int) $weightVariant->weight_in_gram;
+            $lineUnit = $weightVariant->code;
+            $baseQuantity = $this->weightCalc->calculateBaseQuantity($product, $quantity, $weightVariant);
+            $resolvedUnitCost = $unitCost !== null
+                ? $this->weightCalc->roundMoney($unitCost)
+                : $this->weightCalc->variantPurchaseCost($product, $weightVariant);
+        } elseif ($product->isKg()) {
+            $baseQuantity = $this->weightCalc->roundWeight($quantity);
+            $resolvedUnitCost = $unitCost !== null
+                ? $this->weightCalc->roundMoney($unitCost)
+                : $this->weightCalc->roundMoney((float) $product->cost_price);
+            $lineUnit = 'kg';
+        } else {
+            $baseQuantity = (float) Product::convertToPcs($quantity, $lineUnit, $pcs);
+            $resolvedUnitCost = $unitCost !== null
+                ? $this->weightCalc->roundMoney($unitCost)
+                : $this->weightCalc->roundMoney((float) $product->cost_price);
+        }
+
+        $lineTotal = $this->weightCalc->roundMoney($quantity * $resolvedUnitCost);
+
+        return [
+            'product_id' => $product->id,
+            'weight_variant_id' => $weightVariant?->id,
+            'unit' => $lineUnit,
+            'pcs_per_box' => $pcs,
+            'ordered_qty' => $quantity,
+            'unit_cost' => $resolvedUnitCost,
+            'line_total' => $lineTotal,
+            'base_quantity' => $baseQuantity,
+            'variant_name' => $variantName,
+            'unit_weight_kg' => $unitWeightKg,
+            'weight_in_gram' => $weightInGram,
+        ];
+    }
+
     public function receivePurchaseOrder(PurchaseOrder $order, array $lines, ?string $notes, int $adminId): PurchaseReceipt
     {
-        if (!in_array($order->status, ['submitted', 'partial', 'received'])) {
+        if (! in_array($order->status, ['submitted', 'partial', 'received'])) {
             throw new InvalidArgumentException('Purchase order cannot be received in current status.');
         }
 
@@ -74,15 +127,17 @@ class PurchaseService
                 $item = PurchaseOrderItem::with('product')->where('purchase_order_id', $order->id)
                     ->where('id', $line['item_id'])
                     ->firstOrFail();
-                $qty = (int) $line['qty'];
+                $qty = (float) $line['qty'];
 
                 if ($qty <= 0) {
                     continue;
                 }
 
-                if ($qty > $item->pendingQty()) {
+                if ($qty > $item->pendingQty() + 0.0001) {
                     throw new InvalidArgumentException('Receive quantity exceeds pending quantity.');
                 }
+
+                $baseQty = $item->toBaseQty($qty);
 
                 PurchaseReceiptItem::create([
                     'purchase_receipt_id' => $receipt->id,
@@ -90,16 +145,21 @@ class PurchaseService
                     'product_id' => $item->product_id,
                     'received_qty' => $qty,
                     'unit_cost' => $item->unit_cost,
+                    'weight_variant_id' => $item->weight_variant_id,
+                    'base_quantity' => $baseQty,
+                    'variant_name' => $item->variant_name,
+                    'unit_weight_kg' => $item->unit_weight_kg,
                 ]);
 
-                $item->increment('received_qty', $qty);
+                $item->received_qty = (float) $item->received_qty + $qty;
+                $item->save();
 
                 $pcCost = $item->costPerPc();
 
                 $this->stockService->stockIn(
                     $item->product_id,
                     $order->warehouse_id,
-                    $item->toBaseQty($qty),
+                    $baseQty,
                     'Purchase received',
                     $receipt->receipt_number,
                     $adminId,
@@ -107,7 +167,13 @@ class PurchaseService
                     'purchase_receipt',
                     $receipt->id,
                     $order->supplier_id,
-                    $pcCost > 0 ? $pcCost : null
+                    $pcCost > 0 ? $pcCost : null,
+                    [
+                        'weight_variant_id' => $item->weight_variant_id,
+                        'variant_name' => $item->variant_name,
+                        'unit_weight_kg' => $item->unit_weight_kg,
+                        'unit' => $item->product?->isKg() ? 'kg' : 'pcs',
+                    ]
                 );
 
                 if ($pcCost > 0) {
@@ -137,14 +203,25 @@ class PurchaseService
             ]);
 
             foreach ($lines as $line) {
-                $qty = (int) $line['qty'];
+                $qty = (float) $line['qty'];
                 if ($qty <= 0) {
                     continue;
                 }
 
-                $unit = Product::normalizeUnit($line['unit'] ?? 'pc');
-                $pcsPerBox = max(1, (int) ($line['pcs_per_box'] ?? 1));
-                $stockQty = Product::convertToPcs($qty, $unit, $pcsPerBox);
+                $product = Product::findOrFail($line['product_id']);
+                $weightVariant = ! empty($line['weight_variant_id'])
+                    ? WeightVariant::find($line['weight_variant_id'])
+                    : null;
+
+                if ($product->isKg()) {
+                    $baseQty = $this->weightCalc->calculateBaseQuantity($product, $qty, $weightVariant);
+                    $unit = $weightVariant?->code ?: 'kg';
+                    $pcsPerBox = 1;
+                } else {
+                    $unit = Product::normalizeUnit($line['unit'] ?? 'pc');
+                    $pcsPerBox = max(1, (int) ($line['pcs_per_box'] ?? 1));
+                    $baseQty = (float) Product::convertToPcs($qty, $unit, $pcsPerBox);
+                }
 
                 PurchaseReturnItem::create([
                     'purchase_return_id' => $return->id,
@@ -154,23 +231,37 @@ class PurchaseService
                     'pcs_per_box' => $pcsPerBox,
                     'qty' => $qty,
                     'unit_cost' => (float) ($line['unit_cost'] ?? 0),
+                    'weight_variant_id' => $weightVariant?->id,
+                    'base_quantity' => $baseQty,
+                    'variant_name' => $weightVariant?->name,
+                    'unit_weight_kg' => $weightVariant?->weight_in_kg,
                 ]);
 
                 $this->stockService->stockOut(
                     (int) $line['product_id'],
                     (int) $data['warehouse_id'],
-                    $stockQty,
+                    $baseQty,
                     'rtv',
                     $data['reason'] ?? 'Return to vendor',
                     $return->return_number,
                     $adminId,
                     'purchase_return',
                     $return->id,
-                    (int) $data['supplier_id']
+                    (int) $data['supplier_id'],
+                    [
+                        'weight_variant_id' => $weightVariant?->id,
+                        'variant_name' => $weightVariant?->name,
+                        'unit_weight_kg' => $weightVariant?->weight_in_kg,
+                        'unit' => $product->isKg() ? 'kg' : 'pcs',
+                    ]
                 );
 
-                if (!empty($line['purchase_order_item_id'])) {
-                    PurchaseOrderItem::where('id', $line['purchase_order_item_id'])->increment('returned_qty', $qty);
+                if (! empty($line['purchase_order_item_id'])) {
+                    $poItem = PurchaseOrderItem::find($line['purchase_order_item_id']);
+                    if ($poItem) {
+                        $poItem->returned_qty = (float) $poItem->returned_qty + $qty;
+                        $poItem->save();
+                    }
                 }
             }
 

@@ -17,6 +17,11 @@ class StockMovement extends Model
         'qty',
         'qty_before',
         'qty_after',
+        'unit',
+        'base_quantity',
+        'weight_variant_id',
+        'variant_name',
+        'unit_weight_kg',
         'reference_no',
         'reference_type',
         'reference_id',
@@ -40,5 +45,10 @@ class StockMovement extends Model
     public function admin()
     {
         return $this->belongsTo(Admin::class, 'admin_id');
+    }
+
+    public function weightVariant()
+    {
+        return $this->belongsTo(WeightVariant::class);
     }
 }

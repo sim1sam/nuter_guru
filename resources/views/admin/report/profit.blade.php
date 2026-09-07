@@ -48,8 +48,8 @@
                         <tbody>
                         @foreach($products as $p)
                         <tr>
-                            <td>{{ $p->product_name }}</td>
-                            <td>{{ (int) $p->sold_qty }}</td>
+                            <td>{{ $p->product_name }}@if(!empty($p->variant_name_snapshot)) <small class="text-muted">({{ $p->variant_name_snapshot }})</small>@endif</td>
+                            <td>{{ $p->sold_qty }} @if(isset($p->base_qty)) <small class="text-muted">/ {{ number_format((float)$p->base_qty, 3) }} base</small>@endif</td>
                             <td class="text-right">{{ number_format($p->sale_amount, 2) }}</td>
                             <td class="text-right">{{ number_format($p->cost_amount, 2) }}</td>
                             <td class="text-right {{ $p->profit < 0 ? 'text-danger' : 'text-success' }}">{{ number_format($p->profit, 2) }}</td>

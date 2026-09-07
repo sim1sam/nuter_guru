@@ -33,11 +33,16 @@ class PurchaseReturnController extends Controller
         $suppliers = Supplier::where('status', 1)->orderBy('name')->get();
         $warehouses = Warehouse::where('status', 1)->get();
         $categories = Category::orderBy('name')->get(['id', 'name']);
-        $products = Product::orderBy('name')->get(['id', 'name', 'short_name', 'sku', 'barcode', 'cost_price', 'qty', 'category_id', 'pcs_per_box', 'purchase_unit']);
+        $products = Product::with(['weightVariants' => function ($q) {
+            $q->where('weight_variants.status', 1);
+        }])->orderBy('name')->get([
+            'id', 'name', 'short_name', 'sku', 'barcode', 'cost_price', 'qty',
+            'category_id', 'pcs_per_box', 'purchase_unit', 'unit_type',
+        ]);
         $units = Unit::activeUnits();
         $orders = PurchaseOrder::with('supplier')->whereIn('status', ['partial', 'received'])->latest()->get();
         $selectedOrder = $request->purchase_order_id
-            ? PurchaseOrder::with(['supplier', 'items.product'])->find($request->purchase_order_id)
+            ? PurchaseOrder::with(['supplier', 'items.product', 'items.weightVariant'])->find($request->purchase_order_id)
             : null;
 
         return view('admin.purchase.create_return', compact('suppliers', 'warehouses', 'products', 'categories', 'units', 'orders', 'selectedOrder'));
@@ -51,11 +56,13 @@ class PurchaseReturnController extends Controller
             'return_date' => 'required|date',
             'product_id' => 'required|array|min:1',
             'qty' => 'required|array',
+            'weight_variant_id' => 'nullable|array',
+            'weight_variant_id.*' => 'nullable|integer|exists:weight_variants,id',
         ]);
 
         $lines = [];
         foreach ($request->product_id as $i => $productId) {
-            $qty = (int) ($request->qty[$i] ?? 0);
+            $qty = (float) ($request->qty[$i] ?? 0);
             if ($qty <= 0) {
                 continue;
             }
@@ -65,6 +72,9 @@ class PurchaseReturnController extends Controller
                 'unit' => Product::resolvePurchaseUnit($request->unit[$i] ?? 'pc'),
                 'pcs_per_box' => $request->pcs_per_box[$i] ?? 1,
                 'unit_cost' => (float) ($request->unit_cost[$i] ?? 0),
+                'weight_variant_id' => ! empty($request->weight_variant_id[$i])
+                    ? (int) $request->weight_variant_id[$i]
+                    : null,
                 'purchase_order_item_id' => $request->purchase_order_item_id[$i] ?? null,
             ];
         }

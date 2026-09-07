@@ -30,7 +30,7 @@ class PurchaseReceiptController extends Controller
             ->latest()
             ->get();
         $selectedOrder = $request->purchase_order_id
-            ? PurchaseOrder::with(['supplier', 'warehouse', 'items.product'])->find($request->purchase_order_id)
+            ? PurchaseOrder::with(['supplier', 'warehouse', 'items.product', 'items.weightVariant'])->find($request->purchase_order_id)
             : null;
 
         return view('admin.purchase.create_receipt', compact('orders', 'selectedOrder'));
@@ -47,7 +47,7 @@ class PurchaseReceiptController extends Controller
         $order = PurchaseOrder::findOrFail($request->purchase_order_id);
         $lines = [];
         foreach ($request->item_id as $i => $itemId) {
-            $lines[] = ['item_id' => $itemId, 'qty' => (int) ($request->qty[$i] ?? 0)];
+            $lines[] = ['item_id' => $itemId, 'qty' => (float) ($request->qty[$i] ?? 0)];
         }
 
         try {

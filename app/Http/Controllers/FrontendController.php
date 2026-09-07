@@ -381,7 +381,9 @@ class FrontendController extends Controller
                         ->with(['variantItems' => function ($itemQuery) {
                             $itemQuery->where('status', 1)->orderBy('id');
                         }]);
-                }
+                },
+                'weightVariants',
+                'productWeightVariants',
             ])
             ->firstOrFail();
         

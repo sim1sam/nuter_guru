@@ -153,7 +153,7 @@
             </ul>
           </li>
 
-          <li class="nav-item dropdown {{ Route::is('admin.inventory*') || Route::is('admin.stock-history') || Route::is('admin.warehouse.*') || Route::is('admin.unit.*') || Route::is('admin.stockout-product') ? 'active' : '' }}">
+          <li class="nav-item dropdown {{ Route::is('admin.inventory*') || Route::is('admin.stock-history') || Route::is('admin.warehouse.*') || Route::is('admin.unit.*') || Route::is('admin.weight-variant.*') || Route::is('admin.stockout-product') ? 'active' : '' }}">
             <a href="#" class="nav-link has-dropdown">
             <div class="icon">
                 <i class="fas fa-warehouse"></i>
@@ -169,6 +169,7 @@
                 <li class="{{ Route::is('admin.inventory.movements') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.inventory.movements') }}">{{__('admin.Stock Movements')}}</a></li>
                 <li class="{{ Route::is('admin.warehouse.*') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.warehouse.index') }}">{{__('admin.Warehouses')}}</a></li>
                 <li class="{{ Route::is('admin.unit.*') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.unit.index') }}">{{__('admin.Units')}}</a></li>
+                <li class="{{ Route::is('admin.weight-variant.*') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.weight-variant.index') }}">{{__('admin.Weight Variants')}}</a></li>
                 <li class="{{ Route::is('admin.inventory.low-stock') || Route::is('admin.stockout-product') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.inventory.low-stock') }}">{{__('admin.Low Stock Alerts')}}</a></li>
                 <li class="{{ Route::is('admin.inventory.barcode*') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.inventory.barcode') }}">{{__('admin.Barcode Generator')}}</a></li>
             </ul>
@@ -197,6 +198,7 @@
                 <li class="{{ Route::is('admin.report.returns') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.report.returns') }}">{{__('admin.Return Report')}}</a></li>
                 <li class="{{ Route::is('admin.report.sales') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.report.sales') }}">{{__('admin.Sales Report')}}</a></li>
                 <li class="{{ Route::is('admin.report.profit') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.report.profit') }}">{{__('admin.Profit Report')}}</a></li>
+                <li class="{{ Route::is('admin.order-return.*') ? 'active' : '' }}"><a class="nav-link" href="{{ route('admin.order-return.index') }}">{{__('admin.Sale Returns')}}</a></li>
             </ul>
           </li>
 

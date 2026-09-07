@@ -313,8 +313,8 @@ class ReportController extends Controller
             ->leftJoin('products', 'order_products.product_id', '=', 'products.id')
             ->whereBetween('orders.created_at', $this->dateTimeRange($from, $to))
             ->where('orders.order_status', '!=', 4)
-            ->groupBy('order_products.product_id', 'order_products.product_name')
-            ->selectRaw('order_products.product_id, order_products.product_name, SUM(order_products.qty) as sold_qty, SUM(order_products.unit_price * order_products.qty) as sale_amount, SUM(order_products.qty * COALESCE(products.cost_price, 0)) as cost_amount')
+            ->groupBy('order_products.product_id', 'order_products.product_name', 'order_products.variant_name_snapshot')
+            ->selectRaw('order_products.product_id, order_products.product_name, order_products.variant_name_snapshot, SUM(order_products.qty) as sold_qty, SUM(COALESCE(order_products.base_quantity, order_products.qty)) as base_qty, SUM(order_products.unit_price * order_products.qty) as sale_amount, SUM(COALESCE(order_products.base_quantity, order_products.qty) * COALESCE(order_products.unit_cost, products.cost_price, 0)) as cost_amount')
             ->orderByDesc('sale_amount')
             ->get()
             ->map(function ($row) {
@@ -569,7 +569,7 @@ class ReportController extends Controller
             ->leftJoin('products', 'order_products.product_id', '=', 'products.id')
             ->whereBetween('orders.created_at', $this->dateTimeRange($from, $to))
             ->where('orders.order_status', '!=', 4)
-            ->selectRaw('SUM(order_products.qty * COALESCE(products.cost_price, 0)) as cogs')
+            ->selectRaw('SUM(COALESCE(order_products.base_quantity, order_products.qty) * COALESCE(order_products.unit_cost, products.cost_price, 0)) as cogs')
             ->value('cogs') ?? 0);
     }
 

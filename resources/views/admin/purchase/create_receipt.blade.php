@@ -12,15 +12,40 @@
 </select></div>
 @if($selectedOrder)
 <p><strong>{{__('admin.Warehouse')}}:</strong> {{ $selectedOrder->warehouse->name }}</p>
-<table class="table"><thead><tr><th>{{__('admin.Product')}}</th><th>{{__('admin.Unit')}}</th><th>{{__('admin.Pending')}}</th><th>{{__('admin.Receive Qty')}}</th></tr></thead><tbody>
+<table class="table"><thead><tr>
+<th>{{__('admin.Product')}}</th>
+<th>Type</th>
+<th>{{__('admin.Unit')}} / Variant</th>
+<th>{{__('admin.Pending')}}</th>
+<th>{{__('admin.Receive Qty')}}</th>
+</tr></thead><tbody>
 @foreach($selectedOrder->items as $item)
 @if($item->pendingQty() > 0)
+@php
+    $isKg = $item->product && $item->product->isKg();
+    $baseLabel = $isKg ? 'KG' : __('admin.Pcs');
+    $pending = $item->pendingQty();
+@endphp
 <tr>
 <td>{{ $item->product->name }}<input type="hidden" name="item_id[]" value="{{ $item->id }}">
-<small class="text-muted d-block">{{__('admin.Will add')}} {{ $item->toBaseQty($item->pendingQty()) }} {{__('admin.Pcs')}} {{__('admin.to stock')}}</small></td>
-<td>{{ $item->unitLabel() }}@if(\App\Models\Product::isPackUnit($item->unit)) <small class="text-muted d-block">1 {{ $item->unitLabel() }} = {{ $item->pcs_per_box }} {{__('admin.Pcs')}}</small>@endif</td>
-<td>{{ $item->pendingQty() }} {{ $item->unitLabel() }}</td>
-<td><input type="number" name="qty[]" class="form-control" min="0" max="{{ $item->pendingQty() }}" value="{{ $item->pendingQty() }}"></td>
+<small class="text-muted d-block">{{__('admin.Will add')}} {{ $isKg ? number_format($item->toBaseQty($pending), 3) : (int) $item->toBaseQty($pending) }} {{ $baseLabel }} {{__('admin.to stock')}}</small></td>
+<td>
+    @if($isKg)
+        <span class="badge badge-info">KG</span>
+    @else
+        <span class="badge badge-secondary">PCS</span>
+    @endif
+</td>
+<td>
+    {{ $item->unitLabel() }}
+    @if($item->variant_name)
+        <small class="text-muted d-block">{{ $item->variant_name }}</small>
+    @elseif(\App\Models\Product::isPackUnit($item->unit))
+        <small class="text-muted d-block">1 {{ $item->unitLabel() }} = {{ $item->pcs_per_box }} {{__('admin.Pcs')}}</small>
+    @endif
+</td>
+<td>{{ $isKg ? rtrim(rtrim(number_format($pending, 3, '.', ''), '0'), '.') : $pending }} {{ $item->unitLabel() }}</td>
+<td><input type="number" name="qty[]" class="form-control" min="0" step="{{ $isKg ? '0.001' : '1' }}" max="{{ $pending }}" value="{{ $pending }}"></td>
 </tr>
 @endif
 @endforeach

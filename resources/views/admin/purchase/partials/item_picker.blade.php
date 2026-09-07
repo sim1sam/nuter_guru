@@ -13,18 +13,35 @@
     })->values();
     $categoryNames = $categories->pluck('name', 'id');
     $productJson = $products->map(function ($p) use ($categoryNames) {
+        $isKg = strtolower((string) ($p->unit_type ?? 'pcs')) === 'kg';
+        $cost = (float) ($p->cost_price ?? 0);
+
         return [
             'id' => (int) $p->id,
             'name' => (string) $p->name,
             'sku' => (string) ($p->sku ?? ''),
             'barcode' => (string) ($p->barcode ?? ''),
-            'cost' => (float) ($p->cost_price ?? 0),
-            'qty' => (int) $p->qty,
+            'cost' => $cost,
+            'qty' => (float) $p->qty,
             'category_id' => $p->category_id ? (int) $p->category_id : null,
             'category' => $p->category_id ? (string) ($categoryNames[$p->category_id] ?? '') : '',
             'pcs_per_box' => max(1, (int) ($p->pcs_per_box ?? 1)),
             'purchase_unit' => \App\Models\Product::normalizeUnit($p->purchase_unit ?? 'pc'),
             'pack_unit_name' => \App\Models\Unit::label($p->purchase_unit ?? 'pc'),
+            'unit_type' => $isKg ? 'kg' : 'pcs',
+            'weight_variants' => $isKg
+                ? $p->weightVariants->map(function ($wv) use ($cost) {
+                    $kg = (float) $wv->weight_in_kg;
+
+                    return [
+                        'id' => (int) $wv->id,
+                        'name' => (string) $wv->name,
+                        'code' => (string) $wv->code,
+                        'weight_in_kg' => $kg,
+                        'purchase_cost' => round($cost * $kg, 2),
+                    ];
+                })->values()->all()
+                : [],
         ];
     })->values();
 @endphp
@@ -65,7 +82,8 @@
 #purchaseSearchResults .no-result { padding: 12px 14px; color: #6c757d; text-align: center; }
 #purchaseItemsTable th, #purchaseItemsTable td { vertical-align: middle; }
 #purchaseItemsTable td .form-control { min-width: 90px; }
-#purchaseItemsTable .item-unit { min-width: 80px; height: 38px; }
+#purchaseItemsTable .item-unit,
+#purchaseItemsTable .item-weight-variant { min-width: 100px; height: 38px; }
 #purchaseItemsTable .item-pcs-hint,
 #purchaseItemsTable .item-cost-hint { display:block; font-size:11px; margin-top:3px; }
 #purchaseItemsTable .item-total-pcs,
@@ -111,7 +129,7 @@
         </div>
         <div id="purchaseSearchResults"></div>
     </div>
-    <small class="text-muted d-block mt-2">{{__('admin.Select Box or another pack unit to enter unit price and Pcs. Per Pc Cost is calculated')}}</small>
+    <small class="text-muted d-block mt-2">{{__('admin.Select Box or another pack unit to enter unit price and Pcs. Per Pc Cost is calculated')}} · KG products: optional weight variant</small>
 </div>
 
 <div class="table-responsive">
@@ -120,12 +138,12 @@
             <tr>
                 <th style="width:18%">{{__('admin.Product')}}</th>
                 <th>{{__('admin.SKU')}}</th>
-                <th style="width:90px">{{__('admin.Unit')}}</th>
+                <th style="width:110px">{{__('admin.Unit')}} / Variant</th>
                 <th style="width:90px">{{__('admin.Pcs Per Unit')}}</th>
                 <th style="width:85px">{{__('admin.Quantity')}}</th>
                 <th style="width:110px">{{__('admin.Purchase Price')}}</th>
-                <th style="width:110px">{{__('admin.Per Pc Cost')}}</th>
-                <th style="width:75px">{{__('admin.Total Pcs')}}</th>
+                <th style="width:110px">{{__('admin.Per Pc Cost')}} / KG</th>
+                <th style="width:85px">Base Qty</th>
                 <th style="width:90px">{{__('admin.Line Total')}}</th>
                 <th style="width:55px">{{__('admin.Action')}}</th>
             </tr>

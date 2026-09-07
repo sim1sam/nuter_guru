@@ -42,8 +42,44 @@ class CartController extends Controller
                 ], 400);
             }
 
-            // Check stock availability
-            $availableStock = $product->qty - $product->sold_qty;
+            $weightCalc = app(\App\Services\Inventory\WeightCalculationService::class);
+            $weightVariantId = $request->filled('weight_variant_id') ? (int) $request->weight_variant_id : null;
+            $weightVariant = null;
+            $pivot = null;
+            $unitPrice = null;
+            $baseQuantity = null;
+            $variantNameSnapshot = null;
+            $unitWeightKg = null;
+            $qtyRequested = (float) $request->quantity;
+
+            if ($product->isKg() && $weightVariantId) {
+                $pivot = \App\Models\ProductWeightVariant::where('product_id', $product->id)
+                    ->where('weight_variant_id', $weightVariantId)
+                    ->first();
+                if (! $pivot) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid weight variant for this product',
+                    ], 400);
+                }
+                $weightVariant = \App\Models\WeightVariant::where('id', $weightVariantId)->where('status', 1)->first();
+                if (! $weightVariant) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Weight variant is not available',
+                    ], 400);
+                }
+                $unitPrice = $weightCalc->variantSellingPrice($product, $weightVariant, $pivot);
+                $baseQuantity = $weightCalc->calculateBaseQuantity($product, $qtyRequested, $weightVariant);
+                $variantNameSnapshot = $weightVariant->name;
+                $unitWeightKg = (float) $weightVariant->weight_in_kg;
+            } elseif ($product->isKg()) {
+                $unitPrice = (float) (($product->offer_price !== null && $product->offer_price !== '') ? $product->offer_price : $product->price);
+                $baseQuantity = $weightCalc->roundWeight($qtyRequested);
+            }
+
+            // Check stock availability (base unit)
+            $availableStock = $weightCalc->roundWeight((float) $product->qty);
             if ($availableStock <= 0) {
                 session()->flash('error', 'Product is out of stock');
                 return response()->json([
@@ -52,46 +88,67 @@ class CartController extends Controller
                 ], 400);
             }
 
-            if ($request->quantity > $availableStock) {
-                session()->flash('error', "Only {$availableStock} items available in stock");
+            $requiredBase = $baseQuantity ?? $qtyRequested;
+            if (! $weightCalc->hasEnoughStock($product, $requiredBase)) {
+                $msg = $weightCalc->availableStockMessage($product);
+                session()->flash('error', $msg);
                 return response()->json([
                     'success' => false,
-                    'message' => "Only {$availableStock} items available in stock"
+                    'message' => $msg
                 ], 400);
             }
 
             // If user is authenticated, save to database
             if (Auth::check()) {
                 $user = Auth::user();
-                $incomingVariants = $this->normalizeRequestVariants($request);
+                $incomingVariants = $weightVariantId ? [] : $this->normalizeRequestVariants($request);
                 $incomingItemIds = $this->variantItemIds($incomingVariants);
 
                 $existingCartItem = ShoppingCart::with('variants')
                     ->where('user_id', $user->id)
                     ->where('product_id', $request->product_id)
+                    ->when($weightVariantId, fn ($q) => $q->where('weight_variant_id', $weightVariantId))
+                    ->when(! $weightVariantId, fn ($q) => $q->whereNull('weight_variant_id'))
                     ->get()
-                    ->first(function ($item) use ($incomingItemIds) {
+                    ->first(function ($item) use ($incomingItemIds, $weightVariantId) {
+                        if ($weightVariantId) {
+                            return (int) $item->weight_variant_id === (int) $weightVariantId;
+                        }
+
                         return $this->variantItemIds($item->variants) === $incomingItemIds;
                     });
 
                 if ($existingCartItem) {
-                    $newQuantity = $existingCartItem->qty + $request->quantity;
-                    if ($newQuantity > $availableStock) {
-                        session()->flash('error', "Cannot add more items. Only {$availableStock} items available in stock");
+                    $newQuantity = (float) $existingCartItem->qty + $qtyRequested;
+                    $newBase = $weightVariant
+                        ? $weightCalc->calculateBaseQuantity($product, $newQuantity, $weightVariant)
+                        : ($product->isKg() ? $weightCalc->roundWeight($newQuantity) : $newQuantity);
+                    if (! $weightCalc->hasEnoughStock($product, $newBase)) {
+                        $msg = $weightCalc->availableStockMessage($product);
+                        session()->flash('error', $msg);
                         return response()->json([
                             'success' => false,
-                            'message' => "Cannot add more items. Only {$availableStock} items available in stock"
+                            'message' => $msg
                         ], 400);
                     }
                     $existingCartItem->qty = $newQuantity;
+                    $existingCartItem->base_quantity = $newBase;
+                    if ($unitPrice !== null) {
+                        $existingCartItem->unit_price = $unitPrice;
+                    }
                     $existingCartItem->save();
                 } else {
                     $cartItem = new ShoppingCart();
                     $cartItem->user_id = $user->id;
                     $cartItem->product_id = $request->product_id;
-                    $cartItem->qty = $request->quantity;
+                    $cartItem->qty = $qtyRequested;
                     $cartItem->coupon_name = '';
                     $cartItem->offer_type = 0;
+                    $cartItem->weight_variant_id = $weightVariantId;
+                    $cartItem->variant_name_snapshot = $variantNameSnapshot;
+                    $cartItem->unit_weight_kg = $unitWeightKg;
+                    $cartItem->base_quantity = $baseQuantity ?? $qtyRequested;
+                    $cartItem->unit_price = $unitPrice;
                     $cartItem->save();
 
                     foreach ($incomingVariants as $variant) {
@@ -105,24 +162,39 @@ class CartController extends Controller
             } else {
                 // Guest session cart — separate line per product + variant combo
                 $cart = Session::get('guest_cart', []);
-                $incomingVariants = $this->normalizeRequestVariants($request);
-                $productKey = $this->guestCartKey($request->product_id, $incomingVariants);
+                $incomingVariants = $weightVariantId ? [] : $this->normalizeRequestVariants($request);
+                $productKey = $weightVariantId
+                    ? $request->product_id.'_wv_'.$weightVariantId
+                    : $this->guestCartKey($request->product_id, $incomingVariants);
 
                 if (isset($cart[$productKey])) {
-                    $newQuantity = $cart[$productKey]['quantity'] + $request->quantity;
-                    if ($newQuantity > $availableStock) {
-                        session()->flash('error', "Cannot add more items. Only {$availableStock} items available in stock");
+                    $newQuantity = (float) $cart[$productKey]['quantity'] + $qtyRequested;
+                    $newBase = $weightVariant
+                        ? $weightCalc->calculateBaseQuantity($product, $newQuantity, $weightVariant)
+                        : ($product->isKg() ? $weightCalc->roundWeight($newQuantity) : $newQuantity);
+                    if (! $weightCalc->hasEnoughStock($product, $newBase)) {
+                        $msg = $weightCalc->availableStockMessage($product);
+                        session()->flash('error', $msg);
                         return response()->json([
                             'success' => false,
-                            'message' => "Cannot add more items. Only {$availableStock} items available in stock"
+                            'message' => $msg
                         ], 400);
                     }
                     $cart[$productKey]['quantity'] = $newQuantity;
+                    $cart[$productKey]['base_quantity'] = $newBase;
+                    if ($unitPrice !== null) {
+                        $cart[$productKey]['unit_price'] = $unitPrice;
+                    }
                 } else {
                     $cart[$productKey] = [
                         'product_id' => (int) $request->product_id,
-                        'quantity' => (int) $request->quantity,
+                        'quantity' => $qtyRequested,
                         'variants' => $incomingVariants,
+                        'weight_variant_id' => $weightVariantId,
+                        'variant_name_snapshot' => $variantNameSnapshot,
+                        'unit_weight_kg' => $unitWeightKg,
+                        'base_quantity' => $baseQuantity ?? $qtyRequested,
+                        'unit_price' => $unitPrice,
                     ];
                 }
 
@@ -271,12 +343,22 @@ class CartController extends Controller
 
             if (Auth::check()) {
                 $user = Auth::user();
-                $cartItems = ShoppingCart::with(['product', 'variants.variantItem'])
+                $cartItems = ShoppingCart::with(['product', 'variants.variantItem', 'weightVariant'])
                     ->where('user_id', $user->id)
                     ->get()
                     ->map(function ($item) {
                         $variants = $this->formatCartVariants($item->variants);
-                        $unitPrice = product_unit_price($item->product, $item->variants);
+                        if ($item->variant_name_snapshot) {
+                            $variants = [[
+                                'name' => $item->variant_name_snapshot,
+                                'variant_name' => 'Weight',
+                                'variant_value' => $item->variant_name_snapshot,
+                                'price' => (float) ($item->unit_price ?? 0),
+                            ]];
+                        }
+                        $unitPrice = $item->unit_price !== null
+                            ? (float) $item->unit_price
+                            : product_unit_price($item->product, $item->variants);
 
                         return [
                             'id' => $item->id,
@@ -285,6 +367,9 @@ class CartController extends Controller
                             'quantity' => $item->qty,
                             'product' => $item->product,
                             'variants' => $variants,
+                            'weight_variant_id' => $item->weight_variant_id,
+                            'unit_weight_kg' => $item->unit_weight_kg,
+                            'base_quantity' => $item->base_quantity,
                             'unit_price' => $unitPrice,
                             'line_total' => $unitPrice * $item->qty,
                         ];
@@ -298,8 +383,18 @@ class CartController extends Controller
                     $product = Product::find($item['product_id']);
                     if ($product) {
                         $variants = $this->formatCartVariants($item['variants'] ?? []);
-                        $unitPrice = product_unit_price($product, $item['variants'] ?? []);
-                        $qty = (int) ($item['quantity'] ?? 1);
+                        if (! empty($item['variant_name_snapshot'])) {
+                            $variants = [[
+                                'name' => $item['variant_name_snapshot'],
+                                'variant_name' => 'Weight',
+                                'variant_value' => $item['variant_name_snapshot'],
+                                'price' => (float) ($item['unit_price'] ?? 0),
+                            ]];
+                        }
+                        $unitPrice = isset($item['unit_price']) && $item['unit_price'] !== null
+                            ? (float) $item['unit_price']
+                            : product_unit_price($product, $item['variants'] ?? []);
+                        $qty = (float) ($item['quantity'] ?? 1);
                         $cartItems->push([
                             'id' => (string) $itemId,
                             'product_id' => $product->id,
@@ -307,6 +402,9 @@ class CartController extends Controller
                             'qty' => $qty,
                             'quantity' => $qty,
                             'variants' => $variants,
+                            'weight_variant_id' => $item['weight_variant_id'] ?? null,
+                            'unit_weight_kg' => $item['unit_weight_kg'] ?? null,
+                            'base_quantity' => $item['base_quantity'] ?? $qty,
                             'unit_price' => $unitPrice,
                             'line_total' => $unitPrice * $qty,
                         ]);
@@ -503,6 +601,19 @@ class CartController extends Controller
                 return response()->json(['error' => 'Product not found'], 404);
             }
 
+            if ($request->filled('weight_variant_id') && $product->isKg()) {
+                $weightCalc = app(\App\Services\Inventory\WeightCalculationService::class);
+                $wv = \App\Models\WeightVariant::find($request->weight_variant_id);
+                $pivot = \App\Models\ProductWeightVariant::where('product_id', $product->id)
+                    ->where('weight_variant_id', $request->weight_variant_id)
+                    ->first();
+                if ($wv) {
+                    return response()->json([
+                        'productPrice' => $weightCalc->variantSellingPrice($product, $wv, $pivot),
+                    ]);
+                }
+            }
+
             $basePrice = $product->offer_price === null
                 ? (float) $product->price
                 : (float) $product->offer_price;
@@ -589,7 +700,11 @@ class CartController extends Controller
                     continue;
                 }
 
-                $total += $this->calculateLineTotal($item->product, $item->qty, $item->variants) ;
+                if ($item->unit_price !== null) {
+                    $total += (float) $item->unit_price * (float) $item->qty;
+                } else {
+                    $total += $this->calculateLineTotal($item->product, (float) $item->qty, $item->variants);
+                }
             }
 
             return round($total, 2);
@@ -603,6 +718,11 @@ class CartController extends Controller
                 continue;
             }
 
+            if (isset($item['unit_price']) && $item['unit_price'] !== null) {
+                $total += (float) $item['unit_price'] * (float) ($item['quantity'] ?? 1);
+                continue;
+            }
+
             $variantItems = collect($item['variants'] ?? [])
                 ->map(function ($variant) {
                     if (! isset($variant['variant_item_id'])) {
@@ -613,15 +733,15 @@ class CartController extends Controller
                 })
                 ->filter();
 
-            $total += $this->calculateLineTotal($product, $item['quantity'] ?? 1, $variantItems);
+            $total += $this->calculateLineTotal($product, (float) ($item['quantity'] ?? 1), $variantItems);
         }
 
         return round($total, 2);
     }
 
-    private function calculateLineTotal(Product $product, int $quantity, $variants = null): float
+    private function calculateLineTotal(Product $product, $quantity, $variants = null): float
     {
-        return product_unit_price($product, $variants) * max(1, $quantity);
+        return product_unit_price($product, $variants) * max(0.001, (float) $quantity);
     }
 
     public function applyCoupon(Request $request)

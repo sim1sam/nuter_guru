@@ -125,9 +125,10 @@ class Product extends Model
         return self::normalizeUnit($unit) !== 'pc';
     }
 
-    public static function convertToPcs(int $qty, ?string $unit, int $pcsPerBox = 1): int
+    public static function convertToPcs($qty, ?string $unit, int $pcsPerBox = 1): float
     {
         $pcsPerBox = max(1, $pcsPerBox);
+        $qty = (float) $qty;
 
         return self::isPackUnit($unit) ? $qty * $pcsPerBox : $qty;
     }
@@ -177,6 +178,8 @@ class Product extends Model
         'child_category_id',
         'brand_id',
         'qty',
+        'unit_type',
+        'selling_price_mode',
         'pcs_per_box',
         'purchase_unit',
         'weight',
@@ -205,6 +208,34 @@ class Product extends Model
         'approve_by_admin'
     ];
 
+    public function isKg(): bool
+    {
+        return strtolower((string) $this->unit_type) === 'kg';
+    }
+
+    public function isPcs(): bool
+    {
+        return ! $this->isKg();
+    }
+
+    public function unitLabel(): string
+    {
+        return $this->isKg() ? 'KG' : 'PCS';
+    }
+
+    public function weightVariants()
+    {
+        return $this->belongsToMany(WeightVariant::class, 'product_weight_variants')
+            ->withPivot(['id', 'selling_price', 'barcode'])
+            ->withTimestamps()
+            ->orderBy('weight_variants.sort_order');
+    }
+
+    public function productWeightVariants()
+    {
+        return $this->hasMany(ProductWeightVariant::class);
+    }
+
     public function toArray()
     {
         $array = parent::toArray();
@@ -213,5 +244,4 @@ class Product extends Model
 
         return $array;
     }
-
 }

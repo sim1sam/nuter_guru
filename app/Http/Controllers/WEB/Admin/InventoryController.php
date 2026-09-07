@@ -154,7 +154,7 @@ class InventoryController extends Controller
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'warehouse_id' => 'required|exists:warehouses,id',
-            'qty' => 'required|integer|min:1',
+            'qty' => 'required|numeric|min:0.001',
             'reference_no' => 'nullable|string|max:100',
             'note' => 'nullable|string|max:500',
         ]);
@@ -162,7 +162,7 @@ class InventoryController extends Controller
         $this->stockService->stockIn(
             (int) $request->product_id,
             (int) $request->warehouse_id,
-            (int) $request->qty,
+            (float) $request->qty,
             $request->note,
             $request->reference_no,
             Auth::guard('admin')->id()
@@ -187,7 +187,7 @@ class InventoryController extends Controller
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'warehouse_id' => 'required|exists:warehouses,id',
-            'qty' => 'required|integer|min:1',
+            'qty' => 'required|numeric|min:0.001',
             'reason' => 'required|string|max:50',
             'reference_no' => 'nullable|string|max:100',
             'note' => 'nullable|string|max:500',
@@ -197,7 +197,7 @@ class InventoryController extends Controller
             $this->stockService->stockOut(
                 (int) $request->product_id,
                 (int) $request->warehouse_id,
-                (int) $request->qty,
+                (float) $request->qty,
                 $request->reason,
                 $request->note,
                 $request->reference_no,
@@ -229,14 +229,14 @@ class InventoryController extends Controller
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'warehouse_id' => 'required|exists:warehouses,id',
-            'new_qty' => 'required|integer|min:0',
+            'new_qty' => 'required|numeric|min:0',
             'note' => 'nullable|string|max:500',
         ]);
 
         $this->stockService->adjust(
             (int) $request->product_id,
             (int) $request->warehouse_id,
-            (int) $request->new_qty,
+            (float) $request->new_qty,
             $request->note,
             Auth::guard('admin')->id()
         );
@@ -261,7 +261,7 @@ class InventoryController extends Controller
             'product_id' => 'required|exists:products,id',
             'from_warehouse_id' => 'required|exists:warehouses,id',
             'to_warehouse_id' => 'required|exists:warehouses,id|different:from_warehouse_id',
-            'qty' => 'required|integer|min:1',
+            'qty' => 'required|numeric|min:0.001',
             'note' => 'nullable|string|max:500',
         ]);
 
@@ -270,7 +270,7 @@ class InventoryController extends Controller
                 (int) $request->product_id,
                 (int) $request->from_warehouse_id,
                 (int) $request->to_warehouse_id,
-                (int) $request->qty,
+                (float) $request->qty,
                 $request->note,
                 Auth::guard('admin')->id()
             );
@@ -405,3 +405,4 @@ class InventoryController extends Controller
         return redirect()->route('admin.stock-history', $product->id);
     }
 }
+

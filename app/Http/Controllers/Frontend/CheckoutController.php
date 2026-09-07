@@ -580,14 +580,22 @@ class CheckoutController extends Controller
             $variants = is_object($cartItem) ? $cartItem->variants : ($cartItem['variants'] ?? []);
 
             $productId = is_object($cartItem) ? $cartItem->product_id : $cartItem['product_id'];
-            $product = Product::select('id', 'price', 'offer_price', 'weight', 'vendor_id', 'qty', 'name')
+            $product = Product::select('id', 'price', 'offer_price', 'weight', 'vendor_id', 'qty', 'name', 'name_bn', 'cost_price', 'unit_type', 'selling_price_mode')
                 ->find($productId);
 
             if (!$product) {
                 continue;
             }
 
-            $price = product_unit_price($product, $variants);
+            $weightVariantId = is_object($cartItem) ? ($cartItem->weight_variant_id ?? null) : ($cartItem['weight_variant_id'] ?? null);
+            $unitPriceStored = is_object($cartItem) ? ($cartItem->unit_price ?? null) : ($cartItem['unit_price'] ?? null);
+            $baseQtyStored = is_object($cartItem) ? ($cartItem->base_quantity ?? null) : ($cartItem['base_quantity'] ?? null);
+            $variantNameSnapshot = is_object($cartItem) ? ($cartItem->variant_name_snapshot ?? null) : ($cartItem['variant_name_snapshot'] ?? null);
+            $unitWeightKg = is_object($cartItem) ? ($cartItem->unit_weight_kg ?? null) : ($cartItem['unit_weight_kg'] ?? null);
+
+            $price = $unitPriceStored !== null
+                ? (float) $unitPriceStored
+                : product_unit_price($product, $variants);
 
             // Check for flash sale
             $isFlashSale = FlashSaleProduct::where([
@@ -606,6 +614,16 @@ class CheckoutController extends Controller
                 }
             }
 
+            $cartQty = is_object($cartItem) ? $cartItem->qty : ($cartItem['qty'] ?? $cartItem['quantity'] ?? 1);
+            $baseQty = $baseQtyStored !== null
+                ? (float) $baseQtyStored
+                : (float) $cartQty;
+
+            $weightCalc = app(\App\Services\Inventory\WeightCalculationService::class);
+            $unitCost = $product->isKg()
+                ? $weightCalc->roundMoney((float) $product->cost_price * ($unitWeightKg ?: 1))
+                : (float) $product->cost_price;
+
             // Store order product
             $orderProduct = new OrderProduct();
             $orderProduct->order_id = $order->id;
@@ -613,22 +631,32 @@ class CheckoutController extends Controller
             $orderProduct->seller_id = $product->vendor_id;
             $orderProduct->product_name = product_name($product);
             $orderProduct->unit_price = $price;
-            $orderProduct->qty = is_object($cartItem) ? $cartItem->qty : $cartItem['qty'];
+            $orderProduct->qty = $cartQty;
+            $orderProduct->weight_variant_id = $weightVariantId;
+            $orderProduct->variant_name_snapshot = $variantNameSnapshot;
+            $orderProduct->unit_weight_kg = $unitWeightKg;
+            $orderProduct->weight_in_gram = $unitWeightKg ? (int) round($unitWeightKg * 1000) : null;
+            $orderProduct->base_quantity = $baseQty;
+            $orderProduct->unit_cost = $unitCost;
             $orderProduct->save();
 
-            $cartQty = is_object($cartItem) ? $cartItem->qty : $cartItem['qty'];
             try {
                 app(\App\Services\StockService::class)->deductForSale(
                     (int) $product->id,
-                    (int) $cartQty,
+                    $baseQty,
                     $order->order_id,
                     null,
                     'order',
-                    (int) $order->id
+                    (int) $order->id,
+                    [
+                        'weight_variant_id' => $weightVariantId,
+                        'variant_name' => $variantNameSnapshot,
+                        'unit_weight_kg' => $unitWeightKg,
+                        'unit' => $product->isKg() ? 'kg' : 'pcs',
+                    ]
                 );
             } catch (\InvalidArgumentException $e) {
-                $product->qty = max(0, (int) $product->qty - (int) $cartQty);
-                $product->save();
+                throw $e;
             }
 
             // Store product variants
@@ -1949,10 +1977,12 @@ class CheckoutController extends Controller
         $setting = Setting::first();
 
         foreach ($cartProducts as $cartProduct) {
-            $product = Product::select('id', 'price', 'offer_price', 'weight', 'vendor_id', 'qty', 'name')
+            $product = Product::select('id', 'price', 'offer_price', 'weight', 'vendor_id', 'qty', 'name', 'name_bn', 'cost_price', 'unit_type', 'selling_price_mode')
                 ->find($cartProduct->product_id);
 
-            $price = product_unit_price($product, $cartProduct->variants ?? []);
+            $price = $cartProduct->unit_price !== null
+                ? (float) $cartProduct->unit_price
+                : product_unit_price($product, $cartProduct->variants ?? []);
 
             // Check flash sale
             $isFlashSale = FlashSaleProduct::where([
@@ -1971,6 +2001,14 @@ class CheckoutController extends Controller
                 }
             }
 
+            $baseQty = $cartProduct->base_quantity !== null
+                ? (float) $cartProduct->base_quantity
+                : (float) $cartProduct->qty;
+            $weightCalc = app(\App\Services\Inventory\WeightCalculationService::class);
+            $unitCost = $product->isKg()
+                ? $weightCalc->roundMoney((float) $product->cost_price * ((float) ($cartProduct->unit_weight_kg ?: 1)))
+                : (float) $product->cost_price;
+
             // Store order product
             $orderProduct = new OrderProduct();
             $orderProduct->order_id = $order->id;
@@ -1979,20 +2017,31 @@ class CheckoutController extends Controller
             $orderProduct->product_name = product_name($product);
             $orderProduct->unit_price = $price;
             $orderProduct->qty = $cartProduct->qty;
+            $orderProduct->weight_variant_id = $cartProduct->weight_variant_id ?? null;
+            $orderProduct->variant_name_snapshot = $cartProduct->variant_name_snapshot ?? null;
+            $orderProduct->unit_weight_kg = $cartProduct->unit_weight_kg ?? null;
+            $orderProduct->weight_in_gram = !empty($cartProduct->unit_weight_kg) ? (int) round($cartProduct->unit_weight_kg * 1000) : null;
+            $orderProduct->base_quantity = $baseQty;
+            $orderProduct->unit_cost = $unitCost;
             $orderProduct->save();
 
             try {
                 app(\App\Services\StockService::class)->deductForSale(
                     (int) $product->id,
-                    (int) $cartProduct->qty,
+                    $baseQty,
                     $order->order_id,
                     null,
                     'order',
-                    (int) $order->id
+                    (int) $order->id,
+                    [
+                        'weight_variant_id' => $cartProduct->weight_variant_id ?? null,
+                        'variant_name' => $cartProduct->variant_name_snapshot ?? null,
+                        'unit_weight_kg' => $cartProduct->unit_weight_kg ?? null,
+                        'unit' => $product->isKg() ? 'kg' : 'pcs',
+                    ]
                 );
             } catch (\InvalidArgumentException $e) {
-                $product->qty = max(0, (int) $product->qty - (int) $cartProduct->qty);
-                $product->save();
+                throw $e;
             }
 
             // Store product variants

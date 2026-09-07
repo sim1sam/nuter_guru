@@ -104,13 +104,53 @@
                     @endif
 
                     @php
-                        $productVariants = $product->variants
-                            ->where('status', 1)
-                            ->filter(fn ($variant) => $variant->variantItems->where('status', 1)->isNotEmpty())
-                            ->values();
+                        $weightCalc = app(\App\Services\Inventory\WeightCalculationService::class);
+                        $isKgProduct = $product->isKg();
+                        $kgWeightVariants = $isKgProduct ? $product->weightVariants : collect();
+                        $productVariants = $isKgProduct
+                            ? collect()
+                            : $product->variants
+                                ->where('status', 1)
+                                ->filter(fn ($variant) => $variant->variantItems->where('status', 1)->isNotEmpty())
+                                ->values();
                     @endphp
 
-                    @if($productVariants->count() > 0)
+                    @if($isKgProduct && $kgWeightVariants->count() > 0)
+                    <div class="pd-variants mb-3" id="pdWeightVariants">
+                        <div class="pd-variants__head">
+                            <span class="pd-section-label mb-0">{{ __('Select Weight') }}</span>
+                        </div>
+                        <div class="pd-variant-group" data-weight-group="1">
+                            <div class="pd-variant-options" role="radiogroup" aria-label="Weight">
+                                @foreach($kgWeightVariants as $wv)
+                                @php
+                                    $pivot = $product->productWeightVariants->firstWhere('weight_variant_id', $wv->id);
+                                    $sell = $weightCalc->variantSellingPrice($product, $wv, $pivot);
+                                    $purchase = $weightCalc->variantPurchaseCost($product, $wv);
+                                    $avail = $weightCalc->theoreticalAvailableUnits((float)$product->qty, $wv);
+                                @endphp
+                                <label class="pd-variant-chip">
+                                    <input class="weight-variant-option"
+                                           type="radio"
+                                           name="weight_variant"
+                                           value="{{ $wv->id }}"
+                                           data-name="{{ $wv->name }}"
+                                           data-price="{{ $sell }}"
+                                           data-kg="{{ $wv->weight_in_kg }}"
+                                           data-available="{{ $avail }}"
+                                           {{ $loop->first ? 'checked' : '' }}
+                                           required>
+                                    <span class="pd-variant-chip__label">
+                                        <span class="pd-variant-chip__name">{{ $wv->name }}</span>
+                                        <span class="pd-variant-chip__price">{{ $setting->currency_icon }}{{ number_format($sell, 2) }}</span>
+                                        <small class="d-block text-muted">{{ __('Purchase') }}: {{ $setting->currency_icon }}{{ number_format($purchase, 2) }} · {{ $avail }} {{ __('available') }}</small>
+                                    </span>
+                                </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    @elseif($productVariants->count() > 0)
                     <div class="pd-variants mb-3" id="pdVariants">
                         <div class="pd-variants__head">
                             <span class="pd-section-label mb-0">{{ __('Select Options') }}</span>
@@ -548,14 +588,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Variant selection does not change product price
-    variantOptions.forEach(function (option) {
+    // Variant selection updates displayed price
+    document.querySelectorAll('.variant-option, .weight-variant-option').forEach(function (option) {
         option.addEventListener('change', updatePrice);
     });
 
     updatePrice();
 
     function getSelectedVariantPrice() {
+        const weightOpt = document.querySelector('.weight-variant-option:checked');
+        if (weightOpt) {
+            return parseFloat(weightOpt.dataset.price || 0) || Number(basePrice);
+        }
+
         let variantTotal = 0;
         let hasVariantPrice = false;
 
@@ -598,6 +643,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function validateVariantSelection() {
+        const weightGroups = document.querySelectorAll('[data-weight-group]');
+        if (weightGroups.length > 0) {
+            if (!document.querySelector('.weight-variant-option:checked')) {
+                showNotification(@json(__('Please select all required product options before proceeding.')), 'danger');
+                return false;
+            }
+            return true;
+        }
+
         const variantGroups = document.querySelectorAll('.variant-group');
         if (variantGroups.length === 0) {
             return true;
@@ -629,13 +683,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return selectedVariants;
     }
 
+    function selectedWeightVariantId() {
+        const el = document.querySelector('.weight-variant-option:checked');
+        return el ? el.value : null;
+    }
+
     if (addToCartBtn && quantityInput) {
         addToCartBtn.addEventListener('click', function () {
             if (!validateVariantSelection()) {
                 return;
             }
 
-            pdAddToCart(this.dataset.productId, quantityInput.value, collectSelectedVariants());
+            pdAddToCart(this.dataset.productId, quantityInput.value, collectSelectedVariants(), selectedWeightVariantId());
         });
     }
 
@@ -645,7 +704,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            pdBuyNow(this.dataset.productId, quantityInput.value, collectSelectedVariants());
+            pdBuyNow(this.dataset.productId, quantityInput.value, collectSelectedVariants(), selectedWeightVariantId());
         });
     }
 
@@ -654,7 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
             addToWishlist(this.dataset.productId);
         });
     });
-    function pdAddToCart(productId, quantity, variants) {
+    function pdAddToCart(productId, quantity, variants, weightVariantId) {
         if (!addToCartBtn) {
             return;
         }
@@ -674,7 +733,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('product_id', productId);
         formData.append('quantity', quantity);
-        
+        if (weightVariantId) {
+            formData.append('weight_variant_id', weightVariantId);
+        }
+
         if (variants && variants.length > 0) {
             variants.forEach((variant, index) => {
                 formData.append(`variants[${index}][variant_id]`, variant.variant_id);
@@ -729,7 +791,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    function pdBuyNow(productId, quantity, variants) {
+    function pdBuyNow(productId, quantity, variants, weightVariantId) {
         if (!buyNowBtn) {
             return;
         }
@@ -741,6 +803,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Build query parameters for price calculation
         let priceParams = new URLSearchParams();
         priceParams.append('product_id', productId);
+        if (weightVariantId) {
+            priceParams.append('weight_variant_id', weightVariantId);
+        }
         
         if (variants && variants.length > 0) {
             variants.forEach((variant, index) => {
@@ -778,6 +843,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const cartFormData = new FormData();
             cartFormData.append('product_id', productId);
             cartFormData.append('quantity', quantity);
+            if (weightVariantId) {
+                cartFormData.append('weight_variant_id', weightVariantId);
+            }
             
             if (variants && variants.length > 0) {
                 variants.forEach((variant, index) => {

@@ -640,22 +640,33 @@ class PosController extends Controller
             $orderProduct->product_id = $cartProduct->product_id;
             $orderProduct->seller_id = $product->vendor_id;
             $orderProduct->product_name = $product->name;
-            $orderProduct->unit_price = $price;
+            $orderProduct->unit_price = $cartProduct->unit_price ?? $price;
             $orderProduct->qty = $cartProduct->qty;
+            $orderProduct->weight_variant_id = $cartProduct->weight_variant_id;
+            $orderProduct->variant_name_snapshot = $cartProduct->variant_name_snapshot;
+            $orderProduct->unit_weight_kg = $cartProduct->unit_weight_kg;
+            $orderProduct->base_quantity = $cartProduct->base_quantity ?? $cartProduct->qty;
+            $orderProduct->unit_cost = $product->cost_price;
             $orderProduct->save();
 
+            $baseQty = (float) ($cartProduct->base_quantity ?? $cartProduct->qty);
             try {
                 app(\App\Services\StockService::class)->deductForSale(
                     (int) $product->id,
-                    (int) $cartProduct->qty,
+                    $baseQty,
                     $order->order_id,
                     Auth::guard('admin')->id(),
                     'order',
-                    (int) $order->id
+                    (int) $order->id,
+                    [
+                        'weight_variant_id' => $cartProduct->weight_variant_id,
+                        'variant_name' => $cartProduct->variant_name_snapshot,
+                        'unit_weight_kg' => $cartProduct->unit_weight_kg,
+                        'unit' => ($product->unit_type ?? 'pcs') === 'kg' ? 'kg' : 'pcs',
+                    ]
                 );
             } catch (\InvalidArgumentException $e) {
-                $product->qty = max(0, (int) $product->qty - (int) $cartProduct->qty);
-                $product->save();
+                throw $e;
             }
 
             // store prouct variant

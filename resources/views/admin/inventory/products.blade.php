@@ -45,11 +45,11 @@
                                     <td>{{ $product->barcode ?: '-' }}</td>
                                     <td>
                                         @if($product->qty <= 0)
-                                            <span class="badge badge-danger">{{ $product->qty }}</span>
+                                            <span class="badge badge-danger">{{ number_format((float)$product->qty, 3) }} {{ strtoupper($product->unit_type ?? 'pcs') }}</span>
                                         @elseif($product->qty <= ($product->low_stock_threshold ?? 5))
-                                            <span class="badge badge-warning">{{ $product->qty }}</span>
+                                            <span class="badge badge-warning">{{ number_format((float)$product->qty, 3) }} {{ strtoupper($product->unit_type ?? 'pcs') }}</span>
                                         @else
-                                            {{ $product->qty }}
+                                            {{ number_format((float)$product->qty, 3) }} {{ strtoupper($product->unit_type ?? 'pcs') }}
                                         @endif
                                     </td>
                                     <td>{{ max(1, (int) ($product->pcs_per_box ?? 1)) }}</td>

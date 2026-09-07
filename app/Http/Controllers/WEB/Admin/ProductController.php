@@ -91,8 +91,9 @@ class ProductController extends Controller
         $warehouses = \App\Models\Warehouse::where('status', 1)->get();
         $suppliers = \App\Models\Supplier::where('status', 1)->orderBy('name')->get();
         $units = \App\Models\Unit::activeUnits();
+        $weightVariants = \App\Models\WeightVariant::active()->ordered()->get();
 
-        return view('admin.create_product',compact('categories','brands','specificationKeys','warehouses','suppliers','units'));
+        return view('admin.create_product',compact('categories','brands','specificationKeys','warehouses','suppliers','units','weightVariants'));
     }
 
     public function store(Request $request)
@@ -109,6 +110,11 @@ class ProductController extends Controller
             'status' => 'required',
             'weight' => 'nullable|numeric',
             'opening_stock' => 'nullable|numeric|min:0',
+            'unit_type' => 'required|in:pcs,kg',
+            'selling_price_mode' => 'nullable|in:automatic,custom',
+            'weight_variant_ids' => 'nullable|array',
+            'weight_variant_ids.*' => 'integer|exists:weight_variants,id',
+            'weight_variant_prices' => 'nullable|array',
         ];
         $customMessages = [
             'short_name.required' => trans('admin_validation.Short name is required'),
@@ -126,7 +132,7 @@ class ProductController extends Controller
         ];
         $this->validate($request, $rules, $customMessages);
 
-        $openingQty = (int) ($request->opening_stock ?? 0);
+        $openingQty = (float) ($request->opening_stock ?? 0);
         if ($openingQty > 0 && (! $request->filled('cost_price') || (float) $request->cost_price <= 0)) {
             return redirect()->back()->withInput()->with([
                 'messege' => trans('admin.Purchase price is required when opening stock is added'),
@@ -163,8 +169,10 @@ class ProductController extends Controller
             : 0;
         $product->default_supplier_id = $request->default_supplier_id;
         $product->qty = 0;
+        $product->unit_type = $request->unit_type === 'kg' ? 'kg' : 'pcs';
+        $product->selling_price_mode = $request->selling_price_mode === 'custom' ? 'custom' : 'automatic';
         $product->pcs_per_box = max(1, (int) ($request->pcs_per_box ?? 1));
-        $product->purchase_unit = Product::resolvePurchaseUnit($request->purchase_unit);
+        $product->purchase_unit = $product->unit_type === 'kg' ? 'kg' : Product::resolvePurchaseUnit($request->purchase_unit);
         $product->short_description = $request->short_description;
         $product->long_description = $request->long_description;
         $product->status = $request->status;
@@ -188,7 +196,7 @@ class ProductController extends Controller
 
         $stockService = app(\App\Services\StockService::class);
         $warehouseId = $request->opening_warehouse_id ?: $stockService->getDefaultWarehouse()->id;
-        $openingQty = (int) ($request->opening_stock ?? 0);
+        $openingQty = (float) ($request->opening_stock ?? 0);
         $openingCost = ($request->filled('cost_price') && (float) $request->cost_price > 0)
             ? (float) $request->cost_price
             : null;
@@ -197,6 +205,8 @@ class ProductController extends Controller
         } else {
             $stockService->ensureWarehouseStock($product->id, $warehouseId);
         }
+
+        $this->syncProductWeightVariants($product, $request);
 
         if($request->is_specification){
             $exist_specifications=[];
@@ -236,7 +246,7 @@ class ProductController extends Controller
 
     public function edit($id)
     {
-        $product = Product::with('category','brand','gallery','variants','variantItems')->find($id);
+        $product = Product::with('category','brand','gallery','variants','variantItems','productWeightVariants')->find($id);
         $categories = Category::all();
         $subCategories = SubCategory::where('category_id',$product->category_id)->get();
         $childCategories = ChildCategory::where('sub_category_id', $product->sub_category_id)->get();
@@ -244,8 +254,12 @@ class ProductController extends Controller
         $specificationKeys = ProductSpecificationKey::all();
         $productSpecifications = ProductSpecification::where('product_id',$product->id)->get();
         $units = \App\Models\Unit::activeUnits();
+        $weightVariants = \App\Models\WeightVariant::active()->ordered()->get();
+        $selectedWeightVariantIds = $product->productWeightVariants->pluck('weight_variant_id')->all();
+        $customWeightPrices = $product->productWeightVariants->pluck('selling_price', 'weight_variant_id')->all();
+        $suppliers = \App\Models\Supplier::where('status', 1)->orderBy('name')->get();
 
-        return view('admin.edit_product',compact('categories','brands','specificationKeys','product','subCategories','childCategories','productSpecifications','units'));
+        return view('admin.edit_product',compact('categories','brands','specificationKeys','product','subCategories','childCategories','productSpecifications','units','weightVariants','selectedWeightVariantIds','customWeightPrices','suppliers'));
 
     }
 
@@ -264,6 +278,11 @@ class ProductController extends Controller
             'price' => 'required|numeric',
             'status' => 'required',
             'weight' => 'nullable|numeric',
+            'unit_type' => 'required|in:pcs,kg',
+            'selling_price_mode' => 'nullable|in:automatic,custom',
+            'weight_variant_ids' => 'nullable|array',
+            'weight_variant_ids.*' => 'integer|exists:weight_variants,id',
+            'weight_variant_prices' => 'nullable|array',
         ];
         $customMessages = [
             'short_name.required' => trans('admin_validation.Short name is required'),
@@ -312,13 +331,16 @@ class ProductController extends Controller
         $product->sku = $request->sku;
         $product->barcode = $request->barcode;
         $product->low_stock_threshold = $request->low_stock_threshold ?? 5;
+        $product->unit_type = $request->unit_type === 'kg' ? 'kg' : 'pcs';
+        $product->selling_price_mode = $request->selling_price_mode === 'custom' ? 'custom' : 'automatic';
         $product->pcs_per_box = max(1, (int) ($request->pcs_per_box ?? 1));
-        $product->purchase_unit = Product::resolvePurchaseUnit($request->purchase_unit);
+        $product->purchase_unit = $product->unit_type === 'kg' ? 'kg' : Product::resolvePurchaseUnit($request->purchase_unit);
         $product->price = $request->price;
         $product->offer_price = $request->offer_price;
         if ($request->filled('cost_price') && (float) $request->cost_price > 0) {
             $product->cost_price = (float) $request->cost_price;
         }
+        $product->default_supplier_id = $request->default_supplier_id ?: null;
         $product->short_description = $request->short_description;
         $product->long_description = $request->long_description;
         $product->tags = $request->tags;
@@ -335,6 +357,8 @@ class ProductController extends Controller
             $product->approve_by_admin = $request->approve_by_admin;
         }
         $product->save();
+
+        $this->syncProductWeightVariants($product, $request);
 
         $exist_specifications=[];
         if($request->is_specification && $request->keys){
@@ -475,8 +499,42 @@ class ProductController extends Controller
 
     }
 
+    protected function syncProductWeightVariants(Product $product, Request $request): void
+    {
+        if ($product->unit_type !== 'kg') {
+            \App\Models\ProductWeightVariant::where('product_id', $product->id)->delete();
 
+            return;
+        }
 
+        $selected = collect($request->input('weight_variant_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
 
+        \App\Models\ProductWeightVariant::where('product_id', $product->id)
+            ->whereNotIn('weight_variant_id', $selected->all())
+            ->delete();
 
+        $prices = $request->input('weight_variant_prices', []);
+        $mode = $product->selling_price_mode;
+
+        foreach ($selected as $variantId) {
+            $customPrice = null;
+            if ($mode === 'custom' && isset($prices[$variantId]) && $prices[$variantId] !== '') {
+                $customPrice = round((float) $prices[$variantId], 2);
+            }
+
+            \App\Models\ProductWeightVariant::updateOrCreate(
+                [
+                    'product_id' => $product->id,
+                    'weight_variant_id' => $variantId,
+                ],
+                [
+                    'selling_price' => $customPrice,
+                ]
+            );
+        }
+    }
 }

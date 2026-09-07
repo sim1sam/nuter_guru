@@ -924,6 +924,16 @@ Route::group(['as'=> 'admin.', 'prefix' => 'admin'],function (){
     Route::put('unit/{id}', [UnitController::class, 'update'])->name('unit.update');
     Route::delete('unit/{id}', [UnitController::class, 'destroy'])->name('unit.destroy');
 
+    Route::get('weight-variant', [\App\Http\Controllers\WEB\Admin\WeightVariantController::class, 'index'])->name('weight-variant.index');
+    Route::post('weight-variant', [\App\Http\Controllers\WEB\Admin\WeightVariantController::class, 'store'])->name('weight-variant.store');
+    Route::put('weight-variant/{id}', [\App\Http\Controllers\WEB\Admin\WeightVariantController::class, 'update'])->name('weight-variant.update');
+    Route::delete('weight-variant/{id}', [\App\Http\Controllers\WEB\Admin\WeightVariantController::class, 'destroy'])->name('weight-variant.destroy');
+    Route::get('weight-variant/status/{id}', [\App\Http\Controllers\WEB\Admin\WeightVariantController::class, 'changeStatus'])->name('weight-variant.status');
+
+    Route::get('order-return', [\App\Http\Controllers\WEB\Admin\OrderReturnController::class, 'index'])->name('order-return.index');
+    Route::get('order-return/create', [\App\Http\Controllers\WEB\Admin\OrderReturnController::class, 'create'])->name('order-return.create');
+    Route::post('order-return', [\App\Http\Controllers\WEB\Admin\OrderReturnController::class, 'store'])->name('order-return.store');
+
     Route::get('supplier', [SupplierController::class, 'index'])->name('supplier.index');
     Route::post('supplier', [SupplierController::class, 'store'])->name('supplier.store');
     Route::put('supplier/{id}', [SupplierController::class, 'update'])->name('supplier.update');

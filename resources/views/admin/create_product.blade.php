@@ -111,12 +111,20 @@
                                 </div>
 
                                 <div class="form-group col-12">
+                                    <label>{{__('admin.Product Unit Type')}} <span class="text-danger">*</span></label>
+                                    <div class="d-flex" style="gap:18px;">
+                                        <label class="mb-0"><input type="radio" name="unit_type" value="pcs" class="product-unit-type" {{ old('unit_type', 'kg') === 'pcs' ? 'checked' : '' }}> PCS</label>
+                                        <label class="mb-0"><input type="radio" name="unit_type" value="kg" class="product-unit-type" {{ old('unit_type', 'kg') === 'kg' ? 'checked' : '' }}> KG</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group col-12 pcs-only-fields">
                                     <label>{{__('admin.Pcs Per Pack Unit')}}</label>
                                    <input type="number" class="form-control" name="pcs_per_box" value="{{ old('pcs_per_box', 1) }}" min="1">
                                    <small class="text-muted">{{__('admin.How many Pcs in 1 pack unit. Stock and sales stay in Pcs')}}</small>
                                 </div>
 
-                                <div class="form-group col-12">
+                                <div class="form-group col-12 pcs-only-fields">
                                     <label>{{__('admin.Default Purchase Unit')}}</label>
                                     <select name="purchase_unit" class="form-control">
                                         @foreach(($units ?? collect()) as $unit)
@@ -127,20 +135,52 @@
                                 </div>
 
                                 <div class="form-group col-12">
-                                    <label>{{__('admin.Price')}} <span class="text-danger">*</span></label>
-                                   <input type="text" class="form-control" name="price" value="{{ old('price') }}">
+                                    <label><span class="sell-price-label">{{__('admin.Price')}}</span> <span class="text-danger">*</span></label>
+                                   <input type="text" class="form-control" name="price" id="sellPriceInput" value="{{ old('price') }}">
                                 </div>
 
                                 <div class="form-group col-12">
                                     <label>{{__('admin.Offer Price')}}</label>
-                                   <input type="text" class="form-control" name="offer_price" value="{{ old('offer_price') }}">
+                                   <input type="text" class="form-control" name="offer_price" id="offerPriceInput" value="{{ old('offer_price') }}">
                                 </div>
 
+                                <div class="form-group col-12 kg-only-fields" style="display:none;">
+                                    <label>{{__('admin.Selling Price Mode')}}</label>
+                                    <select name="selling_price_mode" id="sellingPriceMode" class="form-control">
+                                        <option value="automatic" {{ old('selling_price_mode', 'automatic') === 'automatic' ? 'selected' : '' }}>{{__('admin.Automatic per KG')}}</option>
+                                        <option value="custom" {{ old('selling_price_mode') === 'custom' ? 'selected' : '' }}>{{__('admin.Custom variant price')}}</option>
+                                    </select>
+                                </div>
 
+                                <div class="form-group col-12 kg-only-fields" style="display:none;">
+                                    <label class="d-flex justify-content-between align-items-center">
+                                        <span>{{__('admin.Weight Variants')}}</span>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="openQuickWeightVariantModal()">
+                                            <i class="fa fa-plus"></i> {{__('admin.Add New')}}
+                                        </button>
+                                    </label>
+                                    <small class="text-muted d-block mb-2">Select packs for this product. Need 100g / 2kg / 5kg? Click Add New.</small>
+                                    <div class="row" id="weightVariantCards">
+                                        @foreach(($weightVariants ?? collect()) as $wv)
+                                        <div class="col-md-4 mb-2">
+                                            <label class="border rounded p-2 d-block mb-0 weight-variant-card">
+                                                <input type="checkbox" name="weight_variant_ids[]" value="{{ $wv->id }}" class="weight-variant-check" data-kg="{{ $wv->weight_in_kg }}" data-name="{{ $wv->name }}" {{ in_array($wv->id, old('weight_variant_ids', [])) ? 'checked' : '' }}>
+                                                <strong>{{ $wv->name }}</strong>
+                                                <div class="small text-muted">{{ number_format($wv->weight_in_kg, 3) }} KG</div>
+                                                <div class="custom-price-wrap mt-1" style="display:none;">
+                                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm weight-custom-price" name="weight_variant_prices[{{ $wv->id }}]" value="{{ old('weight_variant_prices.'.$wv->id) }}" placeholder="{{__('admin.Custom selling price')}}">
+                                                </div>
+                                            </label>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                    <div id="weightVariantPreview" class="mt-2 small text-muted"></div>
+                                    <a href="{{ route('admin.weight-variant.index') }}" target="_blank" class="small">Manage all weight variants</a>
+                                </div>
 
                                 <div class="form-group col-12">
-                                    <label>{{__('admin.Opening Stock (Pcs)')}}</label>
-                                   <input type="number" class="form-control" name="opening_stock" id="openingStockInput" value="{{ old('opening_stock', 0) }}" min="0">
+                                    <label><span class="opening-stock-label">{{__('admin.Opening Stock (Pcs)')}}</span></label>
+                                   <input type="number" step="0.001" class="form-control" name="opening_stock" id="openingStockInput" value="{{ old('opening_stock', 0) }}" min="0">
                                 </div>
 
                                 <div class="form-group col-12">
@@ -153,7 +193,7 @@
                                 </div>
 
                                 <div class="form-group col-12">
-                                    <label>{{ __('admin.Purchase Price (Optional)') }} <span class="text-muted" id="openingPriceHint">({{ __('admin.Required if opening stock is added') }})</span></label>
+                                    <label><span class="cost-price-label">{{ __('admin.Purchase Price (Optional)') }}</span> <span class="text-muted" id="openingPriceHint">({{ __('admin.Required if opening stock is added') }})</span></label>
                                    <input type="number" step="0.0001" class="form-control" name="cost_price" id="costPriceInput" value="{{ old('cost_price') }}" min="0" placeholder="{{ __('admin.Leave empty if no opening stock') }}">
                                     <small class="text-muted">{{ __('admin.Purchase price optional on PO too. Set here for opening stock, or on PO when receiving stock') }}</small>
                                 </div>
@@ -163,9 +203,20 @@
                                     <select name="default_supplier_id" class="form-control select2">
                                         <option value="">{{__('admin.Select Supplier')}}</option>
                                         @foreach($suppliers as $supplier)
-                                        <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                                        <option value="{{ $supplier->id }}" {{ old('default_supplier_id') == $supplier->id ? 'selected' : '' }}>{{ $supplier->name }}</option>
                                         @endforeach
                                     </select>
+                                    @if(($suppliers ?? collect())->isEmpty())
+                                        <small class="text-danger d-block mt-1">
+                                            No suppliers yet.
+                                            <a href="{{ route('admin.supplier.index') }}" target="_blank">Create supplier</a>
+                                            (Purchase → Suppliers), then refresh this page.
+                                        </small>
+                                    @else
+                                        <small class="text-muted d-block mt-1">
+                                            <a href="{{ route('admin.supplier.index') }}" target="_blank">Manage suppliers</a>
+                                        </small>
+                                    @endif
                                 </div>
 
                                 <div class="form-group col-12">
@@ -404,7 +455,7 @@
 
     (function ($) {
         function toggleOpeningPriceHint() {
-            var qty = parseInt($('#openingStockInput').val(), 10) || 0;
+            var qty = parseFloat($('#openingStockInput').val()) || 0;
             var $hint = $('#openingPriceHint');
             if (qty > 0) {
                 $hint.removeClass('text-muted').addClass('text-danger').text('({{ __('admin.Required if opening stock is added') }})');
@@ -412,11 +463,72 @@
                 $hint.removeClass('text-danger').addClass('text-muted').text('({{ __('admin.Optional') }})');
             }
         }
+
+        function isKg() {
+            return $('input[name="unit_type"]:checked').val() === 'kg';
+        }
+
+        function toggleUnitTypeFields() {
+            if (isKg()) {
+                $('.pcs-only-fields').hide();
+                $('.kg-only-fields').show();
+                $('.sell-price-label').text('{{ __('admin.Selling Price') }} / KG');
+                $('.cost-price-label').text('{{ __('admin.Purchase Cost') }} / KG');
+                $('.opening-stock-label').text('{{ __('admin.Opening Stock') }} (KG)');
+            } else {
+                $('.pcs-only-fields').show();
+                $('.kg-only-fields').hide();
+                $('.sell-price-label').text('{{ __('admin.Price') }}');
+                $('.cost-price-label').text('{{ __('admin.Purchase Price (Optional)') }}');
+                $('.opening-stock-label').text('{{ __('admin.Opening Stock (Pcs)') }}');
+            }
+            toggleCustomPriceInputs();
+            renderWeightPreview();
+        }
+
+        function toggleCustomPriceInputs() {
+            var custom = $('#sellingPriceMode').val() === 'custom' && isKg();
+            $('.custom-price-wrap').toggle(custom);
+        }
+
+        function renderWeightPreview() {
+            if (!isKg()) {
+                $('#weightVariantPreview').html('');
+                return;
+            }
+            var cost = parseFloat($('#costPriceInput').val()) || 0;
+            var sell = parseFloat($('#offerPriceInput').val());
+            if (isNaN(sell) || sell <= 0) {
+                sell = parseFloat($('#sellPriceInput').val()) || 0;
+            }
+            var mode = $('#sellingPriceMode').val();
+            var html = '';
+            $('.weight-variant-check:checked').each(function () {
+                var kg = parseFloat($(this).data('kg')) || 0;
+                var name = $(this).data('name');
+                var purchase = (cost * kg).toFixed(2);
+                var selling = mode === 'custom'
+                    ? (parseFloat($(this).closest('label').find('.weight-custom-price').val()) || (sell * kg)).toFixed(2)
+                    : (sell * kg).toFixed(2);
+                html += '<div><strong>' + name + '</strong> — Purchase: ৳' + purchase + ' | Selling: ৳' + selling + '</div>';
+            });
+            $('#weightVariantPreview').html(html);
+        }
+
+        $('input[name="unit_type"]').on('change', toggleUnitTypeFields);
+        $('#sellingPriceMode').on('change', function () {
+            toggleCustomPriceInputs();
+            renderWeightPreview();
+        });
+        $('#costPriceInput, #sellPriceInput, #offerPriceInput').on('input change', renderWeightPreview);
+        $(document).on('change input', '.weight-variant-check, .weight-custom-price', renderWeightPreview);
         $('#openingStockInput').on('input change', toggleOpeningPriceHint);
         toggleOpeningPriceHint();
+        toggleUnitTypeFields();
     })(jQuery);
 
 </script>
 
+@include('admin.partials.quick_weight_variant_modal')
 
 @endsection

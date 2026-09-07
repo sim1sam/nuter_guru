@@ -6,20 +6,25 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
 use App\Models\WarehouseStock;
+use App\Services\Inventory\WeightCalculationService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class StockService
 {
+    public function __construct(protected WeightCalculationService $weightCalc)
+    {
+    }
+
     public function getDefaultWarehouse(): Warehouse
     {
         $warehouse = Warehouse::where('is_default', 1)->where('status', 1)->first();
 
-        if (!$warehouse) {
+        if (! $warehouse) {
             $warehouse = Warehouse::where('status', 1)->first();
         }
 
-        if (!$warehouse) {
+        if (! $warehouse) {
             $warehouse = Warehouse::create([
                 'name' => 'Default Warehouse',
                 'code' => 'WH-001',
@@ -44,7 +49,21 @@ class StockService
     public function syncProductQty(int $productId): void
     {
         $total = WarehouseStock::where('product_id', $productId)->sum('qty');
-        Product::where('id', $productId)->update(['qty' => (int) $total]);
+        Product::where('id', $productId)->update([
+            'qty' => $this->weightCalc->roundWeight($total),
+        ]);
+    }
+
+    public function getAvailableStock(int $productId): float
+    {
+        $product = Product::find($productId);
+
+        return $product ? $this->weightCalc->roundWeight((float) $product->qty) : 0.0;
+    }
+
+    public function hasEnoughStock(int $productId, float $baseQuantity): bool
+    {
+        return $this->getAvailableStock($productId) + 0.0001 >= $this->weightCalc->roundWeight($baseQuantity);
     }
 
     public function generateBarcode(Product $product): string
@@ -59,7 +78,7 @@ class StockService
     public function stockIn(
         int $productId,
         int $warehouseId,
-        int $qty,
+        $qty,
         ?string $note = null,
         ?string $referenceNo = null,
         ?int $adminId = null,
@@ -67,19 +86,30 @@ class StockService
         ?string $referenceType = null,
         ?int $referenceId = null,
         ?int $supplierId = null,
-        ?float $unitCost = null
+        ?float $unitCost = null,
+        array $meta = []
     ): StockMovement {
+        $qty = $this->weightCalc->roundWeight($qty);
         if ($qty <= 0) {
             throw new InvalidArgumentException('Quantity must be greater than zero.');
         }
 
         return DB::transaction(function () use (
             $productId, $warehouseId, $qty, $note, $referenceNo, $adminId,
-            $reason, $referenceType, $referenceId, $supplierId, $unitCost
+            $reason, $referenceType, $referenceId, $supplierId, $unitCost, $meta
         ) {
-            $stock = $this->ensureWarehouseStock($productId, $warehouseId);
-            $before = (int) $stock->qty;
-            $after = $before + $qty;
+            $stock = WarehouseStock::where('warehouse_id', $warehouseId)
+                ->where('product_id', $productId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $stock) {
+                $stock = $this->ensureWarehouseStock($productId, $warehouseId);
+                $stock = WarehouseStock::where('id', $stock->id)->lockForUpdate()->first();
+            }
+
+            $before = $this->weightCalc->roundWeight((float) $stock->qty);
+            $after = $this->weightCalc->roundWeight($before + $qty);
 
             $stock->qty = $after;
             $stock->save();
@@ -90,7 +120,9 @@ class StockService
                 Product::where('id', $productId)->update(['cost_price' => $unitCost]);
             }
 
-            return StockMovement::create([
+            $product = Product::find($productId);
+
+            return StockMovement::create(array_merge([
                 'product_id' => $productId,
                 'warehouse_id' => $warehouseId,
                 'type' => 'in',
@@ -98,6 +130,11 @@ class StockService
                 'qty' => $qty,
                 'qty_before' => $before,
                 'qty_after' => $after,
+                'base_quantity' => $qty,
+                'unit' => $meta['unit'] ?? ($product?->unit_type === 'kg' ? 'kg' : 'pcs'),
+                'weight_variant_id' => $meta['weight_variant_id'] ?? null,
+                'variant_name' => $meta['variant_name'] ?? null,
+                'unit_weight_kg' => $meta['unit_weight_kg'] ?? null,
                 'reference_no' => $referenceNo,
                 'reference_type' => $referenceType,
                 'reference_id' => $referenceId,
@@ -105,50 +142,60 @@ class StockService
                 'unit_cost' => $unitCost,
                 'note' => $note,
                 'admin_id' => $adminId,
-            ]);
+            ], []));
         });
     }
 
     public function stockOut(
         int $productId,
         int $warehouseId,
-        int $qty,
+        $qty,
         string $reason = 'stock_out',
         ?string $note = null,
         ?string $referenceNo = null,
         ?int $adminId = null,
         ?string $referenceType = null,
         ?int $referenceId = null,
-        ?int $supplierId = null
+        ?int $supplierId = null,
+        array $meta = []
     ): StockMovement {
+        $qty = $this->weightCalc->roundWeight($qty);
         if ($qty <= 0) {
             throw new InvalidArgumentException('Quantity must be greater than zero.');
         }
 
         return DB::transaction(function () use (
             $productId, $warehouseId, $qty, $reason, $note, $referenceNo, $adminId,
-            $referenceType, $referenceId, $supplierId
+            $referenceType, $referenceId, $supplierId, $meta
         ) {
             $stock = WarehouseStock::where('warehouse_id', $warehouseId)
                 ->where('product_id', $productId)
                 ->lockForUpdate()
                 ->first();
 
-            if (!$stock) {
+            if (! $stock) {
                 $stock = $this->ensureWarehouseStock($productId, $warehouseId);
+                $stock = WarehouseStock::where('id', $stock->id)->lockForUpdate()->first();
             }
 
-            $before = (int) $stock->qty;
+            $before = $this->weightCalc->roundWeight((float) $stock->qty);
 
-            if ($before < $qty) {
-                throw new InvalidArgumentException('Insufficient stock in warehouse.');
+            if ($before + 0.0001 < $qty) {
+                $product = Product::find($productId);
+                throw new InvalidArgumentException(
+                    $product
+                        ? $this->weightCalc->availableStockMessage($product)
+                        : 'Insufficient stock in warehouse.'
+                );
             }
 
-            $after = $before - $qty;
+            $after = $this->weightCalc->roundWeight($before - $qty);
             $stock->qty = $after;
             $stock->save();
 
             $this->syncProductQty($productId);
+
+            $product = Product::find($productId);
 
             return StockMovement::create([
                 'product_id' => $productId,
@@ -158,6 +205,11 @@ class StockService
                 'qty' => $qty,
                 'qty_before' => $before,
                 'qty_after' => $after,
+                'base_quantity' => $qty,
+                'unit' => $meta['unit'] ?? ($product?->unit_type === 'kg' ? 'kg' : 'pcs'),
+                'weight_variant_id' => $meta['weight_variant_id'] ?? null,
+                'variant_name' => $meta['variant_name'] ?? null,
+                'unit_weight_kg' => $meta['unit_weight_kg'] ?? null,
                 'reference_no' => $referenceNo,
                 'reference_type' => $referenceType,
                 'reference_id' => $referenceId,
@@ -168,42 +220,90 @@ class StockService
         });
     }
 
-    public function adjust(int $productId, int $warehouseId, int $newQty, ?string $note = null, ?int $adminId = null): StockMovement
+    public function addStock(int $productId, float $baseQty, ?int $warehouseId = null, array $options = []): StockMovement
     {
+        $warehouseId = $warehouseId ?: $this->getDefaultWarehouse()->id;
+
+        return $this->stockIn(
+            $productId,
+            $warehouseId,
+            $baseQty,
+            $options['note'] ?? null,
+            $options['reference_no'] ?? null,
+            $options['admin_id'] ?? null,
+            $options['reason'] ?? 'stock_in',
+            $options['reference_type'] ?? null,
+            $options['reference_id'] ?? null,
+            $options['supplier_id'] ?? null,
+            $options['unit_cost'] ?? null,
+            $options['meta'] ?? []
+        );
+    }
+
+    public function removeStock(int $productId, float $baseQty, ?int $warehouseId = null, array $options = []): void
+    {
+        $this->deductForSale(
+            $productId,
+            $baseQty,
+            $options['reference_no'] ?? null,
+            $options['admin_id'] ?? null,
+            $options['reference_type'] ?? 'order',
+            $options['reference_id'] ?? null,
+            $options['meta'] ?? []
+        );
+    }
+
+    public function adjust(int $productId, int $warehouseId, $newQty, ?string $note = null, ?int $adminId = null): StockMovement
+    {
+        $newQty = $this->weightCalc->roundWeight($newQty);
         if ($newQty < 0) {
             throw new InvalidArgumentException('Quantity cannot be negative.');
         }
 
         return DB::transaction(function () use ($productId, $warehouseId, $newQty, $note, $adminId) {
-            $stock = $this->ensureWarehouseStock($productId, $warehouseId);
-            $before = (int) $stock->qty;
-            $diff = $newQty - $before;
+            $stock = WarehouseStock::where('warehouse_id', $warehouseId)
+                ->where('product_id', $productId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $stock) {
+                $stock = $this->ensureWarehouseStock($productId, $warehouseId);
+                $stock = WarehouseStock::where('id', $stock->id)->lockForUpdate()->first();
+            }
+
+            $before = $this->weightCalc->roundWeight((float) $stock->qty);
+            $diff = $this->weightCalc->roundWeight($newQty - $before);
 
             $stock->qty = $newQty;
             $stock->save();
 
             $this->syncProductQty($productId);
 
+            $product = Product::find($productId);
+
             return StockMovement::create([
                 'product_id' => $productId,
                 'warehouse_id' => $warehouseId,
                 'type' => 'adjustment',
-                'reason' => 'adjustment',
+                'reason' => $diff >= 0 ? 'adjustment_in' : 'adjustment_out',
                 'qty' => abs($diff),
                 'qty_before' => $before,
                 'qty_after' => $newQty,
+                'base_quantity' => abs($diff),
+                'unit' => $product?->unit_type === 'kg' ? 'kg' : 'pcs',
                 'note' => $note,
                 'admin_id' => $adminId,
             ]);
         });
     }
 
-    public function transfer(int $productId, int $fromWarehouseId, int $toWarehouseId, int $qty, ?string $note = null, ?int $adminId = null): array
+    public function transfer(int $productId, int $fromWarehouseId, int $toWarehouseId, $qty, ?string $note = null, ?int $adminId = null): array
     {
         if ($fromWarehouseId === $toWarehouseId) {
             throw new InvalidArgumentException('Source and destination warehouses must be different.');
         }
 
+        $qty = $this->weightCalc->roundWeight($qty);
         if ($qty <= 0) {
             throw new InvalidArgumentException('Quantity must be greater than zero.');
         }
@@ -219,7 +319,7 @@ class StockService
         });
     }
 
-    public function openingStock(int $productId, int $warehouseId, int $qty, ?float $unitCost = null, ?int $adminId = null): StockMovement
+    public function openingStock(int $productId, int $warehouseId, $qty, ?float $unitCost = null, ?int $adminId = null): StockMovement
     {
         return $this->stockIn(
             $productId,
@@ -238,18 +338,30 @@ class StockService
 
     public function deductForSale(
         int $productId,
-        int $qty,
+        $qty,
         ?string $referenceNo = null,
         ?int $adminId = null,
         string $referenceType = 'order',
-        ?int $referenceId = null
+        ?int $referenceId = null,
+        array $meta = []
     ): void {
+        $qty = $this->weightCalc->roundWeight($qty);
         if ($qty <= 0) {
             return;
         }
 
-        DB::transaction(function () use ($productId, $qty, $referenceNo, $adminId, $referenceType, $referenceId) {
+        DB::transaction(function () use ($productId, $qty, $referenceNo, $adminId, $referenceType, $referenceId, $meta) {
             $this->alignWarehouseToProductQty($productId);
+
+            $product = Product::lockForUpdate()->find($productId);
+            if (! $product) {
+                throw new InvalidArgumentException('Product not found.');
+            }
+
+            $available = $this->weightCalc->roundWeight((float) $product->qty);
+            if ($available + 0.0001 < $qty) {
+                throw new InvalidArgumentException($this->weightCalc->availableStockMessage($product));
+            }
 
             $remaining = $qty;
             $defaultId = $this->getDefaultWarehouse()->id;
@@ -257,7 +369,7 @@ class StockService
                 ->where('qty', '>', 0)
                 ->lockForUpdate()
                 ->get()
-                ->sortByDesc(fn ($stock) => $stock->warehouse_id === $defaultId ? PHP_INT_MAX : (int) $stock->qty)
+                ->sortByDesc(fn ($stock) => $stock->warehouse_id === $defaultId ? PHP_INT_MAX : (float) $stock->qty)
                 ->values();
 
             foreach ($stocks as $stock) {
@@ -265,7 +377,7 @@ class StockService
                     break;
                 }
 
-                $take = min($remaining, (int) $stock->qty);
+                $take = min($remaining, $this->weightCalc->roundWeight((float) $stock->qty));
                 $this->stockOut(
                     $productId,
                     (int) $stock->warehouse_id,
@@ -275,17 +387,15 @@ class StockService
                     $referenceNo,
                     $adminId,
                     $referenceType,
-                    $referenceId
+                    $referenceId,
+                    null,
+                    $meta
                 );
-                $remaining -= $take;
+                $remaining = $this->weightCalc->roundWeight($remaining - $take);
             }
 
-            if ($remaining > 0) {
-                $product = Product::find($productId);
-                if ($product) {
-                    $product->qty = max(0, (int) $product->qty - $remaining);
-                    $product->save();
-                }
+            if ($remaining > 0.0001) {
+                throw new InvalidArgumentException($this->weightCalc->availableStockMessage($product->fresh()));
             }
         });
     }
@@ -293,27 +403,27 @@ class StockService
     public function alignWarehouseToProductQty(int $productId): void
     {
         $product = Product::find($productId);
-        if (!$product) {
+        if (! $product) {
             return;
         }
 
-        $productQty = (int) $product->qty;
+        $productQty = $this->weightCalc->roundWeight((float) $product->qty);
         $default = $this->ensureWarehouseStock($productId);
         $stocks = WarehouseStock::where('product_id', $productId)->get();
-        $warehouseTotal = (int) $stocks->sum('qty');
+        $warehouseTotal = $this->weightCalc->roundWeight((float) $stocks->sum('qty'));
 
-        if ($productQty === $warehouseTotal) {
+        if (abs($productQty - $warehouseTotal) < 0.0001) {
             return;
         }
 
         if ($productQty > $warehouseTotal) {
-            $default->qty = (int) $default->qty + ($productQty - $warehouseTotal);
+            $default->qty = $this->weightCalc->roundWeight((float) $default->qty + ($productQty - $warehouseTotal));
             $default->save();
 
             return;
         }
 
-        $need = $warehouseTotal - $productQty;
+        $need = $this->weightCalc->roundWeight($warehouseTotal - $productQty);
         $ordered = $stocks->sortByDesc(fn ($stock) => $stock->warehouse_id === $default->warehouse_id ? 1 : 0);
 
         foreach ($ordered as $stock) {
@@ -321,10 +431,10 @@ class StockService
                 break;
             }
 
-            $take = min($need, (int) $stock->qty);
-            $stock->qty = (int) $stock->qty - $take;
+            $take = min($need, $this->weightCalc->roundWeight((float) $stock->qty));
+            $stock->qty = $this->weightCalc->roundWeight((float) $stock->qty - $take);
             $stock->save();
-            $need -= $take;
+            $need = $this->weightCalc->roundWeight($need - $take);
         }
     }
 
