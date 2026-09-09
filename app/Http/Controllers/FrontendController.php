@@ -164,10 +164,12 @@ class FrontendController extends Controller
         // Testimonials
         $testimonials = Testimonial::where('status', 1)->get();
             
-        // Blogs
-        $blogs = Blog::where('status', 1)
+        // Blogs for homepage slider
+        $blogs = Blog::with('category')
+            ->where('status', 1)
+            ->where('show_homepage', 1)
             ->latest()
-            ->take(3)
+            ->take(6)
             ->get();
         
         return view('frontend.home', compact(

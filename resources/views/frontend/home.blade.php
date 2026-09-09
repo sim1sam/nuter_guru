@@ -834,6 +834,78 @@
     padding: 100px 0;
 }
 
+.blog-carousel-wrap {
+    padding: 0;
+}
+
+.blog-section-head {
+    margin-bottom: 1.5rem;
+}
+
+.blog-carousel-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.blog-nav-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: var(--button-color, var(--accent-green, #2d6a4f));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
+}
+
+.blog-nav-btn:hover {
+    background: var(--button-color, var(--accent-green, #2d6a4f));
+    border-color: var(--button-color, var(--accent-green, #2d6a4f));
+    color: #fff;
+}
+
+#blogCarousel .blog-carousel-indicators {
+    position: static;
+    margin: 8px 0 0;
+}
+
+#blogCarousel .blog-carousel-indicators [data-bs-target] {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #adb5bd;
+    border: 0;
+    opacity: 1;
+    margin: 0 4px;
+}
+
+#blogCarousel .blog-carousel-indicators .active {
+    background-color: var(--button-color, var(--accent-green, #2d6a4f));
+}
+
+@media (max-width: 767.98px) {
+    .blog-section-head {
+        flex-direction: column;
+        align-items: center !important;
+        text-align: center;
+    }
+
+    .blog-carousel-nav {
+        margin-left: 0;
+    }
+
+    .blog-nav-btn {
+        width: 40px;
+        height: 40px;
+    }
+}
+
 .blog-card-modern {
     background: white;
     border-radius: 15px;
@@ -1545,193 +1617,107 @@
 </section>
 
 <!-- Latest Blog Section -->
-{{-- <section class="latest-blog-section py-5">
+@if(isset($blogs) && $blogs->count() > 0)
+<section class="latest-blog-section py-5">
     <div class="container">
-        <div class="row">
-            <div class="col-lg-8 mx-auto text-center mb-5">
-                <h2 class="mb-4 fade-in" style="font-weight: 700; color: #2c3e50; font-size: 2.5rem;">Our Blog</h2>
-                <p class="lead text-muted fade-in">Stay updated with our latest jewelry trends and insights</p>
+        <div class="blog-section-head d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+            <div class="blog-section-head__text text-center text-md-start flex-grow-1">
+                <h2 class="mb-2 fade-in" style="font-weight: 700; color: #2c3e50; font-size: 2.5rem;">{{ __('Latest Blog') }}</h2>
+                <p class="lead text-muted fade-in mb-0">{{ __('Tips on dry fruits, nuts and healthy eating') }}</p>
             </div>
-        </div>
-        
-        <div class="row">
-            @if(isset($blogs) && $blogs->count() > 0)
-                @foreach($blogs->take(3) as $blog)
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <article class="blog-card-modern fade-in">
-                            <div class="blog-image-container">
-                                @if($blog->image)
-                                    <img src="{{ asset($blog->image) }}" alt="{{ $blog->title }}" class="blog-image-modern">
-                                @else
-                                    <div class="blog-image-placeholder">
-                                        <i class="fas fa-image"></i>
-                                    </div>
-                                @endif
-                                <div class="blog-overlay">
-                                    <a href="{{ route('blog.detail', $blog->slug) }}" class="blog-read-more">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </a>
-                                </div>
-                            </div>
-                            
-                            <div class="blog-content-modern">
-                                <div class="blog-meta-modern">
-                                    <span class="blog-date-modern">
-                                        <i class="far fa-calendar-alt"></i>
-                                        {{ $blog->created_at->format('M d, Y') }}
-                                    </span>
-                                    @if($blog->category)
-                                        <span class="blog-category-modern">
-                                            <i class="fas fa-tag"></i>
-                                            {{ $blog->category->name }}
-                                        </span>
-                                    @endif
-                                </div>
-                                
-                                <h3 class="blog-title-modern">
-                                    <a href="{{ route('blog.detail', $blog->slug) }}">{{ Str::limit($blog->title, 60) }}</a>
-                                </h3>
-                                
-                                @if($blog->short_description)
-                                    <p class="blog-excerpt-modern">{{ Str::limit($blog->short_description, 100) }}</p>
-                                @else
-                                    <p class="blog-excerpt-modern">{{ Str::limit(strip_tags($blog->description), 100) }}</p>
-                                @endif
-                                
-                                <a href="{{ route('blog.detail', $blog->slug) }}" class="blog-read-link">
-                                    Read More <i class="fas fa-arrow-right"></i>
-                                </a>
-                            </div>
-                        </article>
-                    </div>
-                @endforeach
-            @else
-                <!-- Default blog posts when no data exists -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <article class="blog-card-modern fade-in">
-                        <div class="blog-image-container">
-                            <div class="blog-image-placeholder">
-                                <i class="fas fa-image"></i>
-                            </div>
-                            <div class="blog-overlay">
-                                <a href="#" class="blog-read-more">
-                                    <i class="fas fa-arrow-right"></i>
-                                </a>
-                            </div>
-                        </div>
-                        
-                        <div class="blog-content-modern">
-                            <div class="blog-meta-modern">
-                                <span class="blog-date-modern">
-                                    <i class="far fa-calendar-alt"></i>
-                                    Dec 15, 2023
-                                </span>
-                                <span class="blog-category-modern">
-                                    <i class="fas fa-tag"></i>
-                                    Jewelry Care
-                                </span>
-                            </div>
-                            
-                            <h3 class="blog-title-modern">
-                                <a href="#">How to Care for Your Diamond Jewelry</a>
-                            </h3>
-                            
-                            <p class="blog-excerpt-modern">Learn the best practices for maintaining the brilliance and beauty of your precious diamond jewelry pieces.</p>
-                            
-                            <a href="#" class="blog-read-link">
-                                Read More <i class="fas fa-arrow-right"></i>
-                            </a>
-                        </div>
-                    </article>
-                </div>
-                
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <article class="blog-card-modern fade-in">
-                        <div class="blog-image-container">
-                            <div class="blog-image-placeholder">
-                                <i class="fas fa-image"></i>
-                            </div>
-                            <div class="blog-overlay">
-                                <a href="#" class="blog-read-more">
-                                    <i class="fas fa-arrow-right"></i>
-                                </a>
-                            </div>
-                        </div>
-                        
-                        <div class="blog-content-modern">
-                            <div class="blog-meta-modern">
-                                <span class="blog-date-modern">
-                                    <i class="far fa-calendar-alt"></i>
-                                    Dec 10, 2023
-                                </span>
-                                <span class="blog-category-modern">
-                                    <i class="fas fa-tag"></i>
-                                    Trends
-                                </span>
-                            </div>
-                            
-                            <h3 class="blog-title-modern">
-                                <a href="#">2024 Jewelry Trends to Watch</a>
-                            </h3>
-                            
-                            <p class="blog-excerpt-modern">Discover the upcoming jewelry trends that will define fashion in 2024 and beyond.</p>
-                            
-                            <a href="#" class="blog-read-link">
-                                Read More <i class="fas fa-arrow-right"></i>
-                            </a>
-                        </div>
-                    </article>
-                </div>
-                
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <article class="blog-card-modern fade-in">
-                        <div class="blog-image-container">
-                            <div class="blog-image-placeholder">
-                                <i class="fas fa-image"></i>
-                            </div>
-                            <div class="blog-overlay">
-                                <a href="#" class="blog-read-more">
-                                    <i class="fas fa-arrow-right"></i>
-                                </a>
-                            </div>
-                        </div>
-                        
-                        <div class="blog-content-modern">
-                            <div class="blog-meta-modern">
-                                <span class="blog-date-modern">
-                                    <i class="far fa-calendar-alt"></i>
-                                    Dec 5, 2023
-                                </span>
-                                <span class="blog-category-modern">
-                                    <i class="fas fa-tag"></i>
-                                    Guide
-                                </span>
-                            </div>
-                            
-                            <h3 class="blog-title-modern">
-                                <a href="#">Choosing the Perfect Engagement Ring</a>
-                            </h3>
-                            
-                            <p class="blog-excerpt-modern">A comprehensive guide to selecting the ideal engagement ring for your special moment.</p>
-                            
-                            <a href="#" class="blog-read-link">
-                                Read More <i class="fas fa-arrow-right"></i>
-                            </a>
-                        </div>
-                    </article>
+            @if($blogs->count() > 3)
+                <div class="blog-carousel-nav">
+                    <button class="blog-nav-btn" type="button" data-bs-target="#blogCarousel" data-bs-slide="prev" aria-label="Previous">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="blog-nav-btn" type="button" data-bs-target="#blogCarousel" data-bs-slide="next" aria-label="Next">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
                 </div>
             @endif
         </div>
-        
+
+        <div class="blog-carousel-wrap position-relative">
+            <div id="blogCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000" data-bs-touch="true">
+                <div class="carousel-inner">
+                    @foreach($blogs->chunk(3) as $chunkIndex => $blogChunk)
+                        <div class="carousel-item {{ $chunkIndex == 0 ? 'active' : '' }}">
+                            <div class="row justify-content-center">
+                                @foreach($blogChunk as $blog)
+                                    <div class="col-lg-4 col-md-6 mb-4">
+                                        <article class="blog-card-modern fade-in">
+                                            <div class="blog-image-container">
+                                                @if($blog->image)
+                                                    <img src="{{ asset($blog->image) }}" alt="{{ $blog->title }}" class="blog-image-modern">
+                                                @else
+                                                    <div class="blog-image-placeholder">
+                                                        <i class="fas fa-image"></i>
+                                                    </div>
+                                                @endif
+                                                <div class="blog-overlay">
+                                                    <a href="{{ route('blog.detail', $blog->slug) }}" class="blog-read-more">
+                                                        <i class="fas fa-arrow-right"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+
+                                            <div class="blog-content-modern">
+                                                <div class="blog-meta-modern">
+                                                    <span class="blog-date-modern">
+                                                        <i class="far fa-calendar-alt"></i>
+                                                        {{ $blog->created_at->format('M d, Y') }}
+                                                    </span>
+                                                    @if($blog->category)
+                                                        <span class="blog-category-modern">
+                                                            <i class="fas fa-tag"></i>
+                                                            {{ $blog->category->name }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+
+                                                <h3 class="blog-title-modern">
+                                                    <a href="{{ route('blog.detail', $blog->slug) }}">{{ Str::limit($blog->title, 60) }}</a>
+                                                </h3>
+
+                                                <p class="blog-excerpt-modern">{{ Str::limit(strip_tags($blog->description), 100) }}</p>
+
+                                                <a href="{{ route('blog.detail', $blog->slug) }}" class="blog-read-link">
+                                                    {{ __('Read More') }} <i class="fas fa-arrow-right"></i>
+                                                </a>
+                                            </div>
+                                        </article>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if($blogs->count() > 3)
+                    <div class="carousel-indicators blog-carousel-indicators">
+                        @foreach($blogs->chunk(3) as $chunkIndex => $blogChunk)
+                            <button type="button"
+                                data-bs-target="#blogCarousel"
+                                data-bs-slide-to="{{ $chunkIndex }}"
+                                class="{{ $chunkIndex == 0 ? 'active' : '' }}"
+                                aria-current="{{ $chunkIndex == 0 ? 'true' : 'false' }}"
+                                aria-label="Slide {{ $chunkIndex + 1 }}"></button>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </div>
+
         <div class="row mt-4">
             <div class="col-12 text-center">
                 <a href="{{ route('blog') }}" class="btn btn-outline-primary btn-lg">
-                    View All Blogs <i class="fas fa-arrow-right ms-2"></i>
+                    {{ __('View All Blogs') }} <i class="fas fa-arrow-right ms-2"></i>
                 </a>
             </div>
         </div>
     </div>
-</section> --}}
+</section>
+@endif
 
 <!-- Newsletter Section -->
 <section class="newsletter-section">
