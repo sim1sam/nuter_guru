@@ -607,53 +607,11 @@
 
                                     <div class="sub-total-btn pos-cart-actions">
                                         <div class="sub-total-btn-one">
-
-
                                             <button type="button" class="cancel-btn" data-toggle="modal"
-                                                data-target="#exampleModalLong-3">
+                                                data-target="#posClearCartModal">
                                                 {{__('admin.Cancel Order') }}
                                             </button>
-
-                                            <!-- Modal -->
-                                            <div class="modal fade" id="exampleModalLong-3"  role="dialog"
-                                                aria-labelledby="exampleModalLongTitle" aria-hidden="true">
-                                                <div class="modal-dialog" role="document">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-
-                                                        </div>
-                                                        <div class="modal-body modal-body-one">
-                                                            <div class="modal-img text-center">
-                                                                <img src="{{ asset('backend/pos/assets/images/clear-cart.png') }}"
-                                                                    alt="img">
-                                                            </div>
-
-                                                            <div class="modal-img-text">
-                                                                <h4>{{__('admin.Are you sure') }}</h4>
-                                                                <p>{{__('admin.You want to remove all items from cart!!') }}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-
-                                                            <button type="button" class="no-btn yes-btn"
-                                                                data-dismiss="modal">{{__('admin.No') }}</button>
-
-                                                            <a class="no-btn pos-cart-clear"
-                                                                href="{{ route('admin.pos.cart.clear.product') }}">
-                                                                {{__('admin.Yes') }}
-                                                            </a>
-
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Modal -->
-
-
                                         </div>
-
-
 
                                         <div class="sub-total-btn-two">
                                             <button type="button" class="place-order" data-toggle="modal"
@@ -673,6 +631,28 @@
 
         </div>
     </section>
+</div>
+
+{{-- Clear cart confirm — outside billing panel so overlay is full-screen --}}
+<div class="modal fade pos-clear-cart-modal" id="posClearCartModal" tabindex="-1" role="dialog"
+    aria-labelledby="posClearCartModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered pos-clear-cart-modal__dialog" role="document">
+        <div class="modal-content pos-clear-cart-modal__content">
+            <div class="modal-body text-center">
+                <div class="pos-clear-cart-modal__icon">
+                    <img src="{{ asset('backend/pos/assets/images/clear-cart.png') }}" alt="">
+                </div>
+                <h4 id="posClearCartModalTitle" class="pos-clear-cart-modal__title">{{ __('admin.Are you sure') }}</h4>
+                <p class="pos-clear-cart-modal__text">{{ __('admin.You want to remove all items from cart!!') }}</p>
+            </div>
+            <div class="modal-footer pos-clear-cart-modal__footer">
+                <button type="button" class="btn pos-clear-cart-modal__no" data-dismiss="modal">{{ __('admin.No') }}</button>
+                <a class="btn pos-clear-cart-modal__yes pos-cart-clear" href="{{ route('admin.pos.cart.clear.product') }}">
+                    {{ __('admin.Yes') }}
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- Payment / Place Order modal — outside cart so overlay covers full screen --}}
@@ -942,7 +922,7 @@
         $(document).on('click', '.pos-cart-clear', function (e) {
             e.preventDefault();
             posCartRequest($(this).attr('href'));
-            $('#exampleModalLong-3').modal('hide');
+            $('#posClearCartModal').modal('hide');
         });
 
         $(document).on('submit', '#posPromoWrap form', function (e) {
