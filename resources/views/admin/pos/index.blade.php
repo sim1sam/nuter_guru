@@ -435,6 +435,14 @@
                                                                         </div>
                                                                     @endif
                                                                     @foreach ($product->activeVariants as $variant)
+                                                                        @php
+                                                                            // Hide old "Weight" option-variant when KG pack sizes already shown above
+                                                                            $isWeightOption = strtolower(trim((string) $variant->name)) === 'weight';
+                                                                            $hasKgPacks = $product->isKg() && $product->weightVariants->count() > 0;
+                                                                        @endphp
+                                                                        @if ($isWeightOption && $hasKgPacks)
+                                                                            @continue
+                                                                        @endif
                                                                         <div class="col-md-6">
                                                                             <label for="size">{{ $variant->name }}</label>
                                                                             <select id="size" name="selectedValues[{{ $variant->id }}]" class="form-control variant-select">
