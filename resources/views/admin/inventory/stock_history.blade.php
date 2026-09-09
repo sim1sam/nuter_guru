@@ -15,7 +15,8 @@
                         <div class="card-body">
                             <p><strong>{{__('admin.SKU')}}:</strong> {{ $product->sku }}</p>
                             <p><strong>{{__('admin.Barcode')}}:</strong> {{ $product->barcode ?: '-' }}</p>
-                            <p><strong>{{__('admin.Stock')}}:</strong> {{ $product->qty }}</p>
+                            <p><strong>{{__('admin.Stock')}}:</strong> {{ format_stock_qty($product->qty, $product) }}</p>
+                            <p><strong>{{__('admin.Product Unit Type')}}:</strong> {{ product_unit_label($product) }}</p>
                             @if($product->barcode)
                             <form action="{{ route('admin.inventory.barcode.print') }}" method="POST" target="_blank" class="mt-3">
                                 @csrf
@@ -57,7 +58,7 @@
                                 <thead><tr><th>{{__('admin.Warehouse')}}</th><th>{{__('admin.Stock')}}</th></tr></thead>
                                 <tbody>
                                     @forelse($warehouseStocks as $ws)
-                                    <tr><td>{{ $ws->warehouse->name }}</td><td>{{ $ws->qty }}</td></tr>
+                                    <tr><td>{{ $ws->warehouse->name }}</td><td>{{ format_stock_qty($ws->qty, $product) }}</td></tr>
                                     @empty
                                     <tr><td colspan="2">{{__('admin.No data found')}}</td></tr>
                                     @endforelse
@@ -89,8 +90,11 @@
                                         </select>
                                     </div>
                                     <div class="form-group col-md-2">
-                                        <label>{{__('admin.Stock In Quantity')}}</label>
-                                        <input type="number" name="stock_in" class="form-control" min="1" required>
+                                        <label>{{__('admin.Stock In Quantity')}} ({{ product_unit_label($product) }})</label>
+                                        <div class="input-group">
+                                            <input type="number" name="stock_in" class="form-control" min="{{ $product->isKg() ? '0.001' : '1' }}" step="{{ $product->isKg() ? '0.001' : '1' }}" required>
+                                            <div class="input-group-append"><span class="input-group-text">{{ product_unit_label($product) }}</span></div>
+                                        </div>
                                     </div>
                                     <div class="form-group col-md-3">
                                         <label>{{__('admin.Note')}}</label>
@@ -129,9 +133,9 @@
                                         <td>{{ $movement->created_at->format('d M Y H:i') }}</td>
                                         <td>{{ $movement->warehouse->name ?? '-' }}</td>
                                         <td>{{ strtoupper($movement->type) }}</td>
-                                        <td>{{ $movement->qty }}</td>
-                                        <td>{{ $movement->qty_before }}</td>
-                                        <td>{{ $movement->qty_after }}</td>
+                                        <td>{{ format_stock_qty($movement->qty, $product) }}</td>
+                                        <td>{{ format_stock_qty($movement->qty_before, $product) }}</td>
+                                        <td>{{ format_stock_qty($movement->qty_after, $product) }}</td>
                                         <td>{{ $movement->note }}</td>
                                     </tr>
                                     @endforeach

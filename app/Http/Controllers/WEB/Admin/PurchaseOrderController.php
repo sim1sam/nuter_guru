@@ -79,21 +79,16 @@ class PurchaseOrderController extends Controller
                     continue;
                 }
 
-                $product = Product::with('weightVariants')->findOrFail($productId);
+                $product = Product::findOrFail($productId);
                 $rawCost = $request->unit_cost[$i] ?? null;
                 $unitCost = ($rawCost === null || $rawCost === '') ? null : (float) $rawCost;
-                $weightVariantId = ! empty($request->weight_variant_id[$i])
-                    ? (int) $request->weight_variant_id[$i]
-                    : null;
 
                 if ($product->isKg()) {
-                    if ($weightVariantId && ! $product->weightVariants->contains('id', $weightVariantId)) {
-                        continue;
-                    }
+                    // PO for KG: quantity in KG, cost per KG (no weight variant)
                     $payload = $this->purchaseService->buildLinePayload(
                         $product,
                         $qty,
-                        $weightVariantId,
+                        null,
                         $unitCost
                     );
                 } else {
@@ -118,7 +113,10 @@ class PurchaseOrderController extends Controller
             $this->purchaseService->recalculateOrder($order);
         });
 
-        return redirect()->route('admin.purchase-order.index')->with(['messege' => trans('admin.Purchase order created'), 'alert-type' => 'success']);
+        return redirect()->route('admin.purchase-order.index')->with([
+            'messege' => trans('admin.Purchase order created').' — '.trans('admin.Stock updates only after Receive Stock'),
+            'alert-type' => 'success',
+        ]);
     }
 
     public function show($id)

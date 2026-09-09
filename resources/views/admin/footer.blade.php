@@ -247,7 +247,7 @@
 
             function unitKeyForRow(product, unit, weightVariantId) {
                 if (isKgProduct(product)) {
-                    return weightVariantId ? ('wv-'+weightVariantId) : 'kg';
+                    return 'kg';
                 }
                 return unit || 'pc';
             }
@@ -263,42 +263,23 @@
                 var cost = parseFloat($cost.val()) || 0;
 
                 if (isKg) {
-                    var variantId = $tr.find('.item-weight-variant').val() || '';
-                    var variant = findWeightVariant(product, variantId);
-                    var unitWeight = variant ? parseFloat(variant.weight_in_kg) || 0 : 0;
-                    $tr.attr('data-unit', unitKeyForRow(product, 'kg', variantId));
+                    $tr.attr('data-unit', 'kg');
                     $tr.attr('data-pcs', 1);
                     $pcsInput.val(1);
                     $tr.find('.pcs-per-wrap').hide();
                     $tr.find('.pcs-pc-dash').show();
-                    $tr.find('.pc-cost-wrap').toggle(!!variant);
-                    $tr.find('.pc-cost-dash').toggle(!variant);
+                    $tr.find('.pc-cost-wrap').hide();
+                    $tr.find('.pc-cost-dash').show();
+                    $pcCost.val('');
 
-                    if (variant && source !== 'manual-cost') {
-                        if (source === 'pc') {
-                            var perKg = parseFloat($pcCost.val()) || 0;
-                            cost = perKg * unitWeight;
-                            $cost.val(cost > 0 ? cost.toFixed(2) : '');
-                        } else if (!$cost.val() && variant.purchase_cost > 0) {
-                            cost = variant.purchase_cost;
-                            $cost.val(cost.toFixed(2));
-                        } else {
-                            cost = parseFloat($cost.val()) || 0;
-                        }
-                        var derivedPerKg = (cost > 0 && unitWeight > 0) ? (cost / unitWeight) : 0;
-                        $pcCost.val(derivedPerKg > 0 ? derivedPerKg.toFixed(4) : '');
-                    } else if (!variant) {
-                        $pcCost.val('');
-                        if (!$cost.val() && product && product.cost > 0 && source !== 'manual-cost') {
-                            $cost.val(Number(product.cost).toFixed(2));
-                            cost = parseFloat($cost.val()) || 0;
-                        }
+                    if (!$cost.val() && product && product.cost > 0 && source !== 'manual-cost') {
+                        $cost.val(Number(product.cost).toFixed(2));
                     }
-
                     cost = parseFloat($cost.val()) || 0;
-                    var baseQty = variant ? (qty * unitWeight) : qty;
-                    $tr.find('.item-total-pcs').text(baseQty ? baseQty.toFixed(3) : '0');
+                    // Qty is KG, cost is per KG
+                    $tr.find('.item-total-pcs').text((qty ? Number(qty).toFixed(2) : '0.00') + ' KG');
                     $tr.find('.item-line-total').text((qty * cost).toFixed(2));
+                    $cost.attr('placeholder', '{{ __('admin.Cost per KG') }}');
                     return;
                 }
 
@@ -329,7 +310,7 @@
 
                 cost = parseFloat($cost.val()) || 0;
                 var totalPcs = isPackUnit(unit) ? qty * pcs : qty;
-                $tr.find('.item-total-pcs').text(totalPcs);
+                $tr.find('.item-total-pcs').text(totalPcs + ' PCS');
                 $tr.find('.item-line-total').text((qty * cost).toFixed(2));
                 $cost.attr('placeholder', '0');
                 $pcCost.attr('placeholder', '0');
@@ -348,46 +329,32 @@
                 }
 
                 if (isKgProduct(product)) {
-                    weightVariantId = weightVariantId || '';
-                    var kgKey = unitKeyForRow(product, 'kg', weightVariantId);
-                    var existingKg = rowExists(product.id, kgKey);
+                    var existingKg = rowExists(product.id, 'kg');
                     if (existingKg) {
                         var kgQtyInput = existingKg.querySelector('.item-qty');
-                        kgQtyInput.value = (parseFloat(kgQtyInput.value || 0) || 0) + (qty || 1);
+                        kgQtyInput.value = (parseFloat(kgQtyInput.value || 0) || 0) + (parseFloat(qty) || 1);
                         refreshRowSummary($(existingKg));
                         if (!silent) toastr.success(product.name + ' qty updated');
                         return true;
                     }
 
-                    var variant = findWeightVariant(product, weightVariantId);
-                    var defaultCost = variant
-                        ? (variant.purchase_cost || 0)
-                        : (product.cost || 0);
+                    var defaultCost = product.cost || 0;
                     var trKg = document.createElement('tr');
                     trKg.setAttribute('data-id', product.id);
-                    trKg.setAttribute('data-unit', kgKey);
+                    trKg.setAttribute('data-unit', 'kg');
                     trKg.setAttribute('data-unit-type', 'kg');
                     trKg.setAttribute('data-pcs', '1');
                     trKg.innerHTML =
                         '<td><input type="hidden" name="product_id[]" value="'+product.id+'">' +
+                        '<input type="hidden" name="weight_variant_id[]" value="">' +
                         '<strong>'+product.name+'</strong> <span class="badge badge-info">KG</span></td>' +
                         '<td>'+(product.sku || '-')+'</td>' +
-                        '<td>' +
-                        '<input type="hidden" name="unit[]" value="kg">' +
-                        '<input type="hidden" name="pcs_per_box[]" class="item-pcs-per" value="1">' +
-                        '<select name="weight_variant_id[]" class="form-control item-weight-variant">' +
-                        buildWeightVariantOptions(product, weightVariantId) +
-                        '</select></td>' +
+                        '<td><input type="hidden" name="unit[]" value="kg"><input type="hidden" name="pcs_per_box[]" class="item-pcs-per" value="1"><strong>KG</strong></td>' +
                         '<td><span class="pcs-pc-dash text-muted">-</span><div class="pcs-per-wrap" style="display:none"></div></td>' +
-                        '<td><input type="number" step="0.001" min="0.001" name="'+qtyName+'" class="form-control item-qty" value="'+(qty || 1)+'" required></td>' +
-                        '<td><input type="number" step="0.01" name="'+costName+'" class="form-control item-cost" min="0" value="'+(defaultCost > 0 ? Number(defaultCost).toFixed(2) : '')+'" placeholder="0"></td>' +
-                        '<td>' +
-                        '<div class="pc-cost-wrap"'+(variant?'':' style="display:none"')+'>' +
-                        '<input type="number" step="0.0001" class="form-control item-pc-cost" min="0" value="" placeholder="0">' +
-                        '</div>' +
-                        '<span class="pc-cost-dash text-muted"'+(variant?' style="display:none"':'')+'>-</span>' +
-                        '</td>' +
-                        '<td class="item-total-pcs text-center">0</td>' +
+                        '<td><input type="number" step="0.001" min="0.001" name="'+qtyName+'" class="form-control item-qty" value="'+(qty || 1)+'" required placeholder="KG"></td>' +
+                        '<td><input type="number" step="0.01" name="'+costName+'" class="form-control item-cost" min="0" value="'+(defaultCost > 0 ? Number(defaultCost).toFixed(2) : '')+'" placeholder="{{ __('admin.Cost per KG') }}"></td>' +
+                        '<td><span class="pc-cost-dash text-muted">-</span><div class="pc-cost-wrap" style="display:none"><input type="number" class="form-control item-pc-cost" value=""></div></td>' +
+                        '<td class="item-total-pcs text-center">0 KG</td>' +
                         '<td class="item-line-total text-right">0.00</td>' +
                         '<td class="text-center"><button type="button" class="btn btn-danger btn-sm remove-item"><i class="fa fa-trash"></i></button></td>';
                     document.getElementById('purchaseItemsBody').appendChild(trKg);
@@ -436,7 +403,7 @@
                     '</div>' +
                     '<span class="pc-cost-dash text-muted"'+(packVisible?' style="display:none"':'')+'>-</span>' +
                     '</td>' +
-                    '<td class="item-total-pcs text-center">'+(packVisible ? (qty || 1) * pcs : (qty || 1))+'</td>' +
+                    '<td class="item-total-pcs text-center">'+(packVisible ? (qty || 1) * pcs : (qty || 1))+' PCS</td>' +
                     '<td class="item-line-total text-right">0.00</td>' +
                     '<td class="text-center"><button type="button" class="btn btn-danger btn-sm remove-item"><i class="fa fa-trash"></i></button></td>';
                 document.getElementById('purchaseItemsBody').appendChild(tr);
@@ -468,14 +435,15 @@
                 list.forEach(function (p, i) {
                     var metaExtra = '';
                     if (isKgProduct(p)) {
-                        metaExtra = ' | KG' + ((p.weight_variants && p.weight_variants.length)
-                            ? (' | ' + p.weight_variants.length + ' variants')
-                            : '');
-                    } else if (productPcs(p) > 1) {
-                        metaExtra = ' | 1 ' + unitNameByCode(productUnit(p) === 'pc' ? 'box' : productUnit(p)) + ' = ' + productPcs(p) + ' {{ __('admin.Pcs') }}';
+                        metaExtra = ' | KG' + (p.qty_label ? (' | Stock: ' + p.qty_label) : '');
+                    } else {
+                        metaExtra = (p.qty_label ? (' | Stock: ' + p.qty_label) : ' | PCS');
+                        if (productPcs(p) > 1) {
+                            metaExtra += ' | 1 ' + unitNameByCode(productUnit(p) === 'pc' ? 'box' : productUnit(p)) + ' = ' + productPcs(p) + ' {{ __('admin.Pcs') }}';
+                        }
                     }
                     html += '<div class="result-item" data-index="'+i+'">' +
-                        '<div class="result-name">'+p.name+'</div>' +
+                        '<div class="result-name">'+p.name+(isKgProduct(p) ? ' <span class="badge badge-info">KG</span>' : ' <span class="badge badge-secondary">PCS</span>')+'</div>' +
                         '<div class="result-meta">SKU: '+(p.sku || '-')+' | Barcode: '+(p.barcode || '-') +
                         (p.category ? ' | ' + p.category : '') +
                         metaExtra +
@@ -630,32 +598,8 @@
             });
 
             $('#purchaseItemsBody').on('change', '.item-weight-variant', function () {
-                var $tr = $(this).closest('tr');
-                var id = parseInt($tr.data('id'), 10);
-                var variantId = $(this).val() || '';
-                var key = variantId ? ('wv-'+variantId) : 'kg';
-                var existing = rowExists(id, key);
-                if (existing && existing !== $tr.get(0)) {
-                    toastr.warning('{{ __('admin.This product is already added with this unit') }}');
-                    var prev = $tr.attr('data-unit');
-                    if (prev && String(prev).indexOf('wv-') === 0) {
-                        $(this).val(String(prev).replace('wv-', ''));
-                    } else {
-                        $(this).val('');
-                    }
-                    return;
-                }
-                var product = purchaseProducts.find(function (p) { return String(p.id) === String(id); });
-                var variant = findWeightVariant(product, variantId);
-                if (variant && variant.purchase_cost > 0) {
-                    $tr.find('.item-cost').val(Number(variant.purchase_cost).toFixed(2));
-                } else if (product && product.cost > 0) {
-                    $tr.find('.item-cost').val(Number(product.cost).toFixed(2));
-                } else {
-                    $tr.find('.item-cost').val('');
-                }
-                $tr.attr('data-unit', key);
-                refreshRowSummary($tr);
+                // Weight variants disabled on PO — keep handler no-op for safety
+                refreshRowSummary($(this).closest('tr'));
             });
 
             $('#purchaseItemsBody').on('input', '.item-qty, .item-cost, .item-pcs-per', function () {

@@ -29,19 +29,9 @@
             'purchase_unit' => \App\Models\Product::normalizeUnit($p->purchase_unit ?? 'pc'),
             'pack_unit_name' => \App\Models\Unit::label($p->purchase_unit ?? 'pc'),
             'unit_type' => $isKg ? 'kg' : 'pcs',
-            'weight_variants' => $isKg
-                ? $p->weightVariants->map(function ($wv) use ($cost) {
-                    $kg = (float) $wv->weight_in_kg;
-
-                    return [
-                        'id' => (int) $wv->id,
-                        'name' => (string) $wv->name,
-                        'code' => (string) $wv->code,
-                        'weight_in_kg' => $kg,
-                        'purchase_cost' => round($cost * $kg, 2),
-                    ];
-                })->values()->all()
-                : [],
+            'unit_label' => $isKg ? 'KG' : 'PCS',
+            'qty_label' => format_stock_qty($p->qty, $p),
+            'weight_variants' => [],
         ];
     })->values();
 @endphp
@@ -129,7 +119,7 @@
         </div>
         <div id="purchaseSearchResults"></div>
     </div>
-    <small class="text-muted d-block mt-2">{{__('admin.Select Box or another pack unit to enter unit price and Pcs. Per Pc Cost is calculated')}} · KG products: optional weight variant</small>
+    <small class="text-muted d-block mt-2">{{__('admin.PCS products: pack unit / pcs. KG products: enter quantity in KG and cost per KG')}}</small>
 </div>
 
 <div class="table-responsive">
@@ -138,12 +128,12 @@
             <tr>
                 <th style="width:18%">{{__('admin.Product')}}</th>
                 <th>{{__('admin.SKU')}}</th>
-                <th style="width:110px">{{__('admin.Unit')}} / Variant</th>
+                <th style="width:100px">{{__('admin.Unit')}}</th>
                 <th style="width:90px">{{__('admin.Pcs Per Unit')}}</th>
-                <th style="width:85px">{{__('admin.Quantity')}}</th>
-                <th style="width:110px">{{__('admin.Purchase Price')}}</th>
-                <th style="width:110px">{{__('admin.Per Pc Cost')}} / KG</th>
-                <th style="width:85px">Base Qty</th>
+                <th style="width:90px">{{__('admin.Quantity')}}</th>
+                <th style="width:120px">{{__('admin.Purchase Price')}}</th>
+                <th style="width:100px">{{__('admin.Per Pc Cost')}}</th>
+                <th style="width:100px">{{__('admin.Base Qty')}}</th>
                 <th style="width:90px">{{__('admin.Line Total')}}</th>
                 <th style="width:55px">{{__('admin.Action')}}</th>
             </tr>

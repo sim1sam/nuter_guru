@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
 use App\Models\WarehouseStock;
+use App\Models\WeightVariant;
 use App\Services\Inventory\WeightCalculationService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -438,6 +439,33 @@ class StockService
     }
 
     /**
+     * Resolve KG base qty for an order line.
+     * Pack sales: packs × unit_weight_kg (e.g. 2 × 0.25 = 0.5 KG).
+     */
+    public function resolveOrderItemBaseQty(OrderProduct $item): float
+    {
+        $qty = (float) ($item->qty ?? 0);
+        $unitWeight = (float) ($item->unit_weight_kg ?? 0);
+
+        if ($qty > 0 && $unitWeight > 0) {
+            return $this->weightCalc->roundWeight($qty * $unitWeight);
+        }
+
+        if ($qty > 0 && $item->weight_variant_id) {
+            $variant = WeightVariant::find($item->weight_variant_id);
+            if ($variant && (float) $variant->weight_in_kg > 0) {
+                return $this->weightCalc->roundWeight($qty * (float) $variant->weight_in_kg);
+            }
+        }
+
+        if ($item->base_quantity !== null && $item->base_quantity !== '') {
+            return $this->weightCalc->roundWeight((float) $item->base_quantity);
+        }
+
+        return $this->weightCalc->roundWeight($qty);
+    }
+
+    /**
      * Deduct stock when order moves to Processing (once per sale cycle).
      */
     public function deductStockFromOrder(Order $order, ?int $adminId = null): void
@@ -455,9 +483,15 @@ class StockService
 
             $items = OrderProduct::where('order_id', $locked->id)->get();
             foreach ($items as $item) {
-                $baseQty = (float) ($item->base_quantity ?? $item->qty ?? 0);
+                $baseQty = $this->resolveOrderItemBaseQty($item);
                 if ($baseQty <= 0 || ! $item->product_id) {
                     continue;
+                }
+
+                // Keep stored base_quantity aligned with weight packs
+                if ((float) ($item->base_quantity ?? 0) !== $baseQty) {
+                    $item->base_quantity = $baseQty;
+                    $item->save();
                 }
 
                 $this->deductForSale(
@@ -504,7 +538,7 @@ class StockService
 
             $items = OrderProduct::where('order_id', $locked->id)->get();
             foreach ($items as $item) {
-                $baseQty = (float) ($item->base_quantity ?? $item->qty ?? 0);
+                $baseQty = $this->resolveOrderItemBaseQty($item);
                 if ($baseQty <= 0 || ! $item->product_id) {
                     continue;
                 }

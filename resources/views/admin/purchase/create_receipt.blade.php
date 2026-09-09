@@ -15,7 +15,7 @@
 <table class="table"><thead><tr>
 <th>{{__('admin.Product')}}</th>
 <th>Type</th>
-<th>{{__('admin.Unit')}} / Variant</th>
+<th>{{__('admin.Unit')}}</th>
 <th>{{__('admin.Pending')}}</th>
 <th>{{__('admin.Receive Qty')}}</th>
 </tr></thead><tbody>
@@ -37,14 +37,12 @@
     @endif
 </td>
 <td>
-    {{ $item->unitLabel() }}
-    @if($item->variant_name)
-        <small class="text-muted d-block">{{ $item->variant_name }}</small>
-    @elseif(\App\Models\Product::isPackUnit($item->unit))
+    {{ $isKg ? 'KG' : $item->unitLabel() }}
+    @if(! $isKg && \App\Models\Product::isPackUnit($item->unit))
         <small class="text-muted d-block">1 {{ $item->unitLabel() }} = {{ $item->pcs_per_box }} {{__('admin.Pcs')}}</small>
     @endif
 </td>
-<td>{{ $isKg ? rtrim(rtrim(number_format($pending, 3, '.', ''), '0'), '.') : $pending }} {{ $item->unitLabel() }}</td>
+<td>{{ $isKg ? rtrim(rtrim(number_format($pending, 3, '.', ''), '0'), '.') : $pending }} {{ $isKg ? 'KG' : $item->unitLabel() }}</td>
 <td><input type="number" name="qty[]" class="form-control" min="0" step="{{ $isKg ? '0.001' : '1' }}" max="{{ $pending }}" value="{{ $pending }}"></td>
 </tr>
 @endif

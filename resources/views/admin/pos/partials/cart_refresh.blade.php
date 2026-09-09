@@ -19,7 +19,12 @@
         <div class="pos-cart-item delivery-information-top-item-two">
             <div class="pos-cart-item__info delivery-information-top-item-two-img">
                 <img src="{{ asset($product->card_product->thumb_image) }}" alt="">
-                <p class="pos-cart-item__name">{{ $product->card_product->name }}</p>
+                <p class="pos-cart-item__name">
+                    {{ $product->card_product->name }}
+                    @if (!empty($product->variant_name_snapshot))
+                        <small>({{ $product->variant_name_snapshot }})</small>
+                    @endif
+                </p>
             </div>
 
             <div class="count">
@@ -52,13 +57,14 @@
 
             <div class="price">
                 @php
-                    if ($product->card_product->offer_price == '') {
-                        $total = $product->qty * $product->card_product->price;
-                        $price = $product->card_product->price;
+                    if ($product->unit_price !== null && $product->unit_price !== '') {
+                        $price = (float) $product->unit_price;
+                    } elseif ($product->card_product->offer_price == '') {
+                        $price = (float) $product->card_product->price;
                     } else {
-                        $total = $product->qty * $product->card_product->offer_price;
-                        $price = $product->card_product->offer_price;
+                        $price = (float) $product->card_product->offer_price;
                     }
+                    $total = $product->qty * $price;
                     $grandTotal += $total;
                     $tax = ($grandTotal * ($taxRate / 100));
                     if ($coupon) {

@@ -34,6 +34,9 @@ use App\Mail\OrderSuccessfully;
 use App\Mail\UserRegistrationFromAdmin;
 use App\Services\ShippingCalculationService;
 use App\Services\StockService;
+use App\Services\Inventory\WeightCalculationService;
+use App\Models\WeightVariant;
+use App\Models\ProductWeightVariant;
 use DB;
 
 
@@ -53,7 +56,9 @@ class PosController extends Controller
     {
         Paginator::useBootstrap();
         $data['brands'] = Brand::all();
-        $data['products'] = Product::with('activeVariants')->where(['vendor_id' => 0])->where(['status' => 1])->orderBy('id','desc')->paginate(18);
+        $data['products'] = Product::with(['activeVariants', 'weightVariants' => function ($q) {
+            $q->where('weight_variants.status', 1);
+        }])->where(['vendor_id' => 0])->where(['status' => 1])->orderBy('id','desc')->paginate(18);
         $data['setting'] = Setting::first();
         $data['categories'] = Category::with('subCategories','products')->get();
         $cartData = $this->posCartViewData();
@@ -76,7 +81,9 @@ class PosController extends Controller
     {
         Paginator::useBootstrap();
         $data['brands'] = Brand::all();
-        $data['products'] = Product::where(['vendor_id' => 0])->where(['status' => 1])->where(['category_id' => $id])->orderBy('id','desc')->paginate(18);
+        $data['products'] = Product::with(['activeVariants', 'weightVariants' => function ($q) {
+            $q->where('weight_variants.status', 1);
+        }])->where(['vendor_id' => 0])->where(['status' => 1])->where(['category_id' => $id])->orderBy('id','desc')->paginate(18);
         $data['setting'] = Setting::first();
         $data['categories'] = Category::with('subCategories','products')->get();
         $data['cart_products'] = ShoppingCart::where('user_id',Auth::guard('admin')->user()->id)->orderBy('id','desc')->get();
@@ -101,7 +108,9 @@ class PosController extends Controller
                 ->orWhere('short_name', 'like', '%' . $query . '%');
             });
             }
-        $data['products'] = $productsQuery->paginate(18);
+        $data['products'] = $productsQuery->with(['activeVariants', 'weightVariants' => function ($q) {
+            $q->where('weight_variants.status', 1);
+        }])->paginate(18);
         $data['brands'] = Brand::all();
         $data['setting'] = Setting::first();
         $data['categories'] = Category::with('subCategories','products')->get();
@@ -141,7 +150,7 @@ class PosController extends Controller
 
         return [
             'setting' => Setting::first(),
-            'cart_products' => ShoppingCart::with('card_product')
+            'cart_products' => ShoppingCart::with(['card_product', 'weightVariant'])
                 ->where('user_id', Auth::guard('admin')->user()->id)
                 ->orderBy('id', 'desc')
                 ->get(),
@@ -163,10 +172,14 @@ class PosController extends Controller
             if (!$product->card_product) {
                 continue;
             }
-            $unit = $product->card_product->offer_price === '' || $product->card_product->offer_price === null
-                ? floatval($product->card_product->price)
-                : floatval($product->card_product->offer_price);
-            $grandTotal += $unit * intval($product->qty);
+            if ($product->unit_price !== null && $product->unit_price !== '') {
+                $unit = floatval($product->unit_price);
+            } else {
+                $unit = $product->card_product->offer_price === '' || $product->card_product->offer_price === null
+                    ? floatval($product->card_product->price)
+                    : floatval($product->card_product->offer_price);
+            }
+            $grandTotal += $unit * floatval($product->qty);
         }
 
         $tax = $grandTotal * ($taxRate / 100);
@@ -265,107 +278,226 @@ class PosController extends Controller
 
     public function AddProduct($id)
     {
-        if(Auth::guard('admin')->user()){
-            $check_stock = Product::where('id',$id)->select('qty')->first();
-            $qty = $check_stock->qty;
-            if ($qty > 0) {
-                if(ShoppingCart::where('product_id', $id)->where('user_id',Auth::guard('admin')->user()->id)->exists())
-                {
-                    $cart = ShoppingCart::where('product_id', $id)->where('user_id',Auth::guard('admin')->user()->id)->first();
-                    if($qty >= $cart->qty + 1){
-                        $qty = $cart->qty + 1;
-                        $datacode= array();
-                        $datacode['qty'] = $qty;
-                        ShoppingCart::where('product_id',$id)->where('user_id',Auth::guard('admin')->user()->id)
-                         ->update($datacode);
+        if (! Auth::guard('admin')->user()) {
+            return $this->posCartResult(trans('admin_validation.Sry First You Need To Login'), 'error');
+        }
 
-                        return $this->posCartResult(trans('admin_validation.Product Quantity Updated'), 'success');
-                    }
+        $product = Product::with(['weightVariants' => function ($q) {
+            $q->where('weight_variants.status', 1);
+        }])->find($id);
 
-                    return $this->posCartResult(trans('admin_validation.This Product Are Out of Stock'), 'error');
-                }
+        if (! $product) {
+            return $this->posCartResult(trans('admin_validation.Sry Somthin Went To Wrong'), 'error');
+        }
 
-                $cart = new ShoppingCart();
-                $cart->user_id = Auth::guard('admin')->user()->id;
-                $cart->product_id = $id;
-                $cart->qty = 1;
-                $cart->save();
+        // KG products with pack sizes must be added from Details (weight select)
+        if ($product->isKg() && $product->weightVariants->count() > 0) {
+            return $this->posCartResult(
+                'Please open Details and select a weight (e.g. 250g) before adding to cart.',
+                'error'
+            );
+        }
 
-                return $this->posCartResult(trans('admin_validation.Product Added'), 'success');
-            }
-
+        $weightCalc = app(WeightCalculationService::class);
+        $available = $weightCalc->roundWeight((float) $product->qty);
+        if ($available <= 0) {
             return $this->posCartResult(trans('admin_validation.This Product Are Out of Stock'), 'error');
         }
 
-        return $this->posCartResult(trans('admin_validation.Sry First You Need To Login'), 'error');
+        $adminId = Auth::guard('admin')->user()->id;
+        $existing = ShoppingCart::where('product_id', $id)
+            ->where('user_id', $adminId)
+            ->whereNull('weight_variant_id')
+            ->first();
+
+        $newQty = $existing ? ((float) $existing->qty + 1) : 1.0;
+        $baseQty = $product->isKg()
+            ? $weightCalc->roundWeight($newQty)
+            : $newQty;
+
+        if (! $weightCalc->hasEnoughStock($product, $baseQty)) {
+            return $this->posCartResult(trans('admin_validation.This Product Are Out of Stock'), 'error');
+        }
+
+        if ($existing) {
+            $existing->qty = $newQty;
+            $existing->base_quantity = $baseQty;
+            $existing->save();
+
+            return $this->posCartResult(trans('admin_validation.Product Quantity Updated'), 'success');
+        }
+
+        $cart = new ShoppingCart();
+        $cart->user_id = $adminId;
+        $cart->product_id = $id;
+        $cart->qty = 1;
+        $cart->base_quantity = $product->isKg() ? 1 : 1;
+        $cart->save();
+
+        return $this->posCartResult(trans('admin_validation.Product Added'), 'success');
     }
 
     public function AddProductWithDetils(Request $request, $id)
     {
-        $selectedValues = $request->input('selectedValues');
-        if(Auth::guard('admin')->user()){
-            $check_stock = Product::where('id',$id)->select('qty')->first();
-            $qty = $check_stock->qty;
-            if ($qty >= $request->quantity) {
-                if(ShoppingCart::where('product_id', $id)->where('user_id',Auth::guard('admin')->user()->id)->exists())
-                {
-                    $cart = ShoppingCart::where('product_id', $id)->where('user_id',Auth::guard('admin')->user()->id)->first();
-                    if($qty >= $cart->qty + $request->quantity){
-                        $qty = $cart->qty + $request->quantity;
-                        $datacode= array();
-                        $datacode['qty'] = $qty;
-                        $code_reg = ShoppingCart::where('product_id',$id)->where('user_id',Auth::guard('admin')->user()->id)
-                         ->update($datacode);
-                         if ($selectedValues) {
-                            foreach ($selectedValues as $variantName => $selectedValue) {
-                                $cart_variation = new ShoppingCartVariant();
-                                $cart_variation->shopping_cart_id = $cart->id;
-                                $cart_variation->variant_id = $variantName;
-                                $cart_variation->variant_item_id = $selectedValue;
-                                $cart_variation->save();
-                            }
-                        }
-                    }else{
-                        $notification = trans('admin_validation.This Product Are Out of Stock');
-                        $notification=array('messege'=>$notification,'alert-type'=>'error');
-                        return redirect()->back()->with($notification);
-                    }
-                   
-
-                    $notification = trans('admin_validation.Product Quantity Updated');
-                    $notification=array('messege'=>$notification,'alert-type'=>'success');
-                    return redirect()->back()->with($notification);
-
-                }else{
-                    $cart = new ShoppingCart();
-                    $cart->user_id = Auth::guard('admin')->user()->id;
-                    $cart->product_id = $id;
-                    $cart->qty = $request->quantity;
-                    $cart->save();
-                    if ($selectedValues) {
-                        foreach ($selectedValues as $variantName => $selectedValue) {
-                            $cart_variation = new ShoppingCartVariant();
-                            $cart_variation->shopping_cart_id = $cart->id;
-                            $cart_variation->variant_id = $variantName;
-                            $cart_variation->variant_item_id = $selectedValue;
-                            $cart_variation->save();
-                        }
-                    }
-                    $notification = trans('admin_validation.Product Added');
-                    $notification=array('messege'=>$notification,'alert-type'=>'success');
-                    return redirect()->back()->with($notification);
-                }
-            }else{
-                $notification = trans('admin_validation.This Product Are Out of Stock');
-                $notification=array('messege'=>$notification,'alert-type'=>'error');
-                return redirect()->back()->with($notification);
-            }
-        }else{
+        if (! Auth::guard('admin')->user()) {
             $notification = trans('admin_validation.Sry First You Need To Login');
-            $notification=array('messege'=>$notification,'alert-type'=>'error');
+            $notification = array('messege' => $notification, 'alert-type' => 'error');
             return redirect()->back()->with($notification);
         }
 
+        $product = Product::with(['weightVariants' => function ($q) {
+            $q->where('weight_variants.status', 1);
+        }])->find($id);
+
+        if (! $product) {
+            $notification = array('messege' => trans('admin_validation.Sry Somthin Went To Wrong'), 'alert-type' => 'error');
+            return redirect()->back()->with($notification);
+        }
+
+        $selectedValues = $request->input('selectedValues');
+        $qtyRequested = max(1, (float) $request->quantity);
+        $weightVariantId = $request->filled('weight_variant_id') ? (int) $request->weight_variant_id : null;
+
+        $weightCalc = app(WeightCalculationService::class);
+        $weightVariant = null;
+        $unitPrice = null;
+        $baseQuantity = null;
+        $variantNameSnapshot = null;
+        $unitWeightKg = null;
+
+        if ($product->isKg() && $product->weightVariants->count() > 0 && ! $weightVariantId) {
+            $notification = array(
+                'messege' => 'Please select a weight variant (e.g. 250g).',
+                'alert-type' => 'error',
+            );
+            return redirect()->back()->with($notification);
+        }
+
+        if ($product->isKg() && $weightVariantId) {
+            $pivot = ProductWeightVariant::where('product_id', $product->id)
+                ->where('weight_variant_id', $weightVariantId)
+                ->first();
+            if (! $pivot) {
+                $notification = array('messege' => 'Invalid weight variant for this product', 'alert-type' => 'error');
+                return redirect()->back()->with($notification);
+            }
+            $weightVariant = WeightVariant::where('id', $weightVariantId)->where('status', 1)->first();
+            if (! $weightVariant) {
+                $notification = array('messege' => 'Weight variant is not available', 'alert-type' => 'error');
+                return redirect()->back()->with($notification);
+            }
+            $unitPrice = $weightCalc->variantSellingPrice($product, $weightVariant, $pivot);
+            $baseQuantity = $weightCalc->calculateBaseQuantity($product, $qtyRequested, $weightVariant);
+            $variantNameSnapshot = $weightVariant->name;
+            $unitWeightKg = (float) $weightVariant->weight_in_kg;
+        } elseif ($product->isKg()) {
+            $unitPrice = (float) (($product->offer_price !== null && $product->offer_price !== '') ? $product->offer_price : $product->price);
+            $baseQuantity = $weightCalc->roundWeight($qtyRequested);
+        } else {
+            $baseQuantity = $qtyRequested;
+        }
+
+        $requiredBase = $baseQuantity ?? $qtyRequested;
+        if (! $weightCalc->hasEnoughStock($product, $requiredBase)) {
+            $notification = array('messege' => $weightCalc->availableStockMessage($product), 'alert-type' => 'error');
+            return redirect()->back()->with($notification);
+        }
+
+        $adminId = Auth::guard('admin')->user()->id;
+        $existingQuery = ShoppingCart::where('product_id', $id)->where('user_id', $adminId);
+        if ($weightVariantId) {
+            $existingQuery->where('weight_variant_id', $weightVariantId);
+        } else {
+            $existingQuery->whereNull('weight_variant_id');
+        }
+        $existing = $existingQuery->first();
+
+        if ($existing) {
+            $newQty = (float) $existing->qty + $qtyRequested;
+            $newBase = $weightVariant
+                ? $weightCalc->calculateBaseQuantity($product, $newQty, $weightVariant)
+                : ($product->isKg() ? $weightCalc->roundWeight($newQty) : $newQty);
+
+            if (! $weightCalc->hasEnoughStock($product, $newBase)) {
+                $notification = array('messege' => $weightCalc->availableStockMessage($product), 'alert-type' => 'error');
+                return redirect()->back()->with($notification);
+            }
+
+            $existing->qty = $newQty;
+            $existing->base_quantity = $newBase;
+            if ($unitPrice !== null) {
+                $existing->unit_price = $unitPrice;
+            }
+            $existing->save();
+
+            if ($selectedValues) {
+                foreach ($selectedValues as $variantName => $selectedValue) {
+                    $cart_variation = new ShoppingCartVariant();
+                    $cart_variation->shopping_cart_id = $existing->id;
+                    $cart_variation->variant_id = $variantName;
+                    $cart_variation->variant_item_id = $selectedValue;
+                    $cart_variation->save();
+                }
+            }
+
+            $notification = array('messege' => trans('admin_validation.Product Quantity Updated'), 'alert-type' => 'success');
+            return redirect()->back()->with($notification);
+        }
+
+        $cart = new ShoppingCart();
+        $cart->user_id = $adminId;
+        $cart->product_id = $id;
+        $cart->qty = $qtyRequested;
+        $cart->weight_variant_id = $weightVariantId;
+        $cart->variant_name_snapshot = $variantNameSnapshot;
+        $cart->unit_weight_kg = $unitWeightKg;
+        $cart->base_quantity = $baseQuantity ?? $qtyRequested;
+        $cart->unit_price = $unitPrice;
+        $cart->save();
+
+        if ($selectedValues) {
+            foreach ($selectedValues as $variantName => $selectedValue) {
+                $cart_variation = new ShoppingCartVariant();
+                $cart_variation->shopping_cart_id = $cart->id;
+                $cart_variation->variant_id = $variantName;
+                $cart_variation->variant_item_id = $selectedValue;
+                $cart_variation->save();
+            }
+        }
+
+        $notification = array('messege' => trans('admin_validation.Product Added'), 'alert-type' => 'success');
+        return redirect()->back()->with($notification);
+    }
+
+    protected function syncPosCartLineBase(ShoppingCart $cart): ?string
+    {
+        $product = Product::find($cart->product_id);
+        if (! $product) {
+            return trans('admin_validation.Sry Somthin Went To Wrong');
+        }
+
+        $weightCalc = app(WeightCalculationService::class);
+        $weightVariant = $cart->weight_variant_id
+            ? WeightVariant::find($cart->weight_variant_id)
+            : null;
+
+        if ($product->isKg() && $weightVariant) {
+            $cart->base_quantity = $weightCalc->calculateBaseQuantity($product, $cart->qty, $weightVariant);
+            $cart->unit_weight_kg = (float) $weightVariant->weight_in_kg;
+            $cart->variant_name_snapshot = $weightVariant->name;
+        } elseif ($product->isKg()) {
+            $cart->base_quantity = $weightCalc->roundWeight((float) $cart->qty);
+        } else {
+            $cart->base_quantity = (float) $cart->qty;
+        }
+
+        if (! $weightCalc->hasEnoughStock($product, (float) $cart->base_quantity)) {
+            return $weightCalc->availableStockMessage($product);
+        }
+
+        $cart->save();
+
+        return null;
     }
 
     public function cartIncremet($id) {
@@ -374,18 +506,17 @@ class PosController extends Controller
             return $this->posCartResult(trans('admin_validation.Sry Somthin Went To Wrong'), 'error');
         }
 
-        $check_stock = Product::where('id', $check->product_id)->select('qty')->first();
-        $qty = $check_stock->qty ?? 0;
-        if ($check->user_id == Auth::guard('admin')->user()->id) {
-            if ($qty >= $check->qty + 1) {
-                ShoppingCart::where('id', $id)->update(['qty' => $check->qty + 1]);
-                return $this->posCartResult(trans('admin_validation.Product Quantity Updated'), 'success');
-            }
-
-            return $this->posCartResult(trans('admin_validation.This Product Are Out of Stock'), 'error');
+        if ($check->user_id != Auth::guard('admin')->user()->id) {
+            return $this->posCartResult(trans('admin_validation.Sry Somthin Went To Wrong'), 'error');
         }
 
-        return $this->posCartResult(trans('admin_validation.Sry Somthin Went To Wrong'), 'error');
+        $check->qty = (float) $check->qty + 1;
+        $error = $this->syncPosCartLineBase($check);
+        if ($error) {
+            return $this->posCartResult($error, 'error');
+        }
+
+        return $this->posCartResult(trans('admin_validation.Product Quantity Updated'), 'success');
     }
 
     public function cartDecrement($id) {
@@ -395,7 +526,12 @@ class PosController extends Controller
         }
 
         if ($check->user_id == Auth::guard('admin')->user()->id && $check->qty > 1) {
-            ShoppingCart::where('id', $id)->update(['qty' => $check->qty - 1]);
+            $check->qty = (float) $check->qty - 1;
+            $error = $this->syncPosCartLineBase($check);
+            if ($error) {
+                return $this->posCartResult($error, 'error');
+            }
+
             return $this->posCartResult(trans('admin_validation.Product Quantity Updated'), 'success');
         }
 
@@ -644,7 +780,11 @@ class PosController extends Controller
             $orderProduct->weight_variant_id = $cartProduct->weight_variant_id;
             $orderProduct->variant_name_snapshot = $cartProduct->variant_name_snapshot;
             $orderProduct->unit_weight_kg = $cartProduct->unit_weight_kg;
-            $orderProduct->base_quantity = $cartProduct->base_quantity ?? $cartProduct->qty;
+            if ($cartProduct->unit_weight_kg && (float) $cartProduct->unit_weight_kg > 0) {
+                $orderProduct->base_quantity = round((float) $cartProduct->qty * (float) $cartProduct->unit_weight_kg, 3);
+            } else {
+                $orderProduct->base_quantity = $cartProduct->base_quantity ?? $cartProduct->qty;
+            }
             $orderProduct->unit_cost = $product->cost_price;
             $orderProduct->save();
 
@@ -968,18 +1108,17 @@ class PosController extends Controller
             if (!$cartProduct) {
                 continue;
             }
-            $check_stock = Product::where('id', $cartProduct->product_id)->select('qty')->first();
-            $qty = $check_stock->qty ?? 0;
+            if ($cartProduct->user_id != Auth::guard('admin')->user()->id) {
+                continue;
+            }
 
-            if ($qty >= $quantity) {
-                $cartProduct->qty = $quantity;
-                $cartProduct->save();
-            } else {
-                $notification = trans('admin_validation.This Product Are Out of Stock');
+            $cartProduct->qty = max(1, (float) $quantity);
+            $error = $this->syncPosCartLineBase($cartProduct);
+            if ($error) {
                 if ($isAjax) {
-                    return response()->json(['message' => $notification], 422);
+                    return response()->json(['message' => $error], 422);
                 }
-                $notification = array('messege' => $notification, 'alert-type' => 'error');
+                $notification = array('messege' => $error, 'alert-type' => 'error');
                 return redirect()->back()->with($notification);
             }
         }

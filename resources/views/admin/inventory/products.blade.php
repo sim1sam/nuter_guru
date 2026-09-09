@@ -26,7 +26,7 @@
                                     <th>{{__('admin.Name')}}</th>
                                     <th>{{__('admin.SKU')}}</th>
                                     <th>{{__('admin.Barcode')}}</th>
-                                    <th>{{__('admin.Stock')}} ({{__('admin.Pcs')}})</th>
+                                    <th>{{__('admin.Stock')}}</th>
                                     <th>{{__('admin.Pcs Per Box')}}</th>
                                     <th>{{__('admin.Low Stock Threshold')}}</th>
                                     <th>{{__('admin.Sold')}}</th>
@@ -45,16 +45,21 @@
                                     <td>{{ $product->barcode ?: '-' }}</td>
                                     <td>
                                         @if($product->qty <= 0)
-                                            <span class="badge badge-danger">{{ number_format((float)$product->qty, 3) }} {{ strtoupper($product->unit_type ?? 'pcs') }}</span>
+                                            <span class="badge badge-danger">{{ format_stock_qty($product->qty, $product) }}</span>
                                         @elseif($product->qty <= ($product->low_stock_threshold ?? 5))
-                                            <span class="badge badge-warning">{{ number_format((float)$product->qty, 3) }} {{ strtoupper($product->unit_type ?? 'pcs') }}</span>
+                                            <span class="badge badge-warning">{{ format_stock_qty($product->qty, $product) }}</span>
                                         @else
-                                            {{ number_format((float)$product->qty, 3) }} {{ strtoupper($product->unit_type ?? 'pcs') }}
+                                            {{ format_stock_qty($product->qty, $product) }}
                                         @endif
                                     </td>
                                     <td>{{ max(1, (int) ($product->pcs_per_box ?? 1)) }}</td>
                                     <td>{{ $product->low_stock_threshold ?? 5 }}</td>
-                                    <td>{{ $product->total_sold }}</td>
+                                    <td>
+                                        @php
+                                            $sold = (float) ($product->total_sold ?? $product->sold_qty ?? 0);
+                                        @endphp
+                                        {{ abs($sold - round($sold)) < 0.0001 ? number_format($sold, 0) : number_format($sold, 2) }}
+                                    </td>
                                     <td>
                                         <a class="btn btn-success btn-sm" href="{{ route('admin.stock-history', $product->id) }}"><i class="fa fa-eye"></i></a>
                                     </td>

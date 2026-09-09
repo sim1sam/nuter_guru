@@ -203,9 +203,9 @@
                                 </div>
 
                                 <div class="form-group col-12">
-                                    <label><span class="cost-price-label">{{ __('admin.Purchase Price (Optional)') }}</span> <span class="text-muted" id="openingPriceHint">({{ __('admin.Required if opening stock is added') }})</span></label>
+                                    <label><span class="cost-price-label">{{ __('admin.Purchase Price (Optional)') }}</span></label>
                                    <input type="number" step="0.0001" class="form-control" name="cost_price" id="costPriceInput" value="{{ old('cost_price') }}" min="0" placeholder="{{ __('admin.Leave empty if no opening stock') }}">
-                                    <small class="text-muted">{{ __('admin.Purchase price optional on PO too. Set here for opening stock, or on PO when receiving stock') }}</small>
+                                    <small class="text-muted">{{ __('admin.Opening stock is saved to inventory immediately. Cost is optional') }}</small>
                                 </div>
 
                                 <div class="form-group col-12">
@@ -526,6 +526,9 @@
         }
 
         $('input[name="unit_type"]').on('change', toggleUnitTypeFields);
+        $('#openingStockInput').on('input change', toggleOpeningPriceHint);
+        toggleUnitTypeFields();
+        toggleOpeningPriceHint();
         $('#sellingPriceMode').on('change', function () {
             toggleCustomPriceInputs();
             renderWeightPreview();

@@ -37,9 +37,9 @@
                                 <td>{{ $product->barcode ?: '-' }}</td>
                                 <td>
                                     @if($product->qty <= 0)
-                                        <span class="badge badge-danger">{{ $product->qty }}</span>
+                                        <span class="badge badge-danger">{{ format_stock_qty($product->qty, $product) }}</span>
                                     @else
-                                        <span class="badge badge-warning">{{ $product->qty }}</span>
+                                        <span class="badge badge-warning">{{ format_stock_qty($product->qty, $product) }}</span>
                                     @endif
                                 </td>
                                 <td>{{ $product->low_stock_threshold ?? 5 }}</td>

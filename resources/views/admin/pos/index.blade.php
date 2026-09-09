@@ -316,7 +316,13 @@
                                                 {{ __('admin.Details') }}
                                             </button>
                                             @if ($product->qty > 0)
-                                                <a href="{{ route('admin.pos.add.product', $product->id) }}" class="pos-btn pos-btn--primary pos-add-product">{{ __('admin.Select') }}</a>
+                                                @if ($product->isKg() && $product->weightVariants->count() > 0)
+                                                    <button type="button" class="pos-btn pos-btn--primary" data-toggle="modal" data-target="#exampleModalLong{{ $product->id }}">
+                                                        {{ __('admin.Select') }}
+                                                    </button>
+                                                @else
+                                                    <a href="{{ route('admin.pos.add.product', $product->id) }}" class="pos-btn pos-btn--primary pos-add-product">{{ __('admin.Select') }}</a>
+                                                @endif
                                             @else
                                                 <span class="pos-btn pos-btn--disabled">{{ __('admin.Select') }}</span>
                                             @endif
@@ -414,6 +420,20 @@
                                                             <input type="hidden" name="selected_values" id="selected_values">
                                                             <div class="pt-3">
                                                                 <div class="row">
+                                                                    @if ($product->isKg() && $product->weightVariants->count() > 0)
+                                                                        <div class="col-md-12 mb-2">
+                                                                            <label for="weight_variant_{{ $product->id }}">{{ __('admin.Weight') ?? 'Weight' }}</label>
+                                                                            <select id="weight_variant_{{ $product->id }}" name="weight_variant_id" class="form-control" required>
+                                                                                <option value="" disabled selected>{{ __('Select') }}</option>
+                                                                                @foreach ($product->weightVariants as $wv)
+                                                                                    <option value="{{ $wv->id }}">
+                                                                                        {{ $wv->name }}
+                                                                                        ({{ rtrim(rtrim(number_format((float) $wv->weight_in_kg, 3, '.', ''), '0'), '.') }} KG)
+                                                                                    </option>
+                                                                                @endforeach
+                                                                            </select>
+                                                                        </div>
+                                                                    @endif
                                                                     @foreach ($product->activeVariants as $variant)
                                                                         <div class="col-md-6">
                                                                             <label for="size">{{ $variant->name }}</label>

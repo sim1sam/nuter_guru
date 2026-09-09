@@ -7,13 +7,35 @@
 <p><strong>{{__('admin.Supplier')}}:</strong> {{ $return->supplier->name }}</p>
 <p><strong>{{__('admin.Warehouse')}}:</strong> {{ $return->warehouse->name }}</p>
 <p><strong>{{__('admin.Reason')}}:</strong> {{ $return->reason }}</p>
-<table class="table table-striped mt-3"><thead><tr><th>{{__('admin.Product')}}</th><th>{{__('admin.Unit')}}</th><th>{{__('admin.Quantity')}}</th><th>{{__('admin.Pcs')}}</th><th>{{__('admin.Unit Cost')}}</th></tr></thead>
+<table class="table table-striped mt-3"><thead><tr>
+<th>{{__('admin.Product')}}</th>
+<th>Type</th>
+<th>{{__('admin.Unit')}}</th>
+<th>{{__('admin.Quantity')}}</th>
+<th>{{__('admin.Base Qty')}}</th>
+<th>{{__('admin.Unit Cost')}}</th>
+</tr></thead>
 <tbody>@foreach($return->items as $item)
+@php
+    $product = $item->product;
+    $isKg = $product && $product->isKg();
+    $baseLabel = $isKg ? 'KG' : 'PCS';
+    $baseQty = $isKg
+        ? (float) $item->qty
+        : \App\Models\Product::convertToPcs((int) $item->qty, $item->unit ?? 'pc', (int) ($item->pcs_per_box ?: 1));
+@endphp
 <tr>
-<td>{{ $item->product->name }}</td>
-<td>{{ \App\Models\Unit::label($item->unit ?? 'pc') }}</td>
-<td>{{ $item->qty }}</td>
-<td>{{ \App\Models\Product::convertToPcs((int) $item->qty, $item->unit ?? 'pc', (int) ($item->pcs_per_box ?: 1)) }}</td>
+<td>{{ $product->name ?? '-' }}</td>
+<td>
+    @if($isKg)
+        <span class="badge badge-info">KG</span>
+    @else
+        <span class="badge badge-secondary">PCS</span>
+    @endif
+</td>
+<td>{{ $isKg ? 'KG' : \App\Models\Unit::label($item->unit ?? 'pc') }}</td>
+<td>{{ $isKg ? rtrim(rtrim(number_format((float)$item->qty, 3, '.', ''), '0'), '.') : (float) $item->qty }}</td>
+<td>{{ $isKg ? number_format((float)$baseQty, 3) : (int) $baseQty }} {{ $baseLabel }}</td>
 <td>{{ number_format($item->unit_cost,2) }}</td>
 </tr>
 @endforeach</tbody></table>

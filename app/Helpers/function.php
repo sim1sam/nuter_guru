@@ -127,6 +127,40 @@ function order_status_label($status): string
 }
 
 /**
+ * Product stock unit label: KG or PCS.
+ */
+function product_unit_label($product): string
+{
+    if (is_object($product) && method_exists($product, 'isKg') && $product->isKg()) {
+        return 'KG';
+    }
+
+    $type = is_object($product)
+        ? ($product->unit_type ?? 'pcs')
+        : (is_array($product) ? ($product['unit_type'] ?? 'pcs') : 'pcs');
+
+    return strtolower((string) $type) === 'kg' ? 'KG' : 'PCS';
+}
+
+/**
+ * Format a stock quantity with its unit (e.g. "12.50 KG" or "10 PCS").
+ */
+function format_stock_qty($qty, $product = null): string
+{
+    $unit = $product ? product_unit_label($product) : 'PCS';
+    $value = (float) $qty;
+
+    if ($unit === 'KG') {
+        $decimals = 2;
+    } else {
+        // Whole pieces without decimals; fractional leftover uses 2 decimals
+        $decimals = abs($value - round($value)) < 0.0001 ? 0 : 2;
+    }
+
+    return number_format($value, $decimals).' '.$unit;
+}
+
+/**
  * Slider title/description for the active locale.
  */
 function slider_text($slider, string $field = 'title_one'): string

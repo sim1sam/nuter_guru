@@ -47,9 +47,9 @@
                                     <td>{{ $movement->warehouse->name ?? '-' }}</td>
                                     <td>{{ strtoupper($movement->type) }}</td>
                                     <td>{{ $movement->reason }}</td>
-                                    <td>{{ $movement->qty }}</td>
-                                    <td>{{ $movement->qty_before }}</td>
-                                    <td>{{ $movement->qty_after }}</td>
+                                    <td>{{ format_stock_qty($movement->qty, $movement->product) }}</td>
+                                    <td>{{ format_stock_qty($movement->qty_before, $movement->product) }}</td>
+                                    <td>{{ format_stock_qty($movement->qty_after, $movement->product) }}</td>
                                     <td>{{ $movement->admin->name ?? '-' }}</td>
                                 </tr>
                                 @empty

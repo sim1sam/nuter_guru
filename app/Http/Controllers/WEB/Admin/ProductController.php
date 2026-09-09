@@ -133,12 +133,7 @@ class ProductController extends Controller
         $this->validate($request, $rules, $customMessages);
 
         $openingQty = (float) ($request->opening_stock ?? 0);
-        if ($openingQty > 0 && (! $request->filled('cost_price') || (float) $request->cost_price <= 0)) {
-            return redirect()->back()->withInput()->with([
-                'messege' => trans('admin.Purchase price is required when opening stock is added'),
-                'alert-type' => 'error',
-            ]);
-        }
+        // Opening stock no longer blocked when purchase cost is empty
 
         $product = new Product();
         if($request->thumb_image){
@@ -202,6 +197,7 @@ class ProductController extends Controller
             : null;
         if ($openingQty > 0) {
             $stockService->openingStock($product->id, $warehouseId, $openingQty, $openingCost, auth('admin')->id());
+            $product->refresh();
         } else {
             $stockService->ensureWarehouseStock($product->id, $warehouseId);
         }
@@ -228,6 +224,9 @@ class ProductController extends Controller
             }
         }
         $notification = trans('admin_validation.Created Successfully');
+        if ($openingQty > 0) {
+            $notification .= ' | '.__('admin.Opening Stock').': '.format_stock_qty($product->fresh()->qty, $product);
+        }
         $notification=array('messege'=>$notification,'alert-type'=>'success');
         return redirect()->route('admin.product.index')->with($notification);
     }
@@ -258,8 +257,9 @@ class ProductController extends Controller
         $selectedWeightVariantIds = $product->productWeightVariants->pluck('weight_variant_id')->all();
         $customWeightPrices = $product->productWeightVariants->pluck('selling_price', 'weight_variant_id')->all();
         $suppliers = \App\Models\Supplier::where('status', 1)->orderBy('name')->get();
+        $warehouses = \App\Models\Warehouse::where('status', 1)->orderByDesc('is_default')->orderBy('name')->get();
 
-        return view('admin.edit_product',compact('categories','brands','specificationKeys','product','subCategories','childCategories','productSpecifications','units','weightVariants','selectedWeightVariantIds','customWeightPrices','suppliers'));
+        return view('admin.edit_product',compact('categories','brands','specificationKeys','product','subCategories','childCategories','productSpecifications','units','weightVariants','selectedWeightVariantIds','customWeightPrices','suppliers','warehouses'));
 
     }
 
@@ -283,6 +283,8 @@ class ProductController extends Controller
             'weight_variant_ids' => 'nullable|array',
             'weight_variant_ids.*' => 'integer|exists:weight_variants,id',
             'weight_variant_prices' => 'nullable|array',
+            'add_stock_qty' => 'nullable|numeric|min:0',
+            'add_stock_warehouse_id' => 'nullable|exists:warehouses,id',
         ];
         $customMessages = [
             'short_name.required' => trans('admin_validation.Short name is required'),
@@ -327,7 +329,6 @@ class ProductController extends Controller
         $product->sub_category_id = $request->sub_category ? $request->sub_category : 0;
         $product->child_category_id = $request->child_category ? $request->child_category : 0;
         $product->brand_id = $request->brand ? $request->brand : 0;
-        $product->sold_qty = 0;
         $product->sku = $request->sku;
         $product->barcode = $request->barcode;
         $product->low_stock_threshold = $request->low_stock_threshold ?? 5;
@@ -357,6 +358,31 @@ class ProductController extends Controller
             $product->approve_by_admin = $request->approve_by_admin;
         }
         $product->save();
+
+        // Optional stock top-up from product edit (Inventory Stock In / PO Receive also update qty)
+        $addStockQty = (float) ($request->add_stock_qty ?? 0);
+        if ($addStockQty > 0) {
+            $stockService = app(\App\Services\StockService::class);
+            $warehouseId = $request->add_stock_warehouse_id
+                ? (int) $request->add_stock_warehouse_id
+                : $stockService->getDefaultWarehouse()->id;
+            $stockService->stockIn(
+                (int) $product->id,
+                $warehouseId,
+                $addStockQty,
+                'Added from product edit',
+                'PROD-EDIT-'.$product->id,
+                auth('admin')->id(),
+                'stock_in',
+                'product',
+                (int) $product->id,
+                null,
+                ($request->filled('cost_price') && (float) $request->cost_price > 0)
+                    ? (float) $request->cost_price
+                    : null,
+                ['unit' => $product->isKg() ? 'kg' : 'pcs']
+            );
+        }
 
         $this->syncProductWeightVariants($product, $request);
 

@@ -127,7 +127,28 @@
                                         <label class="mb-0"><input type="radio" name="unit_type" value="pcs" class="product-unit-type" {{ old('unit_type', $product->unit_type ?? 'pcs') === 'pcs' ? 'checked' : '' }}> PCS</label>
                                         <label class="mb-0"><input type="radio" name="unit_type" value="kg" class="product-unit-type" {{ old('unit_type', $product->unit_type ?? 'pcs') === 'kg' ? 'checked' : '' }}> KG</label>
                                     </div>
-                                    <small class="text-muted">{{__('admin.Current stock')}}: {{ number_format((float)$product->qty, 3) }} {{ strtoupper($product->unit_type ?? 'pcs') }}</small>
+                                    <small class="text-muted d-block mt-1">
+                                        {{__('admin.Current stock')}}: <strong>{{ format_stock_qty($product->qty, $product) }}</strong>
+                                        · <a href="{{ route('admin.inventory.stock-in') }}?product_id={{ $product->id }}">{{__('admin.Stock In')}}</a>
+                                        · <a href="{{ route('admin.stock-history', $product->id) }}">{{__('admin.Stock History')}}</a>
+                                    </small>
+                                </div>
+
+                                <div class="form-group col-12">
+                                    <label><span class="add-stock-label">{{__('admin.Add Stock')}} ({{ product_unit_label($product) }})</span></label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input type="number" step="0.001" min="0" class="form-control" name="add_stock_qty" value="{{ old('add_stock_qty') }}" placeholder="0">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <select name="add_stock_warehouse_id" class="form-control">
+                                                @foreach(($warehouses ?? collect()) as $warehouse)
+                                                <option value="{{ $warehouse->id }}" {{ $warehouse->is_default ? 'selected' : '' }}>{{ $warehouse->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">{{__('admin.Leave empty to keep current stock. PO stock updates only after Receive Stock')}}</small>
                                 </div>
 
                                 <div class="form-group col-12 pcs-only-fields">
@@ -525,11 +546,13 @@
                 $('.kg-only-fields').show();
                 $('.sell-price-label').text('{{ __('admin.Selling Price') }} / KG');
                 $('.cost-price-label').text('{{ __('admin.Purchase Cost') }} / KG');
+                $('.add-stock-label').text('{{ __('admin.Add Stock') }} (KG)');
             } else {
                 $('.pcs-only-fields').show();
                 $('.kg-only-fields').hide();
                 $('.sell-price-label').text('{{ __('admin.Price') }}');
                 $('.cost-price-label').text('{{ __('admin.Purchase Price (Per Pc)') }}');
+                $('.add-stock-label').text('{{ __('admin.Add Stock') }} (PCS)');
             }
             toggleCustomPriceInputs();
             renderWeightPreview();
