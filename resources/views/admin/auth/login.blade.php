@@ -6,6 +6,9 @@
         : asset('uploads/custom-images/prod-mixed-dry.jpg');
     $logo = !empty($setting->logo) ? asset($setting->logo) : null;
     $year = date('Y');
+    $ngForest = $adminPrimary ?? ($theme['button_color'] ?? '#6AB344');
+    $ngLeaf = $adminPrimaryDark ?? ($theme['button_hover'] ?? '#4F8C30');
+    $ngHighlight = $adminHighlight ?? ($theme['primary'] ?? '#F58220');
 @endphp
 
 <body class="ng-login-body">
@@ -14,8 +17,9 @@
 
 :root {
     --ng-ink: #1c2a22;
-    --ng-forest: #2f5d46;
-    --ng-leaf: #3f7a58;
+    --ng-forest: {{ $ngForest }};
+    --ng-leaf: {{ $ngLeaf }};
+    --ng-highlight: {{ $ngHighlight }};
     --ng-cream: #faf7f1;
     --ng-line: #ddd4c6;
     --ng-muted: #6d7a71;

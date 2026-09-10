@@ -1,13 +1,13 @@
 /* POS Modern Redesign — scoped to pos page */
 .pos-wrapper-section {
-    --pos-primary: #8B7BA8;
-    --pos-primary-dark: #6f5f8c;
-    --pos-primary-soft: rgba(139, 123, 168, 0.12);
+    --pos-primary: var(--primary, #6AB344);
+    --pos-primary-dark: var(--primary-dark, #4f8c30);
+    --pos-primary-soft: var(--admin-soft, rgba(106, 179, 68, 0.12));
     --pos-surface: #ffffff;
-    --pos-bg: #f4f2f8;
-    --pos-border: #e8e4ef;
+    --pos-bg: #f5f7f3;
+    --pos-border: #e3e8df;
     --pos-text: #2d2a3a;
-    --pos-muted: #6b6580;
+    --pos-muted: #6b7165;
     --pos-success: #2e9e6a;
     --pos-danger: #e04f4f;
     --pos-radius: 14px;

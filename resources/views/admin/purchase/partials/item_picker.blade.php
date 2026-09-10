@@ -45,12 +45,12 @@
 .purchase-search-wrap { position: relative; }
 .purchase-search-icon {
     position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-    color: #82829c; font-size: 16px; pointer-events: none; z-index: 2;
+    color: var(--primary); font-size: 16px; pointer-events: none; z-index: 2;
 }
 #productScanSearchInput {
     padding-left: 42px; padding-right: 110px; border: 2px solid #d8dbe3;
 }
-#productScanSearchInput:focus { border-color: #82829c; box-shadow: 0 0 0 0.15rem rgba(130,130,156,.2); }
+#productScanSearchInput:focus { border-color: var(--primary); box-shadow: 0 0 0 0.15rem rgba(var(--primary-rgb), .2); }
 .btn-add-item { min-width: 100px; height: 44px; font-weight: 600; }
 .purchase-search-actions {
     position: absolute; right: 6px; top: 50%; transform: translateY(-50%); z-index: 3;
