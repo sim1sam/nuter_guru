@@ -650,6 +650,63 @@ class PosController extends Controller
         return $this->posCartResult(trans('user.Coupon Applied'), 'success');
     }
 
+    /**
+     * Guest POS customer: reuse by phone if exists, otherwise create walk-in user (no register email).
+     */
+    protected function resolveGuestPosCustomer(string $name, string $phone, string $address, string $deliveryArea): User
+    {
+        $phone = trim($phone);
+        $name = trim($name);
+
+        $user = User::where('phone', $phone)->where('status', 1)->first();
+        if (! $user) {
+            $emailBase = 'pos.'.preg_replace('/\D+/', '', $phone);
+            if ($emailBase === 'pos.') {
+                $emailBase = 'pos.'.time();
+            }
+            $email = $emailBase.'@guest.local';
+            $i = 1;
+            while (User::where('email', $email)->exists()) {
+                $email = $emailBase.'.'.$i.'@guest.local';
+                $i++;
+            }
+
+            $user = new User();
+            $user->name = $name;
+            $user->email = $email;
+            $user->phone = $phone;
+            $user->address = $address;
+            $user->status = 1;
+            $user->password = Hash::make(\Illuminate\Support\Str::random(12));
+            if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'email_verified')) {
+                $user->email_verified = 1;
+            }
+            $user->save();
+        } else {
+            $user->name = $name;
+            if (! $user->address) {
+                $user->address = $address;
+            }
+            $user->save();
+        }
+
+        if (! Address::where('user_id', $user->id)->exists()) {
+            $addr = new Address();
+            $addr->user_id = $user->id;
+            $addr->name = $name;
+            $addr->email = $user->email;
+            $addr->phone = $phone;
+            $addr->address = $address;
+            $addr->delivery_area = $deliveryArea;
+            $addr->type = 'Home';
+            $addr->default_shipping = 1;
+            $addr->default_billing = 1;
+            $addr->save();
+        }
+
+        return $user;
+    }
+
     public function orderSubmit(Request $request){
 
         $admin_id = Auth::guard('admin')->user()->id;
@@ -658,10 +715,48 @@ class PosController extends Controller
         $discount = $request->discount;
         $cupon = $request->cupon;
         $tax = $request->tax;
-        $customer_id = $request->customer_id;
         $shipping_id = $request->shipping_id;
         $payment_method = $request->payment_method;
         $order_status = $request->order_status;
+        $customerMode = $request->input('customer_mode', 'register');
+
+        if ($customerMode === 'guest') {
+            $this->validate($request, [
+                'guest_name' => 'required|string|max:255',
+                'guest_phone' => 'required|string|max:50',
+                'address_line' => 'required|string|max:1000',
+                'delivery_area' => 'required|in:inside,outside',
+                'shipping_id' => 'required',
+                'payment_method' => 'required',
+                'order_status' => 'required',
+            ], [
+                'guest_name.required' => trans('admin.Name is required'),
+                'guest_phone.required' => trans('admin.Phone Number is required'),
+                'address_line.required' => trans('admin.Address is required'),
+            ]);
+
+            $customer = $this->resolveGuestPosCustomer(
+                $request->guest_name,
+                $request->guest_phone,
+                $request->address_line,
+                $request->delivery_area
+            );
+            $customer_id = $customer->id;
+        } else {
+            $this->validate($request, [
+                'customer_id' => 'required|exists:users,id',
+                'address_line' => 'required|string|max:1000',
+                'delivery_area' => 'required|in:inside,outside',
+                'shipping_id' => 'required',
+                'payment_method' => 'required',
+                'order_status' => 'required',
+            ], [
+                'customer_id.required' => trans('admin.Please select a customer'),
+                'address_line.required' => trans('admin.Address is required'),
+            ]);
+            $customer_id = $request->customer_id;
+        }
+
         if($request->payment_method == 'Cash'){
             $paymetn_status = 1;
         }else{
@@ -716,6 +811,9 @@ class PosController extends Controller
         $order->coupon_coast = $discount;
         $order->order_status = $order_status;
         $order->cash_on_delivery = $order_status;
+        if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'is_pos')) {
+            $order->is_pos = 1;
+        }
         $order->save();
         $order_details = "";
 
@@ -831,15 +929,19 @@ class PosController extends Controller
             }
         }
 
-         // Order address only (does not change customer's saved address)
-         $customer = User::find($request->customer_id);
-         $saved = Address::where('user_id', $request->customer_id)
+         // Order address
+         $customer = User::find($customer_id);
+         $saved = Address::where('user_id', $customer_id)
              ->orderByDesc('default_billing')
              ->first();
 
-         $name = $customer->name ?? 'Walk-in Customer';
+         $name = $customerMode === 'guest'
+             ? ($request->guest_name ?: ($customer->name ?? 'Walk-in Customer'))
+             : ($customer->name ?? 'Walk-in Customer');
          $email = $customer->email ?? null;
-         $phone = $customer->phone ?? null;
+         $phone = $customerMode === 'guest'
+             ? ($request->guest_phone ?: ($customer->phone ?? null))
+             : ($customer->phone ?? null);
          $line = $request->filled('address_line')
              ? $request->address_line
              : ($saved->address ?? '');
@@ -852,10 +954,10 @@ class PosController extends Controller
              return redirect()->back()->with($notification);
          }
 
-         // If customer has no saved address, save to profile for next time
-         if (! $saved) {
+         // Register mode: if customer has no saved address, save to profile for next time
+         if (! $saved && $customerMode !== 'guest') {
              $saved = new Address();
-             $saved->user_id = $request->customer_id;
+             $saved->user_id = $customer_id;
              $saved->name = $name;
              $saved->email = $email;
              $saved->phone = $phone;

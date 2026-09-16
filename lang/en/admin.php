@@ -1094,6 +1094,14 @@
   'Current stock' => 'Current stock',
   'Sale Returns' => 'Sale Returns',
   'Variant-wise Sales' => 'Variant-wise Sales',
-  'Stock Movement Report' => 'Stock Movement Report',
+  'Please select a customer' => 'Please select a customer',
+  'Name and mobile are required' => 'Name and mobile are required',
+  'Name is required' => 'Name is required',
+  'Register Customer' => 'Register Customer',
+  'Guest Mode' => 'Guest Mode',
+  'Select registered customer from system' => 'Select registered customer from system',
+  'Enter guest name, mobile and address' => 'Enter guest name, mobile and address',
+  'Customer Name' => 'Customer Name',
+  'Mobile' => 'Mobile',
 );
  ?>

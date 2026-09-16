@@ -121,7 +121,7 @@ class OrderController extends Controller
         $brands = Brand::all();
         $products = Product::where('status',1)->where('vendor_id',0)->get();
         $categories = Category::with('subCategories','products')->get();
-        $order = Order::with('user','orderProducts.orderProductVariants','orderAddress')->findOrFail($id);
+        $order = Order::with('user','orderProducts.orderProductVariants','orderProducts.product','orderAddress')->findOrFail($id);
         $setting = Setting::first();
         $footer = Footer::first();
         $customerDefaultAddress = null;

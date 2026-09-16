@@ -214,6 +214,7 @@
             <thead>
               <tr>
                 <th width="5%">#</th>
+                <th width="8%">{{__('admin.Photo')}}</th>
                 <th>{{__('admin.Product')}}</th>
                 <th>{{__('admin.Variant')}}</th>
                 @if ($setting->enable_multivendor == 1)
@@ -227,9 +228,19 @@
             </thead>
             <tbody>
               @forelse ($order->orderProducts as $index => $orderProduct)
-                @php $totalVariant = $orderProduct->orderProductVariants->count(); @endphp
+                @php
+                  $totalVariant = $orderProduct->orderProductVariants->count();
+                  $productImage = optional($orderProduct->product)->thumb_image;
+                @endphp
                 <tr>
                   <td>{{ $index + 1 }}</td>
+                  <td>
+                    @if($productImage)
+                      <img src="{{ asset($productImage) }}" alt="{{ $orderProduct->product_name }}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">
+                    @else
+                      <span class="muted">-</span>
+                    @endif
+                  </td>
                   <td>{{ $orderProduct->product_name }}</td>
                   <td>
                     @forelse ($orderProduct->orderProductVariants as $indx => $variant)
@@ -255,13 +266,13 @@
                     </div>
                     <span class="qty-print">{{ $orderProduct->qty }}</span>
                   </td>
-                  <td class="text-right">{{ $setting->currency_icon }}{{ number_format((float)$orderProduct->unit_price * (int)$orderProduct->qty, 2) }}</td>
+                  <td class="text-right">{{ $setting->currency_icon }}{{ number_format((float)$orderProduct->unit_price * (float)$orderProduct->qty, 2) }}</td>
                   <td class="text-right delete-icon print-area">
                     <a href="javascript:;" data-toggle="modal" data-target="#deleteModal" class="btn btn-danger btn-sm" onclick="deleteData({{ $orderProduct->id}},{{$order->id }})"><i class="fa fa-trash"></i></a>
                   </td>
                 </tr>
               @empty
-                <tr><td colspan="8" class="text-center">{{ __('admin.No products found') }}</td></tr>
+                <tr><td colspan="9" class="text-center">{{ __('admin.No products found') }}</td></tr>
               @endforelse
             </tbody>
           </table>

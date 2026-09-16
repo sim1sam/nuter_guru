@@ -56,6 +56,27 @@
     .pos-address-card__icon { width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .pos-address-card__meta { font-size: 12px; color: #6b6580; margin-top: 2px; }
     .pos-address-card__text { color: #4A4A5C; line-height: 1.5; font-size: 14px; }
+    .pos-customer-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .pos-customer-mode__btn {
+        border: 1px solid #e5e7eb;
+        background: #f9fafb;
+        border-radius: 12px;
+        padding: 12px 10px;
+        text-align: center;
+        cursor: pointer;
+        font-weight: 600;
+        color: #4b5563;
+        margin: 0;
+    }
+    .pos-customer-mode__btn input { display: none; }
+    .pos-customer-mode__btn.is-active {
+        background: var(--pos-primary, #8B7BA8);
+        border-color: var(--pos-primary, #8B7BA8);
+        color: #fff;
+        box-shadow: 0 6px 16px rgba(139,123,168,.25);
+    }
+    .pos-customer-mode__hint { font-size: 12px; color: #6b7280; margin: -6px 0 14px; }
+    .pos-register-actions { margin-top: 8px; }
 </style>
 @endsection
 @section('admin-content')
@@ -681,16 +702,48 @@
                     <input type="hidden" name="discount" id="posOrderDiscount" value="{{ $discount ?? 0 }}">
                     @endif
 
-                    <div class="form-group">
-                        <label for="posOrderCustomerSelect">{{ __('admin.Select Customer') }}</label>
-                        <select name="customer_id" id="posOrderCustomerSelect" class="form-control select2" required>
-                            <option value="">{{ __('admin.Select a Customer') }}</option>
-                            @foreach ($customers as $customer)
-                                <option value="{{ $customer->id }}" {{ ($selected_customer->id ?? null) == $customer->id ? 'selected' : '' }}>
-                                    {{ $customer->name }}{{ $customer->phone ? ' ('.$customer->phone.')' : '' }}
-                                </option>
-                            @endforeach
-                        </select>
+                    <div class="pos-customer-mode" id="posCustomerModeToggle">
+                        <label class="pos-customer-mode__btn is-active">
+                            <input type="radio" name="customer_mode" value="register" checked>
+                            {{ __('admin.Register Customer') }}
+                        </label>
+                        <label class="pos-customer-mode__btn">
+                            <input type="radio" name="customer_mode" value="guest">
+                            {{ __('admin.Guest Mode') }}
+                        </label>
+                    </div>
+                    <p class="pos-customer-mode__hint" id="posCustomerModeHint">
+                        {{ __('admin.Select registered customer from system') }}
+                    </p>
+
+                    <div id="posRegisterCustomerBlock">
+                        <div class="form-group mb-2">
+                            <label for="posOrderCustomerSelect">{{ __('admin.Select Customer') }}</label>
+                            <select name="customer_id" id="posOrderCustomerSelect" class="form-control select2">
+                                <option value="">{{ __('admin.Select a Customer') }}</option>
+                                @foreach ($customers as $customer)
+                                    <option value="{{ $customer->id }}" {{ ($selected_customer->id ?? null) == $customer->id ? 'selected' : '' }}>
+                                        {{ $customer->name }}{{ $customer->phone ? ' ('.$customer->phone.')' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="pos-register-actions">
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="posOpenRegisterFromOrder">
+                                    + {{ __('admin.Add Customer') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="posGuestCustomerBlock" style="display:none;">
+                        <div class="form-group">
+                            <label for="posGuestName">{{ __('admin.Customer Name') }} <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="guest_name" id="posGuestName" placeholder="{{ __('admin.Full Name') }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="posGuestPhone">{{ __('admin.Mobile') }} <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="guest_phone" id="posGuestPhone" placeholder="{{ __('admin.Phone Number') }}">
+                        </div>
                     </div>
 
                     <div id="posCustomerAddressBox" class="pos-address-box mb-3" style="display:none;">
@@ -980,8 +1033,52 @@
             });
         }
 
+        function setCustomerMode(mode) {
+            var isGuest = mode === 'guest';
+            $('#posCustomerModeToggle .pos-customer-mode__btn').removeClass('is-active');
+            $('#posCustomerModeToggle input[value="' + mode + '"]').closest('.pos-customer-mode__btn').addClass('is-active');
+            $('#posRegisterCustomerBlock').toggle(!isGuest);
+            $('#posGuestCustomerBlock').toggle(isGuest);
+            $('#posCustomerModeHint').text(isGuest
+                ? '{{ __('admin.Enter guest name, mobile and address') }}'
+                : '{{ __('admin.Select registered customer from system') }}'
+            );
+
+            if (isGuest) {
+                $('#posOrderCustomerSelect').prop('required', false).val('').trigger('change');
+                $('#posGuestName, #posGuestPhone').prop('required', true);
+                $('#posAddressCard, #posAddressMissing').hide();
+                $('#posCustomerAddressBox').show();
+                $('#posAddressForm').show();
+                $('#posAddressLine').val('');
+                $('#posAreaInside').prop('checked', true);
+            } else {
+                $('#posGuestName, #posGuestPhone').prop('required', false).val('');
+                $('#posOrderCustomerSelect').prop('required', true);
+                var selectedId = $('#posCustomerId').val() || $('#posOrderCustomerSelect').val();
+                if (selectedId) {
+                    $('#posOrderCustomerSelect').val(String(selectedId)).trigger('change');
+                } else {
+                    $('#posCustomerAddressBox').hide();
+                }
+            }
+        }
+
+        $(document).on('change', 'input[name="customer_mode"]', function () {
+            setCustomerMode($(this).val());
+        });
+
+        $(document).on('click', '#posOpenRegisterFromOrder', function () {
+            $('#exampleModal-4').modal('hide');
+            setTimeout(function () {
+                $('#exampleModalLong-1').modal('show');
+            }, 350);
+        });
+
         $(document).on('change', '#posOrderCustomerSelect', function () {
-            loadCustomerAddress($(this).val());
+            if ($('input[name="customer_mode"]:checked').val() === 'register') {
+                loadCustomerAddress($(this).val());
+            }
         });
 
         $('#exampleModalLong-1').on('show.bs.modal', function () {
@@ -1001,10 +1098,40 @@
                     dropdownParent: $modal
                 });
             });
+            var preselected = $('#posCustomerId').val();
+            if (preselected) {
+                $('input[name="customer_mode"][value="register"]').prop('checked', true);
+                setCustomerMode('register');
+            } else {
+                setCustomerMode($('input[name="customer_mode"]:checked').val() || 'register');
+            }
         });
 
         $('#exampleModal-4').on('shown.bs.modal', function () {
-            loadCustomerAddress($('#posOrderCustomerSelect').val());
+            if ($('input[name="customer_mode"]:checked').val() === 'register') {
+                loadCustomerAddress($('#posOrderCustomerSelect').val());
+            }
+        });
+
+        $('#posPlaceOrderForm').on('submit', function (e) {
+            var mode = $('input[name="customer_mode"]:checked').val();
+            if (mode === 'register' && !$('#posOrderCustomerSelect').val()) {
+                e.preventDefault();
+                posToast('{{ __('admin.Please select a customer') }}', 'error');
+                return false;
+            }
+            if (mode === 'guest') {
+                if (!$.trim($('#posGuestName').val()) || !$.trim($('#posGuestPhone').val())) {
+                    e.preventDefault();
+                    posToast('{{ __('admin.Name and mobile are required') }}', 'error');
+                    return false;
+                }
+            }
+            if (!$.trim($('#posAddressLine').val())) {
+                e.preventDefault();
+                posToast('{{ __('admin.Address is required') }}', 'error');
+                return false;
+            }
         });
 
         function pickCustomer(customer) {
