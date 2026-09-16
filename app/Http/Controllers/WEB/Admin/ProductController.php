@@ -106,8 +106,9 @@ class ProductController extends Controller
         $suppliers = \App\Models\Supplier::where('status', 1)->orderBy('name')->get();
         $units = \App\Models\Unit::activeUnits();
         $weightVariants = \App\Models\WeightVariant::active()->ordered()->get();
+        $setting = Setting::first();
 
-        return view('admin.create_product',compact('categories','brands','specificationKeys','warehouses','suppliers','units','weightVariants'));
+        return view('admin.create_product',compact('categories','brands','specificationKeys','warehouses','suppliers','units','weightVariants','setting'));
     }
 
     public function store(Request $request)
@@ -272,8 +273,9 @@ class ProductController extends Controller
         $customWeightPrices = $product->productWeightVariants->pluck('selling_price', 'weight_variant_id')->all();
         $suppliers = \App\Models\Supplier::where('status', 1)->orderBy('name')->get();
         $warehouses = \App\Models\Warehouse::where('status', 1)->orderByDesc('is_default')->orderBy('name')->get();
+        $setting = Setting::first();
 
-        return view('admin.edit_product',compact('categories','brands','specificationKeys','product','subCategories','childCategories','productSpecifications','units','weightVariants','selectedWeightVariantIds','customWeightPrices','suppliers','warehouses'));
+        return view('admin.edit_product',compact('categories','brands','specificationKeys','product','subCategories','childCategories','productSpecifications','units','weightVariants','selectedWeightVariantIds','customWeightPrices','suppliers','warehouses','setting'));
 
     }
 
@@ -648,11 +650,17 @@ class ProductController extends Controller
 
         $prices = $request->input('weight_variant_prices', []);
         $mode = $product->selling_price_mode;
+        $perKg = (float) ($product->offer_price > 0 ? $product->offer_price : $product->price);
+
+        $variants = \App\Models\WeightVariant::whereIn('id', $selected->all())->get()->keyBy('id');
 
         foreach ($selected as $variantId) {
             $customPrice = null;
             if ($mode === 'custom' && isset($prices[$variantId]) && $prices[$variantId] !== '') {
                 $customPrice = round((float) $prices[$variantId], 2);
+            } else {
+                $kg = (float) optional($variants->get($variantId))->weight_in_kg;
+                $customPrice = $kg > 0 ? round($perKg * $kg, 2) : null;
             }
 
             \App\Models\ProductWeightVariant::updateOrCreate(

@@ -76,12 +76,17 @@
             + '    <input type="checkbox" name="weight_variant_ids[]" value="' + variant.id + '" class="weight-variant-check" data-kg="' + variant.weight_in_kg + '" data-name="' + variant.name + '" checked>'
             + '    <strong>' + variant.name + '</strong>'
             + '    <div class="small text-muted">' + Number(variant.weight_in_kg).toFixed(3) + ' KG</div>'
+            + '    <div class="weight-calc-price mt-1 font-weight-bold text-success" data-calc-for="' + variant.id + '">—</div>'
             + '    <div class="custom-price-wrap mt-1" style="' + (customMode ? '' : 'display:none;') + '">'
-            + '      <input type="number" step="0.01" min="0" class="form-control form-control-sm weight-custom-price" name="weight_variant_prices[' + variant.id + ']" placeholder="{{__('admin.Custom selling price')}}">'
+            + '      <label class="small mb-1">{{__('admin.Custom selling price')}}</label>'
+            + '      <input type="number" step="0.01" min="0" class="form-control form-control-sm weight-custom-price" name="weight_variant_prices[' + variant.id + ']" placeholder="0.00">'
             + '    </div>'
             + '  </label>'
             + '</div>';
         $('#weightVariantCards').append(html);
+        if (typeof toggleCustomPriceInputs === 'function') {
+            toggleCustomPriceInputs();
+        }
         if (typeof renderWeightPreview === 'function') {
             renderWeightPreview();
         }

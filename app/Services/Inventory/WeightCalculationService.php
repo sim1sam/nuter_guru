@@ -62,7 +62,7 @@ class WeightCalculationService
             }
         }
 
-        $sell = $product->offer_price !== null && $product->offer_price !== ''
+        $sell = $product->offer_price !== null && $product->offer_price !== '' && (float) $product->offer_price > 0
             ? (float) $product->offer_price
             : (float) $product->price;
 

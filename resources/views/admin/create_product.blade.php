@@ -169,16 +169,22 @@
                                             <i class="fa fa-plus"></i> {{__('admin.Add New')}}
                                         </button>
                                     </label>
-                                    <small class="text-muted d-block mb-2">Select packs for this product. Need 100g / 2kg / 5kg? Click Add New.</small>
+                                    <small class="text-muted d-block mb-2">
+                                        Example: Selling 1100/KG → 250g = 275, 500g = 550, 1kg = 1100.
+                                        If Offer Price is set, pack prices use the offer rate instead.
+                                        Choose <strong>Custom</strong> to type each pack selling price manually.
+                                    </small>
                                     <div class="row" id="weightVariantCards">
                                         @foreach(($weightVariants ?? collect()) as $wv)
                                         <div class="col-md-4 mb-2">
                                             <label class="border rounded p-2 d-block mb-0 weight-variant-card">
                                                 <input type="checkbox" name="weight_variant_ids[]" value="{{ $wv->id }}" class="weight-variant-check" data-kg="{{ $wv->weight_in_kg }}" data-name="{{ $wv->name }}" {{ in_array($wv->id, old('weight_variant_ids', [])) ? 'checked' : '' }}>
                                                 <strong>{{ $wv->name }}</strong>
-                                                <div class="small text-muted">{{ number_format($wv->weight_in_kg, 3) }} KG</div>
+                                                <div class="small text-muted">{{ number_format((float)$wv->weight_in_kg, 3) }} KG</div>
+                                                <div class="weight-calc-price mt-1 font-weight-bold text-success" data-calc-for="{{ $wv->id }}">—</div>
                                                 <div class="custom-price-wrap mt-1" style="display:none;">
-                                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm weight-custom-price" name="weight_variant_prices[{{ $wv->id }}]" value="{{ old('weight_variant_prices.'.$wv->id) }}" placeholder="{{__('admin.Custom selling price')}}">
+                                                    <label class="small mb-1">{{__('admin.Custom selling price')}}</label>
+                                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm weight-custom-price" name="weight_variant_prices[{{ $wv->id }}]" value="{{ old('weight_variant_prices.'.$wv->id) }}" placeholder="0.00">
                                                 </div>
                                             </label>
                                         </div>
@@ -497,33 +503,78 @@
         }
 
         function toggleCustomPriceInputs() {
-            var custom = $('#sellingPriceMode').val() === 'custom' && isKg();
-            $('.custom-price-wrap').toggle(custom);
+            $('.custom-price-wrap').toggle($('#sellingPriceMode').val() === 'custom' && isKg());
+        }
+
+        function perKgSellPrice() {
+            var offer = parseFloat($('#offerPriceInput').val());
+            if (!isNaN(offer) && offer > 0) {
+                return offer;
+            }
+            return parseFloat($('#sellPriceInput').val()) || 0;
         }
 
         function renderWeightPreview() {
             if (!isKg()) {
                 $('#weightVariantPreview').html('');
+                $('.weight-calc-price').text('—');
                 return;
             }
             var cost = parseFloat($('#costPriceInput').val()) || 0;
-            var sell = parseFloat($('#offerPriceInput').val());
-            if (isNaN(sell) || sell <= 0) {
-                sell = parseFloat($('#sellPriceInput').val()) || 0;
-            }
+            var sell = perKgSellPrice();
+            var basePrice = parseFloat($('#sellPriceInput').val()) || 0;
+            var offer = parseFloat($('#offerPriceInput').val());
+            var usingOffer = !isNaN(offer) && offer > 0;
             var mode = $('#sellingPriceMode').val();
-            var html = '';
-            $('.weight-variant-check:checked').each(function () {
-                var kg = parseFloat($(this).data('kg')) || 0;
-                var name = $(this).data('name');
-                var purchase = (cost * kg).toFixed(2);
-                var selling = mode === 'custom'
-                    ? (parseFloat($(this).closest('label').find('.weight-custom-price').val()) || (sell * kg)).toFixed(2)
-                    : (sell * kg).toFixed(2);
-                html += '<div><strong>' + name + '</strong> — Purchase: ৳' + purchase + ' | Selling: ৳' + selling + '</div>';
+            var currency = '{{ $setting->currency_icon ?? "৳" }}';
+            var html = '<div class="mb-1"><strong>Per KG:</strong> '
+                + currency + basePrice.toFixed(2)
+                + (usingOffer ? ' → Offer ' + currency + offer.toFixed(2) : '')
+                + ' <span class="badge badge-' + (mode === 'custom' ? 'warning' : 'success') + '">'
+                + (mode === 'custom' ? 'Custom' : 'Auto')
+                + '</span></div>';
+
+            $('.weight-variant-check').each(function () {
+                var $check = $(this);
+                var kg = parseFloat($check.data('kg')) || 0;
+                var name = $check.data('name');
+                var calc = Math.round((sell * kg) * 100) / 100;
+                var $card = $check.closest('label');
+                var $calcEl = $card.find('.weight-calc-price');
+                var $custom = $card.find('.weight-custom-price');
+
+                if (mode === 'custom') {
+                    if ($check.is(':checked') && (!$custom.val() || $custom.data('auto-filled') === 1)) {
+                        $custom.val(calc.toFixed(2)).data('auto-filled', 1);
+                    }
+                    var customVal = parseFloat($custom.val());
+                    var showPrice = (!isNaN(customVal) && customVal >= 0) ? customVal : calc;
+                    $calcEl.html('Selling: ' + currency + showPrice.toFixed(2) + ' <small class="text-muted">(edit below)</small>');
+                } else {
+                    $calcEl.html('Selling: ' + currency + calc.toFixed(2));
+                }
+
+                if ($check.is(':checked')) {
+                    var purchase = (cost * kg).toFixed(2);
+                    var selling = mode === 'custom'
+                        ? (parseFloat($custom.val()) || calc).toFixed(2)
+                        : calc.toFixed(2);
+                    html += '<div><strong>' + name + '</strong> (' + kg + ' KG) — '
+                        + (cost > 0 ? 'Purchase: ' + currency + purchase + ' | ' : '')
+                        + 'Selling: ' + currency + selling + '</div>';
+                }
             });
+
+            if (!$('.weight-variant-check:checked').length) {
+                html += '<div class="text-muted">Select variants to see pack prices (e.g. 250g / 500g / 1kg).</div>';
+            }
             $('#weightVariantPreview').html(html);
         }
+
+        $(document).on('input change', '.weight-custom-price', function () {
+            $(this).data('auto-filled', 0);
+            renderWeightPreview();
+        });
 
         $('input[name="unit_type"]').on('change', toggleUnitTypeFields);
         $('#openingStockInput').on('input change', toggleOpeningPriceHint);
@@ -534,7 +585,7 @@
             renderWeightPreview();
         });
         $('#costPriceInput, #sellPriceInput, #offerPriceInput').on('input change', renderWeightPreview);
-        $(document).on('change input', '.weight-variant-check, .weight-custom-price', renderWeightPreview);
+        $(document).on('change input', '.weight-variant-check', renderWeightPreview);
         $('#openingStockInput').on('input change', toggleOpeningPriceHint);
         toggleOpeningPriceHint();
         toggleUnitTypeFields();
