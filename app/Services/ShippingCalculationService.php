@@ -106,6 +106,37 @@ class ShippingCalculationService
     }
 
     /**
+     * Storefront checkout: only Inside Dhaka / Outside Dhaka.
+     * POS and admin keep the full shipping list (including Free).
+     */
+    public function forStorefront(Collection $methods): Collection
+    {
+        return $methods->filter(function (Shipping $shipping) {
+            return $this->isInsideOrOutsideDhaka($shipping);
+        })->values();
+    }
+
+    public function isInsideOrOutsideDhaka(?Shipping $shipping): bool
+    {
+        if (! $shipping) {
+            return false;
+        }
+
+        $rule = mb_strtolower(trim((string) $shipping->shipping_rule));
+        if ($rule === '' || str_contains($rule, 'free')) {
+            return false;
+        }
+
+        $isInside = str_contains($rule, 'inside')
+            || str_contains($rule, 'ভিতরে')
+            || str_contains($rule, 'ভেতরে');
+        $isOutside = str_contains($rule, 'outside')
+            || str_contains($rule, 'বাইরে');
+
+        return $isInside || $isOutside;
+    }
+
+    /**
      * Attach resolved fee for frontend (shipping_fee / cost = total for this cart).
      * rate_per_kg keeps the admin-configured ৳/KG value.
      */

@@ -737,7 +737,7 @@ class FrontendController extends Controller
 
         $shippingService = app(\App\Services\ShippingCalculationService::class);
         $shippingMethods = $shippingService->decorateMethods(
-            $shippingService->availableMethods($cartItems),
+            $shippingService->forStorefront($shippingService->availableMethods($cartItems)),
             $cartItems
         );
         $cartWeightKg = $shippingService->cartWeightKg($cartItems);

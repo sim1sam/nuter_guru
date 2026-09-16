@@ -131,17 +131,9 @@
                                     </div>
                                     <input type="hidden" id="country" name="billing_country" value="{{ $bdCountryId }}">
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label d-block">{{ __('Delivery Area') }} *</label>
-                                    @php $billingArea = old('billing_delivery_area', $defaultAddress->delivery_area ?? 'inside'); @endphp
-                                    <div class="checkout-area-toggle">
-                                        <input type="radio" class="btn-check" name="billing_delivery_area" id="billing_area_inside" value="inside" {{ $billingArea === 'inside' ? 'checked' : '' }}>
-                                        <label class="checkout-area-btn" for="billing_area_inside">{{ __('Inside Dhaka') }}</label>
-                                        <input type="radio" class="btn-check" name="billing_delivery_area" id="billing_area_outside" value="outside" {{ $billingArea === 'outside' ? 'checked' : '' }}>
-                                        <label class="checkout-area-btn" for="billing_area_outside">{{ __('Outside Dhaka') }}</label>
-                                    </div>
-                                </div>
                             </div>
+                            @php $billingArea = old('billing_delivery_area', $defaultAddress->delivery_area ?? 'inside'); @endphp
+                            <input type="hidden" name="billing_delivery_area" id="billing_delivery_area" value="{{ $billingArea === 'outside' ? 'outside' : 'inside' }}">
                             @if($hasSavedAddresses)
                             <div class="text-end">
                                 <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-cancel-new-address">{{ __('Cancel') }}</button>
@@ -200,16 +192,8 @@
                                 </div>
                                 <input type="hidden" id="ship_country" name="shipping_country" value="{{ $bdCountryId }}">
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label d-block">{{ __('Delivery Area') }} *</label>
-                                <div class="checkout-area-toggle">
-                                    <input type="radio" class="btn-check" name="shipping_delivery_area" id="ship_area_inside" value="inside" checked>
-                                    <label class="checkout-area-btn" for="ship_area_inside">{{ __('Inside Dhaka') }}</label>
-                                    <input type="radio" class="btn-check" name="shipping_delivery_area" id="ship_area_outside" value="outside">
-                                    <label class="checkout-area-btn" for="ship_area_outside">{{ __('Outside Dhaka') }}</label>
-                                </div>
-                            </div>
                         </div>
+                        <input type="hidden" name="shipping_delivery_area" id="shipping_delivery_area" value="inside">
                     </div>
                 </div>
 
@@ -817,9 +801,46 @@ const STORE_CURRENCY = @json(currency_icon());
 
 function setDeliveryArea(name, value) {
     const target = value === 'outside' ? 'outside' : 'inside';
+    const hidden = document.getElementById(name);
+    if (hidden) {
+        hidden.value = target;
+        return;
+    }
     document.querySelectorAll('input[name="' + name + '"]').forEach(function (radio) {
         radio.checked = radio.value === target;
     });
+}
+
+function areaFromShippingRule(ruleName) {
+    const text = String(ruleName || '').toLowerCase();
+    if (text.indexOf('outside') !== -1 || text.indexOf('বাইরে') !== -1) {
+        return 'outside';
+    }
+    if (text.indexOf('inside') !== -1 || text.indexOf('ভিতরে') !== -1 || text.indexOf('ভেতরে') !== -1) {
+        return 'inside';
+    }
+    return null;
+}
+
+function syncDeliveryAreaFromShippingMethod() {
+    const selected = document.querySelector('input[name="shipping_method"]:checked');
+    if (!selected) return;
+
+    let rule = '';
+    if (window.checkout && Array.isArray(checkout.shippingMethods)) {
+        const method = checkout.shippingMethods.find(function (m) { return String(m.id) === String(selected.value); });
+        if (method) rule = method.shipping_rule || '';
+    }
+    if (!rule) {
+        const label = document.querySelector('label[for="' + selected.id + '"]');
+        rule = label ? label.textContent : '';
+    }
+
+    const area = areaFromShippingRule(rule);
+    if (!area) return;
+
+    setDeliveryArea('billing_delivery_area', area);
+    setDeliveryArea('shipping_delivery_area', area);
 }
 
 function setSelectedAddressCard(index) {
@@ -1146,8 +1167,14 @@ class Checkout {
             });
         }
 
-        // Shipping method change events are now bound in loadShippingMethods()
-
+        // Shipping method change events are bound in loadShippingMethods()
+        document.querySelectorAll('input[name="shipping_method"]').forEach((radio) => {
+            radio.addEventListener('change', () => {
+                syncDeliveryAreaFromShippingMethod();
+                this.updateShippingCost();
+            });
+        });
+        syncDeliveryAreaFromShippingMethod();
         // Payment method change
         document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
             radio.addEventListener('change', () => {
@@ -1353,11 +1380,13 @@ class Checkout {
             // Bind event listeners after shipping methods are loaded
             document.querySelectorAll('input[name="shipping_method"]').forEach(radio => {
                 radio.addEventListener('change', () => {
+                    syncDeliveryAreaFromShippingMethod();
                     this.updateShippingCost();
                 });
             });
             
             // Update shipping cost for the initially selected method
+            syncDeliveryAreaFromShippingMethod();
             this.updateShippingCost();
         } else if (shippingContainer) {
             // Show message if no shipping methods available
@@ -1558,6 +1587,7 @@ class Checkout {
     }
 
     updateShippingCost() {
+        syncDeliveryAreaFromShippingMethod();
         const selectedShippingElement = document.querySelector('input[name="shipping_method"]:checked');
         const selectedShippingId = selectedShippingElement ? selectedShippingElement.value : null;
         if (selectedShippingId) {

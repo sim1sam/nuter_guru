@@ -142,9 +142,9 @@ class CheckoutController extends Controller
             $shippingService = app(ShippingCalculationService::class);
             $cartCollection = $this->getCartItems($user);
 
-            // Get shipping methods (weight-aware when KG cart)
+            // Get shipping methods (weight-aware when KG cart) — storefront: Inside/Outside Dhaka only
             $shippingMethods = $shippingService->decorateMethods(
-                $shippingService->availableMethods($cartCollection),
+                $shippingService->forStorefront($shippingService->availableMethods($cartCollection)),
                 $cartCollection
             );
             $shippingMethods->each(function ($shipping) {
@@ -514,6 +514,11 @@ class CheckoutController extends Controller
             
             if (!$shipping) {
                 return redirect()->back()->withErrors(['error' => 'Invalid shipping method'])->withInput();
+            }
+
+            $shippingService = app(ShippingCalculationService::class);
+            if (! $shippingService->isInsideOrOutsideDhaka($shipping)) {
+                return redirect()->back()->withErrors(['shipping_method' => 'Please select Inside Dhaka or Outside Dhaka shipping.'])->withInput();
             }
             
             // Use the webOrderStore method that follows API pattern
