@@ -69,11 +69,11 @@
                                 @php $area = old('delivery_area', $address->delivery_area ?? 'inside'); @endphp
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="delivery_area" id="areaInside" value="inside" {{ $area == 'inside' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="areaInside">Inside</label>
+                                    <label class="form-check-label" for="areaInside">{{ __('Inside Dhaka') }}</label>
                                 </div>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="delivery_area" id="areaOutside" value="outside" {{ $area == 'outside' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="areaOutside">Outside</label>
+                                    <label class="form-check-label" for="areaOutside">{{ __('Outside Dhaka') }}</label>
                                 </div>
                                 @error('delivery_area')
                                     <div class="text-danger small">{{ $message }}</div>

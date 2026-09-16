@@ -67,11 +67,11 @@
                                 <label class="form-label d-block">Delivery Area <span class="text-danger">*</span></label>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="delivery_area" id="areaInside" value="inside" {{ old('delivery_area', 'inside') == 'inside' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="areaInside">Inside</label>
+                                    <label class="form-check-label" for="areaInside">{{ __('Inside Dhaka') }}</label>
                                 </div>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="delivery_area" id="areaOutside" value="outside" {{ old('delivery_area') == 'outside' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="areaOutside">Outside</label>
+                                    <label class="form-check-label" for="areaOutside">{{ __('Outside Dhaka') }}</label>
                                 </div>
                                 @error('delivery_area')
                                     <div class="text-danger small">{{ $message }}</div>

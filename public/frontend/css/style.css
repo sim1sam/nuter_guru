@@ -1074,6 +1074,28 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 1rem;
 }
 
+.pd-variant-select {
+    max-width: 420px;
+    width: 100%;
+    min-height: 46px;
+    border: 1px solid var(--border-color, #e5e5e5);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-dark, #2c2c2c);
+    background-color: #fff;
+    padding: 0.55rem 2.25rem 0.55rem 0.9rem;
+}
+
+.pd-variant-select:focus {
+    border-color: var(--organic-green, #2D6A4F);
+    box-shadow: 0 0 0 0.2rem rgba(45, 106, 79, 0.15);
+}
+
+.pd-variant-meta {
+    font-size: 0.85rem;
+}
+
 .pd-variant-options {
     display: flex;
     flex-wrap: wrap;

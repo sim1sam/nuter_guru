@@ -13,6 +13,21 @@
     $hasHalfStar = ($rating - $fullStars) >= 0.5;
     $reviewCount = $product->reviews->where('status', 1)->count();
     $basePrice = $product->offer_price ?? $product->price;
+    $weightCalc = app(\App\Services\Inventory\WeightCalculationService::class);
+    $isKgProduct = $product->isKg();
+    $kgWeightVariants = $isKgProduct ? $product->weightVariants : collect();
+    $productVariants = $isKgProduct
+        ? collect()
+        : $product->variants
+            ->where('status', 1)
+            ->filter(fn ($variant) => $variant->variantItems->where('status', 1)->isNotEmpty())
+            ->values();
+
+    if ($isKgProduct && $kgWeightVariants->count() > 0) {
+        $firstWv = $kgWeightVariants->first();
+        $firstPivot = $product->productWeightVariants->firstWhere('weight_variant_id', $firstWv->id);
+        $basePrice = $weightCalc->variantSellingPrice($product, $firstWv, $firstPivot);
+    }
 
     $tags = [];
     if ($product->tags) {
@@ -93,9 +108,12 @@
 
                     <div class="pd-price-block">
                         <span class="current-price" id="detailCurrentPrice">{{ $setting->currency_icon }}{{ number_format($basePrice, 2) }}</span>
-                        @if($hasSale)
+                        @if($hasSale && !($isKgProduct && $kgWeightVariants->count() > 0))
                             <span class="original-price" id="detailOriginalPrice">{{ $setting->currency_icon }}{{ number_format($product->price, 2) }}</span>
                             <span class="pd-savings">You save {{ $setting->currency_icon }}{{ number_format($product->price - $product->offer_price, 2) }}</span>
+                        @elseif($hasSale && $isKgProduct && $kgWeightVariants->count() > 0)
+                            <span class="original-price" id="detailOriginalPrice" style="display:none;"></span>
+                            <span class="pd-savings" id="detailSavings" style="display:none;"></span>
                         @endif
                     </div>
 
@@ -103,51 +121,37 @@
                         <p class="pd-short-desc">{{ $product->short_description }}</p>
                     @endif
 
-                    @php
-                        $weightCalc = app(\App\Services\Inventory\WeightCalculationService::class);
-                        $isKgProduct = $product->isKg();
-                        $kgWeightVariants = $isKgProduct ? $product->weightVariants : collect();
-                        $productVariants = $isKgProduct
-                            ? collect()
-                            : $product->variants
-                                ->where('status', 1)
-                                ->filter(fn ($variant) => $variant->variantItems->where('status', 1)->isNotEmpty())
-                                ->values();
-                    @endphp
-
                     @if($isKgProduct && $kgWeightVariants->count() > 0)
                     <div class="pd-variants mb-3" id="pdWeightVariants">
                         <div class="pd-variants__head">
-                            <span class="pd-section-label mb-0">{{ __('Select Weight') }}</span>
+                            <span class="pd-section-label mb-0">{{ __('Select Weight') }} <span class="text-danger">*</span></span>
                         </div>
                         <div class="pd-variant-group" data-weight-group="1">
-                            <div class="pd-variant-options" role="radiogroup" aria-label="Weight">
+                            <select class="form-select pd-variant-select weight-variant-select"
+                                    id="weightVariantSelect"
+                                    name="weight_variant"
+                                    aria-label="{{ __('Select Weight') }}"
+                                    required>
+                                <option value="" disabled>{{ __('Choose a weight option') }}</option>
                                 @foreach($kgWeightVariants as $wv)
                                 @php
                                     $pivot = $product->productWeightVariants->firstWhere('weight_variant_id', $wv->id);
                                     $sell = $weightCalc->variantSellingPrice($product, $wv, $pivot);
-                                    $purchase = $weightCalc->variantPurchaseCost($product, $wv);
+                                    $regular = round((float) $product->price * (float) $wv->weight_in_kg, 2);
                                     $avail = $weightCalc->theoreticalAvailableUnits((float)$product->qty, $wv);
                                 @endphp
-                                <label class="pd-variant-chip">
-                                    <input class="weight-variant-option"
-                                           type="radio"
-                                           name="weight_variant"
-                                           value="{{ $wv->id }}"
-                                           data-name="{{ $wv->name }}"
-                                           data-price="{{ $sell }}"
-                                           data-kg="{{ $wv->weight_in_kg }}"
-                                           data-available="{{ $avail }}"
-                                           {{ $loop->first ? 'checked' : '' }}
-                                           required>
-                                    <span class="pd-variant-chip__label">
-                                        <span class="pd-variant-chip__name">{{ $wv->name }}</span>
-                                        <span class="pd-variant-chip__price">{{ $setting->currency_icon }}{{ number_format($sell, 2) }}</span>
-                                        <small class="d-block text-muted">{{ __('Purchase') }}: {{ $setting->currency_icon }}{{ number_format($purchase, 2) }} · {{ $avail }} {{ __('available') }}</small>
-                                    </span>
-                                </label>
+                                <option value="{{ $wv->id }}"
+                                        data-name="{{ $wv->name }}"
+                                        data-price="{{ $sell }}"
+                                        data-regular="{{ $regular }}"
+                                        data-kg="{{ $wv->weight_in_kg }}"
+                                        data-available="{{ $avail }}"
+                                        {{ $loop->first ? 'selected' : '' }}>
+                                    {{ $wv->name }} — {{ $setting->currency_icon }}{{ number_format($sell, 2) }}
+                                </option>
                                 @endforeach
-                            </div>
+                            </select>
+                            <small class="pd-variant-meta text-muted d-block mt-2" id="weightVariantMeta"></small>
                         </div>
                     </div>
                     @elseif($productVariants->count() > 0)
@@ -162,31 +166,28 @@
                             $defaultItem = $activeItems->firstWhere('is_default', 1) ?: $activeItems->first();
                         @endphp
                         <div class="pd-variant-group variant-group" data-variant-id="{{ $variant->id }}">
-                            <span class="pd-section-label">{{ $variant->name }} <span class="text-danger">*</span></span>
-                            <div class="pd-variant-options" role="radiogroup" aria-label="{{ $variant->name }}">
+                            <label class="pd-section-label" for="variant_select_{{ $variant->id }}">{{ $variant->name }} <span class="text-danger">*</span></label>
+                            <select class="form-select pd-variant-select variant-select"
+                                    id="variant_select_{{ $variant->id }}"
+                                    name="variant_{{ $variant->id }}"
+                                    data-variant-id="{{ $variant->id }}"
+                                    aria-label="{{ $variant->name }}"
+                                    required>
+                                <option value="" disabled {{ !$defaultItem ? 'selected' : '' }}>{{ __('Choose') }} {{ $variant->name }}</option>
                                 @foreach($activeItems as $item)
                                 @php
                                     $variantDisplayPrice = (float) $item->price > 0
                                         ? (float) $item->price
                                         : (float) $basePrice;
                                 @endphp
-                                <label class="pd-variant-chip">
-                                    <input class="variant-option"
-                                           type="radio"
-                                           name="variant_{{ $variant->id }}"
-                                           id="variant_{{ $item->id }}"
-                                           value="{{ $item->id }}"
-                                           data-name="{{ $item->name }}"
-                                           data-price="{{ $item->price }}"
-                                           {{ $defaultItem && $defaultItem->id === $item->id ? 'checked' : '' }}
-                                           required>
-                                    <span class="pd-variant-chip__label">
-                                        <span class="pd-variant-chip__name">{{ $item->name }}</span>
-                                        <span class="pd-variant-chip__price">{{ $setting->currency_icon }}{{ number_format($variantDisplayPrice, 2) }}</span>
-                                    </span>
-                                </label>
+                                <option value="{{ $item->id }}"
+                                        data-name="{{ $item->name }}"
+                                        data-price="{{ $item->price }}"
+                                        {{ $defaultItem && $defaultItem->id === $item->id ? 'selected' : '' }}>
+                                    {{ $item->name }} — {{ $setting->currency_icon }}{{ number_format($variantDisplayPrice, 2) }}
+                                </option>
                                 @endforeach
-                            </div>
+                            </select>
                         </div>
                         @endforeach
                     </div>
@@ -556,8 +557,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const addToCartBtn = document.getElementById('addToCart');
     const buyNowBtn = document.getElementById('buyNow');
     const wishlistButtons = document.querySelectorAll('#addToWishlist');
-    const variantOptions = document.querySelectorAll('.variant-option');
     const basePrice = {{ $basePrice }};
+    const availableLabel = @json(__('available'));
 
     thumbnails.forEach(function (thumb) {
         thumb.addEventListener('click', function () {
@@ -588,15 +589,54 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Variant selection updates displayed price
-    document.querySelectorAll('.variant-option, .weight-variant-option').forEach(function (option) {
-        option.addEventListener('change', updatePrice);
+    function selectedWeightOption() {
+        const sel = document.getElementById('weightVariantSelect');
+        if (!sel || !sel.value) {
+            return null;
+        }
+        return sel.options[sel.selectedIndex];
+    }
+
+    function updateWeightMeta() {
+        const opt = selectedWeightOption();
+        const meta = document.getElementById('weightVariantMeta');
+        const originalEl = document.getElementById('detailOriginalPrice');
+        const savingsEl = document.getElementById('detailSavings');
+        if (!opt) {
+            if (meta) meta.textContent = '';
+            return;
+        }
+        const avail = opt.dataset.available || '0';
+        const regular = parseFloat(opt.dataset.regular || 0);
+        const sell = parseFloat(opt.dataset.price || 0);
+        if (meta) {
+            meta.textContent = avail + ' ' + availableLabel;
+        }
+        if (originalEl && savingsEl) {
+            if (regular > sell && sell > 0) {
+                originalEl.style.display = '';
+                savingsEl.style.display = '';
+                originalEl.textContent = currencyIcon + regular.toFixed(2);
+                savingsEl.textContent = 'You save ' + currencyIcon + (regular - sell).toFixed(2);
+            } else {
+                originalEl.style.display = 'none';
+                savingsEl.style.display = 'none';
+            }
+        }
+    }
+
+    document.querySelectorAll('.weight-variant-select, .variant-select').forEach(function (select) {
+        select.addEventListener('change', function () {
+            updatePrice();
+            updateWeightMeta();
+        });
     });
 
     updatePrice();
+    updateWeightMeta();
 
     function getSelectedVariantPrice() {
-        const weightOpt = document.querySelector('.weight-variant-option:checked');
+        const weightOpt = selectedWeightOption();
         if (weightOpt) {
             return parseFloat(weightOpt.dataset.price || 0) || Number(basePrice);
         }
@@ -604,15 +644,16 @@ document.addEventListener('DOMContentLoaded', function() {
         let variantTotal = 0;
         let hasVariantPrice = false;
 
-        document.querySelectorAll('.variant-option:checked').forEach(function (variant) {
-            const price = parseFloat(variant.dataset.price || 0);
+        document.querySelectorAll('.variant-select').forEach(function (sel) {
+            if (!sel.value) return;
+            const opt = sel.options[sel.selectedIndex];
+            const price = parseFloat(opt.dataset.price || 0);
             if (price > 0) {
                 variantTotal += price;
                 hasVariantPrice = true;
             }
         });
 
-        // Variant item price is the selling price for that option (not added on top of main price)
         return hasVariantPrice ? variantTotal : Number(basePrice);
     }
 
@@ -643,10 +684,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function validateVariantSelection() {
-        const weightGroups = document.querySelectorAll('[data-weight-group]');
-        if (weightGroups.length > 0) {
-            if (!document.querySelector('.weight-variant-option:checked')) {
+        const weightSelect = document.getElementById('weightVariantSelect');
+        if (weightSelect) {
+            if (!weightSelect.value) {
                 showNotification(@json(__('Please select all required product options before proceeding.')), 'danger');
+                weightSelect.focus();
                 return false;
             }
             return true;
@@ -657,8 +699,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         }
 
-        const selectedVariants = document.querySelectorAll('.variant-option:checked');
-        if (selectedVariants.length < variantGroups.length) {
+        let allSelected = true;
+        document.querySelectorAll('.variant-select').forEach(function (sel) {
+            if (!sel.value) {
+                allSelected = false;
+            }
+        });
+
+        if (!allSelected) {
             showNotification(@json(__('Please select all required product options before proceeding.')), 'danger');
             const box = document.getElementById('pdVariants');
             if (box) {
@@ -674,18 +722,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function collectSelectedVariants() {
         const selectedVariants = [];
-        document.querySelectorAll('.variant-option:checked').forEach(function (variant) {
+        document.querySelectorAll('.variant-select').forEach(function (sel) {
+            if (!sel.value) return;
             selectedVariants.push({
-                variant_id: variant.name.replace('variant_', ''),
-                variant_item_id: variant.value
+                variant_id: sel.dataset.variantId,
+                variant_item_id: sel.value
             });
         });
         return selectedVariants;
     }
 
     function selectedWeightVariantId() {
-        const el = document.querySelector('.weight-variant-option:checked');
-        return el ? el.value : null;
+        const sel = document.getElementById('weightVariantSelect');
+        return sel && sel.value ? sel.value : null;
     }
 
     if (addToCartBtn && quantityInput) {

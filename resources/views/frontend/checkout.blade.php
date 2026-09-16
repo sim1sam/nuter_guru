@@ -50,7 +50,7 @@
                             @foreach($addresses as $index => $address)
                                 @php
                                     $isSelected = (string)$index === (string)$defaultIdx;
-                                    $areaLabel = ($address->delivery_area ?? 'inside') === 'outside' ? __('Outside') : __('Inside');
+                                    $areaLabel = ($address->delivery_area ?? 'inside') === 'outside' ? __('Outside Dhaka') : __('Inside Dhaka');
                                 @endphp
                                 <button type="button"
                                         class="checkout-address-card {{ $isSelected ? 'is-selected' : '' }}"
@@ -136,9 +136,9 @@
                                     @php $billingArea = old('billing_delivery_area', $defaultAddress->delivery_area ?? 'inside'); @endphp
                                     <div class="checkout-area-toggle">
                                         <input type="radio" class="btn-check" name="billing_delivery_area" id="billing_area_inside" value="inside" {{ $billingArea === 'inside' ? 'checked' : '' }}>
-                                        <label class="checkout-area-btn" for="billing_area_inside">{{ __('Inside') }}</label>
+                                        <label class="checkout-area-btn" for="billing_area_inside">{{ __('Inside Dhaka') }}</label>
                                         <input type="radio" class="btn-check" name="billing_delivery_area" id="billing_area_outside" value="outside" {{ $billingArea === 'outside' ? 'checked' : '' }}>
-                                        <label class="checkout-area-btn" for="billing_area_outside">{{ __('Outside') }}</label>
+                                        <label class="checkout-area-btn" for="billing_area_outside">{{ __('Outside Dhaka') }}</label>
                                     </div>
                                 </div>
                             </div>
@@ -204,9 +204,9 @@
                                 <label class="form-label d-block">{{ __('Delivery Area') }} *</label>
                                 <div class="checkout-area-toggle">
                                     <input type="radio" class="btn-check" name="shipping_delivery_area" id="ship_area_inside" value="inside" checked>
-                                    <label class="checkout-area-btn" for="ship_area_inside">{{ __('Inside') }}</label>
+                                    <label class="checkout-area-btn" for="ship_area_inside">{{ __('Inside Dhaka') }}</label>
                                     <input type="radio" class="btn-check" name="shipping_delivery_area" id="ship_area_outside" value="outside">
-                                    <label class="checkout-area-btn" for="ship_area_outside">{{ __('Outside') }}</label>
+                                    <label class="checkout-area-btn" for="ship_area_outside">{{ __('Outside Dhaka') }}</label>
                                 </div>
                             </div>
                         </div>
