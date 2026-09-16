@@ -123,7 +123,7 @@ class PaymentController extends Controller
             $request->shipping_address_id
         );
 
-        $this->sendOrderSuccessMail(
+        $mailSent = $this->sendOrderSuccessMail(
             $user,
             $total_price,
             "Cash on Delivery",
@@ -135,6 +135,9 @@ class PaymentController extends Controller
         $notification = trans(
             "Order submited successfully. please wait for admin approval"
         );
+        if (! $mailSent) {
+            $notification .= ' | '.MailHelper::notSentMessage();
+        }
 
         $order = $order_result["order"];
         $order_id = $order->order_id;
@@ -247,7 +250,7 @@ class PaymentController extends Controller
             $request->shipping_address_id
         );
 
-        $this->sendOrderSuccessMail(
+        $mailSent = $this->sendOrderSuccessMail(
             $user,
             $total_price,
             "Stripe",
@@ -257,6 +260,9 @@ class PaymentController extends Controller
         );
 
         $notification = trans("Payment Successfully");
+        if (! $mailSent) {
+            $notification .= ' | '.MailHelper::notSentMessage();
+        }
         $order = $order_result["order"];
         $order_id = $order->order_id;
 
@@ -414,7 +420,7 @@ class PaymentController extends Controller
                 $request->shipping_address_id
             );
 
-            $this->sendOrderSuccessMail(
+            $mailSent = $this->sendOrderSuccessMail(
                 $user,
                 $total_price,
                 "Razorpay",
@@ -422,6 +428,10 @@ class PaymentController extends Controller
                 $order_result["order"],
                 $order_result["order_details"]
             );
+
+            if (! $mailSent) {
+                MailHelper::flashNotSent();
+            }
 
             if ($request->request_from == "react_web") {
                 $order = $order_result["order"];
@@ -548,7 +558,7 @@ class PaymentController extends Controller
                 $request->shipping_address_id
             );
 
-            $this->sendOrderSuccessMail(
+            $mailSent = $this->sendOrderSuccessMail(
                 $user,
                 $total_price,
                 "Flutterwave",
@@ -560,6 +570,9 @@ class PaymentController extends Controller
             $order = $order_result["order"];
             $order_id = $order->order_id;
             $notification = trans("Payment Successfully");
+            if (! $mailSent) {
+                $notification .= ' | '.MailHelper::notSentMessage();
+            }
 
             return response()->json(
                 [
@@ -693,7 +706,7 @@ class PaymentController extends Controller
                 $shipping_address_id
             );
 
-            $this->sendOrderSuccessMail(
+            $mailSent = $this->sendOrderSuccessMail(
                 $user,
                 $total_price,
                 "Mollie",
@@ -701,6 +714,10 @@ class PaymentController extends Controller
                 $order_result["order"],
                 $order_result["order_details"]
             );
+
+            if (! $mailSent) {
+                MailHelper::flashNotSent();
+            }
 
             $frontend_success_url = Session::get("frontend_success_url");
             $request_from = Session::get("request_from");
@@ -836,7 +853,7 @@ class PaymentController extends Controller
                 $request->shipping_address_id
             );
 
-            $this->sendOrderSuccessMail(
+            $mailSent = $this->sendOrderSuccessMail(
                 $user,
                 $total_price,
                 "Paystack",
@@ -848,6 +865,9 @@ class PaymentController extends Controller
             $order = $order_result["order"];
             $order_id = $order->order_id;
             $notification = trans("Payment Successfully");
+            if (! $mailSent) {
+                $notification .= ' | '.MailHelper::notSentMessage();
+            }
 
             return response()->json(
                 [
@@ -1047,7 +1067,7 @@ class PaymentController extends Controller
                     $shipping_address_id
                 );
 
-                $this->sendOrderSuccessMail(
+                $mailSent = $this->sendOrderSuccessMail(
                     $user,
                     $total_price,
                     "Instamojo",
@@ -1055,6 +1075,10 @@ class PaymentController extends Controller
                     $order_result["order"],
                     $order_result["order_details"]
                 );
+
+                if (! $mailSent) {
+                    MailHelper::flashNotSent();
+                }
 
                 $frontend_success_url = Session::get("frontend_success_url");
                 $request_from = Session::get("request_from");
@@ -1136,7 +1160,7 @@ class PaymentController extends Controller
             $request->shipping_address_id
         );
 
-        $this->sendOrderSuccessMail(
+        $mailSent = $this->sendOrderSuccessMail(
             $user,
             $total_price,
             "Bank Payment",
@@ -1148,6 +1172,9 @@ class PaymentController extends Controller
         $notification = trans(
             "Order submited successfully. please wait for admin approval"
         );
+        if (! $mailSent) {
+            $notification .= ' | '.MailHelper::notSentMessage();
+        }
 
         $order = $order_result["order"];
 
@@ -1355,7 +1382,7 @@ class PaymentController extends Controller
                 $shipping_address_id
             );
 
-            $this->sendOrderSuccessMail(
+            $mailSent = $this->sendOrderSuccessMail(
                 $user,
                 $total_price,
                 "Instamojo",
@@ -1369,13 +1396,21 @@ class PaymentController extends Controller
             $request_from = Session::get("request_from");
 
             if ($request_from == "react_web") {
+                if (! $mailSent) {
+                    MailHelper::flashNotSent();
+                }
                 $order = $order_result["order"];
                 $success_url = $frontend_success_url;
                 $success_url = $success_url . "/" . $order->order_id;
                 return redirect($success_url);
             } else {
+                $orderMessage = trans("Order Successfully");
+                if (! $mailSent) {
+                    $orderMessage .= ' | '.MailHelper::notSentMessage();
+                }
+
                 return response()->json(
-                    ["message" => trans("Order Successfully")],
+                    ["message" => $orderMessage],
                     200
                 );
             }
@@ -1712,10 +1747,13 @@ class PaymentController extends Controller
         $payment_status,
         $order,
         $order_details
-    ) {
+    ): bool {
         $setting = Setting::first();
-        MailHelper::setMailConfig();
         $template = EmailTemplate::where("id", 6)->first();
+        if (! $template) {
+            return false;
+        }
+
         $subject = $template->subject;
         $message = $template->description;
         $message = str_replace("{{user_name}}", $user->name, $message);
@@ -1736,9 +1774,11 @@ class PaymentController extends Controller
         );
 
         $message = str_replace("{{order_detail}}", $order_details, $message);
-        Mail::to($user->email)->send(new OrderSuccessfully($message, $subject));
+        $sent = MailHelper::sendTo($user->email, new OrderSuccessfully($message, $subject));
 
         $this->sendOrderSuccessSms($user, $order);
+
+        return $sent;
     }
 
     public function sendOrderSuccessSms($user, $order){

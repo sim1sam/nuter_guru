@@ -69,40 +69,38 @@ class RegisterController extends Controller
         $user->phone = $request->phone ? $request->phone : '';
         $user->agree_policy = $request->agree ? 1 : 0;
         $user->password = Hash::make($request->password);
-        $user->verify_token = random_int(100000, 999999);;
+        $user->verify_token = null;
+        $user->status = 1;
+        $user->email_verified = 1;
+        $user->email_verified_at = now();
         $user->save();
 
-        MailHelper::setMailConfig();
-
-        $template=EmailTemplate::where('id',4)->first();
-        $subject=$template->subject;
-        $message=$template->description;
-        $message = str_replace('{{user_name}}',$request->name,$message);
-        Mail::to($user->email)->send(new UserRegistration($message,$subject,$user));
-
+        // No verification email — mail server may be unavailable in production
         if($enable_phone_required == 1){
             $template = SmsTemplate::where('id',1)->first();
-            $message = $template->description;
-            $message = str_replace('{{user_name}}',$user->name,$message);
-            $message = str_replace('{{otp_code}}',$user->verify_token,$message);
+            if ($template) {
+                $message = $template->description;
+                $message = str_replace('{{user_name}}',$user->name,$message);
+                $message = str_replace('{{otp_code}}','',$message);
 
-            $twilio = TwilioSms::first();
-            if($twilio->enable_register_sms == 1){
-                try{
-                    $account_sid = $twilio->account_sid;
-                    $auth_token = $twilio->auth_token;
-                    $twilio_number = $twilio->twilio_phone_number;
-                    $recipients = $user->phone;
-                    $client = new Client($account_sid, $auth_token);
-                    $client->messages->create($recipients,
-                            ['from' => $twilio_number, 'body' => $message] );
-                }catch(Exception $ex){
+                $twilio = TwilioSms::first();
+                if($twilio && $twilio->enable_register_sms == 1){
+                    try{
+                        $account_sid = $twilio->account_sid;
+                        $auth_token = $twilio->auth_token;
+                        $twilio_number = $twilio->twilio_phone_number;
+                        $recipients = $user->phone;
+                        $client = new Client($account_sid, $auth_token);
+                        $client->messages->create($recipients,
+                                ['from' => $twilio_number, 'body' => $message] );
+                    }catch(Exception $ex){
 
+                    }
                 }
             }
         }
 
-        $notification = trans('Register Successfully. Please Verify your email');
+        $notification = trans('Register Successfully. You can login now.');
         return response()->json(['notification' => $notification]);
     }
 
@@ -125,13 +123,11 @@ class RegisterController extends Controller
         $user = User::where('email', $request->email)->first();
         if($user){
             if($user->email_verified == 0){
-                MailHelper::setMailConfig();
-
                 $template=EmailTemplate::where('id',4)->first();
                 $subject=$template->subject;
                 $message=$template->description;
                 $message = str_replace('{{user_name}}',$user->name,$message);
-                Mail::to($user->email)->send(new UserRegistration($message,$subject,$user));
+                $mailSent = MailHelper::sendTo($user->email, new UserRegistration($message,$subject,$user));
 
                 if($enable_phone_required == 1){
                     $template=SmsTemplate::where('id',1)->first();
@@ -156,7 +152,10 @@ class RegisterController extends Controller
                 }
 
                 $notification = trans('Register Successfully. Please Verify your email');
-                return response()->json(['notification' => $notification]);
+                if (! $mailSent) {
+                    $notification .= ' | '.MailHelper::notSentMessage();
+                }
+                return response()->json(['notification' => $notification, 'alert-type' => $mailSent ? 'success' : 'warning']);
 
             }else{
                 $notification = trans('Already verfied your account');

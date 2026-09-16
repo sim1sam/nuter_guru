@@ -15,29 +15,71 @@
           </div>
 
           <div class="section-body">
-            <a href="{{ route('admin.product.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> {{__('admin.Add New')}}</a>
-            <div class="row mt-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+              <a href="{{ route('admin.product.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> {{__('admin.Add New')}}</a>
+              <form method="GET" action="{{ url()->current() }}" class="form-inline">
+                <label class="mr-2 mb-0">{{__('admin.Category')}}</label>
+                <select name="category_id" class="form-control mr-2" onchange="this.form.submit()">
+                  <option value="">{{__('admin.All')}}</option>
+                  @foreach(($categories ?? []) as $category)
+                    <option value="{{ $category->id }}" {{ (string)($selectedCategory ?? '') === (string)$category->id ? 'selected' : '' }}>
+                      {{ $category->name }}
+                    </option>
+                  @endforeach
+                </select>
+                @if(!empty($selectedCategory))
+                  <a href="{{ url()->current() }}" class="btn btn-light">Clear</a>
+                @endif
+              </form>
+            </div>
+
+            <div class="row mt-2">
                 <div class="col">
                   <div class="card">
                     <div class="card-body">
+                      <div class="mb-3 d-flex flex-wrap" id="bulkActionBar" style="display:none !important; gap:8px;">
+                        <button type="button" class="btn btn-success btn-sm" onclick="submitBulkStatus(1)"><i class="fas fa-check"></i> Active Selected</button>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="submitBulkStatus(0)"><i class="fas fa-ban"></i> Deactive Selected</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="submitBulkDelete()"><i class="fas fa-trash"></i> Delete Selected</button>
+                        <span class="align-self-center text-muted ml-2" id="selectedCount">0 selected</span>
+                      </div>
+
+                      <form id="bulkStatusForm" method="POST" action="{{ route('admin.product.bulk-status') }}" style="display:none;">
+                        @csrf
+                        <input type="hidden" name="status" id="bulkStatusValue" value="1">
+                        <div id="bulkStatusIds"></div>
+                      </form>
+                      <form id="bulkDeleteForm" method="POST" action="{{ route('admin.product.bulk-delete') }}" style="display:none;">
+                        @csrf
+                        <div id="bulkDeleteIds"></div>
+                      </form>
+
                       <div class="table-responsive table-invoice">
                         <table class="table table-striped" id="dataTable">
                             <thead>
                                 <tr>
+                                    <th width="3%">
+                                      <input type="checkbox" id="selectAllProducts">
+                                    </th>
                                     <th width="5%">{{__('admin.SN')}}</th>
-                                    <th width="30%">{{__('admin.Name')}}</th>
-                                    <th width="10%">{{__('admin.Price')}}</th>
-                                    <th width="15%">{{__('admin.Photo')}}</th>
-                                    <th width="15%">{{__('admin.Type')}}</th>
+                                    <th width="22%">{{__('admin.Name')}}</th>
+                                    <th width="12%">{{__('admin.Category')}}</th>
+                                    <th width="8%">{{__('admin.Price')}}</th>
+                                    <th width="12%">{{__('admin.Photo')}}</th>
+                                    <th width="12%">{{__('admin.Type')}}</th>
                                     <th width="10%">{{__('admin.Status')}}</th>
-                                    <th width="15%">{{__('admin.Action')}}</th>
+                                    <th width="16%">{{__('admin.Action')}}</th>
                                   </tr>
                             </thead>
                             <tbody>
                                 @foreach ($products as $index => $product)
                                     <tr>
+                                        <td>
+                                          <input type="checkbox" class="product-check" value="{{ $product->id }}">
+                                        </td>
                                         <td>{{ ++$index }}</td>
                                         <td><a target="_blank" href="{{ $frontend_view.$product->slug }}">{{ $product->short_name }}</a></td>
+                                        <td>{{ optional($product->category)->name }}</td>
                                         <td>{{ $setting->currency_icon }}{{ $product->price }}</td>
                                         <td> <img class="rounded-circle" src="{{ asset($product->thumb_image) }}" alt="" width="100px" height="100px"></td>
                                         <td>
@@ -148,5 +190,60 @@
             }
         })
     }
+
+    function getSelectedProductIds(){
+        return $('.product-check:checked').map(function(){ return $(this).val(); }).get();
+    }
+
+    function updateBulkBar(){
+        var ids = getSelectedProductIds();
+        var count = ids.length;
+        $('#selectedCount').text(count + ' selected');
+        if(count > 0){
+            $('#bulkActionBar').attr('style', 'gap:8px;');
+        }else{
+            $('#bulkActionBar').attr('style', 'display:none !important; gap:8px;');
+        }
+    }
+
+    function fillIds(containerId, ids){
+        var $box = $(containerId);
+        $box.empty();
+        ids.forEach(function(id){
+            $box.append('<input type="hidden" name="ids[]" value="'+id+'">');
+        });
+    }
+
+    function submitBulkStatus(status){
+        var ids = getSelectedProductIds();
+        if(ids.length === 0){
+            toastr.error('Please select at least one product');
+            return;
+        }
+        $('#bulkStatusValue').val(status);
+        fillIds('#bulkStatusIds', ids);
+        $('#bulkStatusForm').submit();
+    }
+
+    function submitBulkDelete(){
+        var ids = getSelectedProductIds();
+        if(ids.length === 0){
+            toastr.error('Please select at least one product');
+            return;
+        }
+        if(!confirm('Delete selected products? Products with orders will be skipped.')){
+            return;
+        }
+        fillIds('#bulkDeleteIds', ids);
+        $('#bulkDeleteForm').submit();
+    }
+
+    $(document).on('change', '#selectAllProducts', function(){
+        $('.product-check').prop('checked', $(this).prop('checked'));
+        updateBulkBar();
+    });
+    $(document).on('change', '.product-check', function(){
+        updateBulkBar();
+    });
 </script>
 @endsection

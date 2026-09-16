@@ -106,13 +106,18 @@ class CustomerController extends Controller
         $this->validate($request, $rules,$customMessages);
 
         $users = User::where('status',1)->get();
-        MailHelper::setMailConfig();
+        $mailSent = true;
         foreach($users as $user){
-            Mail::to($user->email)->send(new SendSingleSellerMail($request->subject,$request->message));
+            if (! MailHelper::sendTo($user->email, new SendSingleSellerMail($request->subject,$request->message))) {
+                $mailSent = false;
+            }
         }
 
         $notification = trans('admin_validation.Email Send Successfully');
-        $notification = array('messege'=>$notification,'alert-type'=>'success');
+        if (! $mailSent) {
+            $notification .= ' | '.MailHelper::notSentMessage();
+        }
+        $notification = array('messege'=>$notification,'alert-type'=> $mailSent ? 'success' : 'warning');
         return redirect()->back()->with($notification);
     }
 
@@ -128,11 +133,13 @@ class CustomerController extends Controller
         $this->validate($request, $rules,$customMessages);
 
         $user = User::find($id);
-        MailHelper::setMailConfig();
-        Mail::to($user->email)->send(new SendSingleSellerMail($request->subject,$request->message));
+        $mailSent = MailHelper::sendTo($user->email, new SendSingleSellerMail($request->subject,$request->message));
 
         $notification = trans('admin_validation.Email Send Successfully');
-        $notification = array('messege'=>$notification,'alert-type'=>'success');
+        if (! $mailSent) {
+            $notification .= ' | '.MailHelper::notSentMessage();
+        }
+        $notification = array('messege'=>$notification,'alert-type'=> $mailSent ? 'success' : 'warning');
         return redirect()->back()->with($notification);
     }
 

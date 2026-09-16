@@ -179,14 +179,15 @@ class SellerController extends Controller
             $seller->save();
 
             $user = User::find($seller->user_id);
-            MailHelper::setMailConfig();
             $template = EmailTemplate::where('id',7)->first();
             $subject = $template->subject;
             $message = $template->description;
             $message = str_replace('{{name}}',$user->name,$message);
-            Mail::to($user->email)->send(new ApprovedSellerAccount($message,$subject));
-
-            $message = trans('admin_validation.Active Successfully');
+            if (! MailHelper::sendTo($user->email, new ApprovedSellerAccount($message,$subject))) {
+                $message = trans('admin_validation.Active Successfully').' | '.MailHelper::notSentMessage();
+            } else {
+                $message = trans('admin_validation.Active Successfully');
+            }
         }
         return response()->json($message);
     }
@@ -317,15 +318,17 @@ class SellerController extends Controller
 
         $user = User::with('seller')->find($id);
         $seller = $user->seller;
-        MailHelper::setMailConfig();
-        Mail::to($user->email)->send(new SendSingleSellerMail($request->subject,$request->message));
+        $mailSent = MailHelper::sendTo($user->email, new SendSingleSellerMail($request->subject,$request->message));
         $sellerMail = new SellerMailLog();
         $sellerMail->seller_id = $seller->id;
         $sellerMail->subject = $request->subject;
         $sellerMail->message = $request->message;
         $sellerMail->save();
         $notification = trans('admin_validation.Email Send Successfully');
-        $notification = array('messege'=>$notification,'alert-type'=>'success');
+        if (! $mailSent) {
+            $notification .= ' | '.MailHelper::notSentMessage();
+        }
+        $notification = array('messege'=>$notification,'alert-type'=> $mailSent ? 'success' : 'warning');
         return redirect()->back()->with($notification);
     }
 
@@ -365,9 +368,11 @@ class SellerController extends Controller
         $this->validate($request, $rules,$customMessages);
 
         $sellers = Vendor::with('user')->where('status',1)->get();
-        MailHelper::setMailConfig();
+        $mailSent = true;
         foreach($sellers as $seller){
-            Mail::to($seller->user->email)->send(new SendSingleSellerMail($request->subject,$request->message));
+            if (! MailHelper::sendTo($seller->user->email, new SendSingleSellerMail($request->subject,$request->message))) {
+                $mailSent = false;
+            }
             $sellerMail = new SellerMailLog();
             $sellerMail->seller_id = $seller->id;
             $sellerMail->subject = $request->subject;
@@ -376,7 +381,10 @@ class SellerController extends Controller
         }
 
         $notification = trans('admin_validation.Email Send Successfully');
-        $notification = array('messege'=>$notification,'alert-type'=>'success');
+        if (! $mailSent) {
+            $notification .= ' | '.MailHelper::notSentMessage();
+        }
+        $notification = array('messege'=>$notification,'alert-type'=> $mailSent ? 'success' : 'warning');
         return redirect()->back()->with($notification);
     }
 

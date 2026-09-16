@@ -17,6 +17,10 @@
                 <div class="col">
                   <div class="card">
                     <div class="card-body">
+                        <div class="alert alert-info mb-4">
+                            <strong>{{ __('admin.Email Configuration') }}:</strong>
+                            {{ __('All system emails (orders, password reset, admin notifications) use these SMTP settings. Do not use localhost:1025 on live server — use your hosting SMTP or Gmail/SendGrid.') }}
+                        </div>
                         <form action="{{ route('admin.update-email-configuraion') }}" method="POST">
                             @csrf
                             @method('PUT')
@@ -24,7 +28,10 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="name">{{__('admin.Mail Host')}}</label>
-                                    <input type="text" name="mail_host" value="{{ $email->mail_host }}" class="form-control">
+                                    <input type="text" name="mail_host" value="{{ $email->mail_host }}" class="form-control" placeholder="smtp.gmail.com">
+                                    @if(in_array(strtolower((string) $email->mail_host), ['localhost', '127.0.0.1', 'mailhog', 'mailpit'], true) || (int) $email->mail_port === 1025)
+                                        <small class="text-danger">{{ __('This host/port is for local testing only and will fail on production.') }}</small>
+                                    @endif
                                     </div>
                                 </div>
                                 <div class="col-md-6">

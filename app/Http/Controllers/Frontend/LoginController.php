@@ -72,10 +72,6 @@ class LoginController extends Controller
 
         $user = User::where('email', $request->email)->first();
         if($user){
-            if($user->email_verified_at == null){
-                $notification = trans('Please verify your email');
-                return response()->json(['error' => $notification], 403);
-            }
             if($user->status == 0){
                 $notification = trans('Inactive account');
                 return response()->json(['error' => $notification], 403);
@@ -142,15 +138,17 @@ class LoginController extends Controller
             $user->forget_password_token = Str::random(100);
             $user->save();
 
-            MailHelper::setMailConfig();
             $template = EmailTemplate::where('id', 1)->first();
             $subject = $template->subject;
             $message = $template->description;
             $message = str_replace('{{user_name}}', $user->name, $message);
-            Mail::to($user->email)->send(new UserForgetPassword($message, $subject, $user));
+            $mailSent = MailHelper::sendTo($user->email, new UserForgetPassword($message, $subject, $user));
 
             $notification = trans('Reset password link send to your email');
-            $notification = array('messege' => $notification, 'alert-type' => 'success');
+            if (! $mailSent) {
+                $notification .= ' | '.MailHelper::notSentMessage();
+            }
+            $notification = array('messege' => $notification, 'alert-type' => $mailSent ? 'success' : 'warning');
             return redirect()->back()->with($notification);
         } else {
             $notification = trans('Email does not exist');
@@ -185,15 +183,17 @@ class LoginController extends Controller
             $user->forget_password_token = Str::random(100);
             $user->save();
 
-            MailHelper::setMailConfig();
             $template = EmailTemplate::where('id', 1)->first();
             $subject = $template->subject;
             $message = $template->description;
             $message = str_replace('{{user_name}}', $user->name, $message);
-            Mail::to($user->email)->send(new UserForgetPassword($message, $subject, $user));
+            $mailSent = MailHelper::sendTo($user->email, new UserForgetPassword($message, $subject, $user));
 
             $notification = trans('Reset password link send to your email');
-            return response()->json(['success' => $notification]);
+            if (! $mailSent) {
+                $notification .= ' | '.MailHelper::notSentMessage();
+            }
+            return response()->json(['success' => $notification, 'alert-type' => $mailSent ? 'success' : 'warning']);
         } else {
             $notification = trans('Email does not exist');
             return response()->json(['error' => $notification], 403);

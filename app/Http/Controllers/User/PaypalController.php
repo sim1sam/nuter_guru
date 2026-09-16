@@ -235,10 +235,13 @@ class PaypalController extends Controller
             $transaction_id = $payment_id;
             $order_result = $this->orderStore($user, $total_price, $totalProduct, 'Paypal', $transaction_id, 1, $shipping, $shipping_fee, $coupon_price, 0,$billing_address_id, $shipping_address_id);
 
-            $this->sendOrderSuccessMail($user, $total_price, 'Paypal', 1, $order_result['order'], $order_result['order_details']);
+            $mailSent = $this->sendOrderSuccessMail($user, $total_price, 'Paypal', 1, $order_result['order'], $order_result['order_details']);
 
             $notification = trans('Payment Successfully');
-            return response()->json(['message' => $notification],200);
+            if (! $mailSent) {
+                $notification .= ' | '.MailHelper::notSentMessage();
+            }
+            return response()->json(['message' => $notification, 'alert-type' => $mailSent ? 'success' : 'warning'],200);
         }
     }
 
@@ -393,7 +396,11 @@ class PaypalController extends Controller
             $transaction_id = $payment_id;
             $order_result = $this->orderStore($user, $total_price, $totalProduct, 'Paypal', $transaction_id, 1, $shipping, $shipping_fee, $coupon_price, 0,$billing_address_id, $shipping_address_id);
 
-            $this->sendOrderSuccessMail($user, $total_price, 'Paypal', 1, $order_result['order'], $order_result['order_details']);
+            $mailSent = $this->sendOrderSuccessMail($user, $total_price, 'Paypal', 1, $order_result['order'], $order_result['order_details']);
+
+            if (! $mailSent) {
+                MailHelper::flashNotSent();
+            }
 
             $order = $order_result['order'];
             $success_url = Session::get('success_url');
@@ -619,12 +626,15 @@ class PaypalController extends Controller
     }
 
 
-    public function sendOrderSuccessMail($user, $total_price, $payment_method, $payment_status, $order, $order_details){
+    public function sendOrderSuccessMail($user, $total_price, $payment_method, $payment_status, $order, $order_details): bool
+    {
         $setting = Setting::first();
 
-        MailHelper::setMailConfig();
-
         $template=EmailTemplate::where('id',6)->first();
+        if (! $template) {
+            return false;
+        }
+
         $subject=$template->subject;
         $message=$template->description;
         $message = str_replace('{{user_name}}',$user->name,$message);
@@ -634,9 +644,11 @@ class PaypalController extends Controller
         $message = str_replace('{{order_status}}','Pending',$message);
         $message = str_replace('{{order_date}}',$order->created_at->format('d F, Y'),$message);
         $message = str_replace('{{order_detail}}',$order_details,$message);
-        Mail::to($user->email)->send(new OrderSuccessfully($message,$subject));
+        $sent = MailHelper::sendTo($user->email, new OrderSuccessfully($message,$subject));
 
         $this->sendOrderSuccessSms($user, $order);
+
+        return $sent;
     }
 
     public function sendOrderSuccessSms($user, $order){

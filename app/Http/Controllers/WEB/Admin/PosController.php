@@ -600,22 +600,21 @@ class PosController extends Controller
             $address->default_billing = 1;
             $address->save();
 
-            try {
-                MailHelper::setMailConfig();
-                $template=EmailTemplate::where('id',8)->first();
-                if ($template) {
-                    $subject=$template->subject;
-                    $message=$template->description;
-                    $message = str_replace('{{user_name}}',$request->name,$message);
-                    Mail::to($user->email)->send(new UserRegistrationFromAdmin($message,$subject,$user));
-                }
-            } catch (\Throwable $e) {
-                // ignore mail errors
+            $mailSent = true;
+            $template=EmailTemplate::where('id',8)->first();
+            if ($template) {
+                $subject=$template->subject;
+                $message=$template->description;
+                $message = str_replace('{{user_name}}',$request->name,$message);
+                $mailSent = MailHelper::sendTo($user->email, new UserRegistrationFromAdmin($message,$subject,$user));
             }
 
             session(['pos_customer_id' => $user->id]);
             $notification = trans('admin_validation.Customer Create Successfully');
-            $notification = array('messege'=>$notification,'alert-type'=>'success');
+            if (! $mailSent) {
+                $notification .= ' | '.MailHelper::notSentMessage();
+            }
+            $notification = array('messege'=>$notification,'alert-type'=> $mailSent ? 'success' : 'warning');
             return redirect()->back()->with($notification);
         }else{
             $notification = trans('admin_validation.Customer Create Not Successfully');
@@ -901,44 +900,17 @@ class PosController extends Controller
 
              $cartProduct->delete();
          }
-         
-            $setting = Setting::first();
-            $mailName = $orderAddress->billing_name;
-            $mailEmail = $orderAddress->shipping_email ?: $orderAddress->billing_email;
-            if ($mailEmail) {
-                try {
-                    MailHelper::setMailConfig();
-                    $template = EmailTemplate::where("id", 6)->first();
-                    if ($template) {
-                        $subject = $template->subject;
-                        $message = $template->description;
-                        $message = str_replace("{{user_name}}", $mailName, $message);
-                        $message = str_replace(
-                            "{{total_amount}}",
-                            $setting->currency_icon . $total_price,
-                            $message
-                        );
-                        $message = str_replace("{{payment_method}}",$payment_method, $message);
-                        $message = str_replace("{{payment_status}}", $paymetn_status, $message);
-                        $message = str_replace("{{order_status}}", $order_status, $message);
-                        $message = str_replace(
-                            "{{order_date}}",
-                            $order->created_at->format("d F, Y"),
-                            $message
-                        );
-                        $message = str_replace("{{order_detail}}", $order_details, $message);
-                        Mail::to($mailEmail)->send(new OrderSuccessfully($message, $subject));
-                    }
-                } catch (\Throwable $e) {
-                    // Keep order success even if mail fails
-                }
-            }
 
+        // POS orders do not send email
         session()->forget('pos_customer_id');
         $notification = trans('admin_validation.Order Created SuccesFully').($steadfastNote ?? '');
+        $alertType = 'success';
+        if (! empty($steadfastNote) && str_contains($steadfastNote, 'failed')) {
+            $alertType = 'warning';
+        }
         $notification = array(
             'messege'=>$notification,
-            'alert-type'=> (!empty($steadfastNote) && str_contains($steadfastNote, 'failed')) ? 'warning' : 'success'
+            'alert-type'=> $alertType
         );
         return redirect()->route('admin.order-show', $order->id)->with($notification);
 

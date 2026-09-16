@@ -47,12 +47,13 @@ class SubscriberController extends Controller
 
         $subscriber = Subscriber::find($id);
         if($subscriber){
-            MailHelper::setMailConfig();
-
-            Mail::to($subscriber->email)->send(new SubscirberSendMail($request->subject,$request->message));
+            $mailSent = MailHelper::sendTo($subscriber->email, new SubscirberSendMail($request->subject,$request->message));
 
             $notification = trans('admin_validation.Email Send Successfully');
-            $notification = array('messege'=>$notification,'alert-type'=>'success');
+            if (! $mailSent) {
+                $notification .= ' | '.MailHelper::notSentMessage();
+            }
+            $notification = array('messege'=>$notification,'alert-type'=> $mailSent ? 'success' : 'warning');
             return redirect()->back()->with($notification);
         }else{
 
@@ -75,13 +76,18 @@ class SubscriberController extends Controller
 
         $subscribers = Subscriber::where('is_verified',1)->get();
         if($subscribers->count() > 0){
-            MailHelper::setMailConfig();
+            $mailSent = true;
             foreach($subscribers as $index => $subscriber){
-                Mail::to($subscriber->email)->send(new SubscirberSendMail($request->subject,$request->message));
+                if (! MailHelper::sendTo($subscriber->email, new SubscirberSendMail($request->subject,$request->message))) {
+                    $mailSent = false;
+                }
             }
 
             $notification = trans('admin_validation.Email Send Successfully');
-            $notification = array('messege'=>$notification,'alert-type'=>'success');
+            if (! $mailSent) {
+                $notification .= ' | '.MailHelper::notSentMessage();
+            }
+            $notification = array('messege'=>$notification,'alert-type'=> $mailSent ? 'success' : 'warning');
             return redirect()->back()->with($notification);
         }else{
 

@@ -36,7 +36,6 @@ class AdminForgotPasswordController extends Controller
         ];
         $this->validate($request, $rules,$customMessages);
 
-        MailHelper::setMailConfig();
         $admin=Admin::where('email',$request->email)->first();
         if($admin){
             $admin->forget_password_token = random_int(100000, 999999);
@@ -47,10 +46,13 @@ class AdminForgotPasswordController extends Controller
             $subject=$template->subject;
             $message=str_replace('{{name}}',$admin->name,$message);
 
-            Mail::to($admin->email)->send(new AdminForgetPassword($admin,$message,$subject));
+            $mailSent = MailHelper::sendTo($admin->email, new AdminForgetPassword($admin,$message,$subject));
 
             $notification= trans('admin_validation.Forget password link send your email');
-            return response()->json(['notification' => $notification],200);
+            if (! $mailSent) {
+                $notification .= ' | '.MailHelper::notSentMessage();
+            }
+            return response()->json(['notification' => $notification, 'alert-type' => $mailSent ? 'success' : 'warning'],200);
 
         }else {
             $notification= trans('admin_validation.email does not exist');

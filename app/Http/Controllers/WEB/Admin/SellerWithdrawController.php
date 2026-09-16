@@ -64,11 +64,13 @@ class SellerWithdrawController extends Controller
         $message=str_replace('{{withdraw_charge}}',$withdraw->withdraw_charge,$message);
         $message=str_replace('{{withdraw_amount}}',$withdraw->withdraw_amount,$message);
         $message=str_replace('{{approval_date}}',$withdraw->approved_date,$message);
-        MailHelper::setMailConfig();
-        Mail::to($user->email)->send(new SellerWithdrawApproval($subject,$message));
+        $mailSent = MailHelper::sendTo($user->email, new SellerWithdrawApproval($subject,$message));
 
         $notification = trans('admin_validation.Withdraw request approval successfully');
-        $notification=array('messege'=>$notification,'alert-type'=>'success');
+        if (! $mailSent) {
+            $notification .= ' | '.MailHelper::notSentMessage();
+        }
+        $notification=array('messege'=>$notification,'alert-type'=> $mailSent ? 'success' : 'warning');
         return redirect()->route('admin.seller-withdraw')->with($notification);
     }
 }

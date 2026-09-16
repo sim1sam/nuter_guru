@@ -40,24 +40,38 @@ class ProductController extends Controller
         $this->middleware('auth:admin');
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('category','seller','brand')->where(['vendor_id' => 0])->orderBy('id','desc')->get();
+        $query = Product::with('category','seller','brand')->where(['vendor_id' => 0]);
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        $products = $query->orderBy('id','desc')->get();
         $orderProducts = OrderProduct::all();
         $setting = Setting::first();
         $frontend_url = $setting->frontend_url;
         $frontend_view = $frontend_url.'single-product?slug=';
+        $categories = Category::orderBy('name','asc')->get();
+        $selectedCategory = $request->category_id;
 
-        return view('admin.product',compact('products','orderProducts','setting','frontend_view'));
+        return view('admin.product',compact('products','orderProducts','setting','frontend_view','categories','selectedCategory'));
     }
 
-    public function sellerProduct(){
-        $products = Product::with('category','seller','brand')->where('vendor_id','!=',0)->where('status',1)->get();
+    public function sellerProduct(Request $request){
+        $query = Product::with('category','seller','brand')->where('vendor_id','!=',0)->where('status',1);
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+        $products = $query->get();
         $orderProducts = OrderProduct::all();
         $setting = Setting::first();
         $frontend_url = $setting->frontend_url;
         $frontend_view = $frontend_url.'single-product?slug=';
-        return view('admin.product',compact('products','orderProducts','setting','frontend_view'));
+        $categories = Category::orderBy('name','asc')->get();
+        $selectedCategory = $request->category_id;
+        return view('admin.product',compact('products','orderProducts','setting','frontend_view','categories','selectedCategory'));
     }
 
     public function sellerPendingProduct(){
@@ -461,6 +475,95 @@ class ProductController extends Controller
             $message = trans('admin_validation.Active Successfully');
         }
         return response()->json($message);
+    }
+
+    public function bulkStatus(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+            'status' => 'required|in:0,1',
+        ]);
+
+        Product::whereIn('id', $request->ids)
+            ->where('vendor_id', 0)
+            ->update(['status' => (int) $request->status]);
+
+        $message = (int) $request->status === 1
+            ? trans('admin_validation.Active Successfully')
+            : trans('admin_validation.InActive Successfully');
+
+        $notification = array('messege' => $message, 'alert-type' => 'success');
+        return redirect()->back()->with($notification);
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+        ]);
+
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach ($request->ids as $id) {
+            $product = Product::where('id', $id)->where('vendor_id', 0)->first();
+            if (! $product) {
+                continue;
+            }
+
+            $existOrder = OrderProduct::where('product_id', $id)->count();
+            if ($existOrder > 0) {
+                $skipped++;
+                continue;
+            }
+
+            $gallery = $product->gallery;
+            $old_thumbnail = $product->thumb_image;
+            $product->delete();
+            if ($old_thumbnail) {
+                if (File::exists(public_path().'/'.$old_thumbnail)) unlink(public_path().'/'.$old_thumbnail);
+            }
+            foreach ($gallery as $image) {
+                $old_image = $image->image;
+                $image->delete();
+                if ($old_image) {
+                    if (File::exists(public_path().'/'.$old_image)) unlink(public_path().'/'.$old_image);
+                }
+            }
+            ProductVariant::where('product_id', $id)->delete();
+            ProductVariantItem::where('product_id', $id)->delete();
+            FlashSaleProduct::where('product_id', $id)->delete();
+            ProductReport::where('product_id', $id)->delete();
+            ProductReview::where('product_id', $id)->delete();
+            ProductSpecification::where('product_id', $id)->delete();
+            Wishlist::where('product_id', $id)->delete();
+            $cartProducts = ShoppingCart::where('product_id', $id)->get();
+            foreach ($cartProducts as $cartProduct) {
+                ShoppingCartVariant::where('shopping_cart_id', $cartProduct->id)->delete();
+                $cartProduct->delete();
+            }
+            CompareProduct::where('product_id', $id)->delete();
+            $deleted++;
+        }
+
+        if ($deleted > 0 && $skipped === 0) {
+            $message = trans('admin_validation.Delete Successfully');
+            $alert = 'success';
+        } elseif ($deleted > 0 && $skipped > 0) {
+            $message = $deleted.' deleted, '.$skipped.' skipped (have orders)';
+            $alert = 'warning';
+        } elseif ($skipped > 0) {
+            $message = 'Selected products cannot be deleted because they have orders.';
+            $alert = 'error';
+        } else {
+            $message = 'No products selected.';
+            $alert = 'error';
+        }
+
+        $notification = array('messege' => $message, 'alert-type' => $alert);
+        return redirect()->back()->with($notification);
     }
 
     public function productApproved($id){

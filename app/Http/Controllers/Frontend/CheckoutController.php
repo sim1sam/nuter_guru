@@ -348,7 +348,7 @@ class CheckoutController extends Controller
                 ]);
 
                 // Send order success email
-                $this->sendOrderSuccessMail(
+                $mailSent = $this->sendOrderSuccessMail(
                     $user,
                     $order->total_amount,
                     'Stripe',
@@ -361,8 +361,13 @@ class CheckoutController extends Controller
                 $this->clearCartAfterOrder($user);
                 session()->forget(['temp_order_id', 'coupon_code']);
 
+                $successMessage = trans('Payment completed successfully');
+                if (! $mailSent) {
+                    $successMessage .= ' | '.MailHelper::notSentMessage();
+                }
+
                 return redirect()->route('order.success', ['order' => encodeOrderId($order->order_id)])
-                               ->with('success', trans('Payment completed successfully'));
+                               ->with('success', $successMessage);
             } else {
                 return redirect()->route('checkout')->with('error', trans('Payment verification failed'));
             }
@@ -552,18 +557,14 @@ class CheckoutController extends Controller
             }
             
             if (in_array($validatedData['payment_method'], ['cash_on_delivery', 'manual_payment'], true)) {
-                try {
-                    $this->sendWebOrderSuccessEmail($orderResult['order'], $orderResult['order_details']);
-                } catch (\Throwable $emailError) {
-                    \Log::warning('Order confirmation email failed: ' . $emailError->getMessage(), [
-                        'order_id' => $orderResult['order']->order_id ?? null,
-                        'user_id' => Auth::id(),
-                    ]);
-                }
+                $mailSent = $this->sendWebOrderSuccessEmail($orderResult['order'], $orderResult['order_details']);
 
                 $msg = $validatedData['payment_method'] === 'manual_payment'
                     ? 'অর্ডার সম্পন্ন হয়েছে। অ্যাডমিন পেমেন্ট যাচাই করে অনুমোদন করবে। / Order placed. Waiting for admin payment approval.'
                     : 'Order placed successfully!';
+                if (! $mailSent) {
+                    $msg .= ' | '.MailHelper::notSentMessage();
+                }
 
                 return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])
                     ->with('success', $msg);
@@ -830,19 +831,18 @@ class CheckoutController extends Controller
     /**
      * Send order success email for web orders
      */
-    public function sendWebOrderSuccessEmail($order, $order_details)
+    public function sendWebOrderSuccessEmail($order, $order_details): bool
     {
         $user = Auth::user();
         if (!$user) {
-            return; // Skip email for guest orders for now
+            return true; // Skip email for guest orders for now
         }
 
         $setting = Setting::first();
-        MailHelper::setMailConfig();
         $template = EmailTemplate::where('id', 6)->first();
         
         if (!$template) {
-            return;
+            return false;
         }
 
         $subject = $template->subject;
@@ -854,12 +854,8 @@ class CheckoutController extends Controller
         $message = str_replace('{{order_status}}', 'Pending', $message);
         $message = str_replace('{{order_date}}', $order->created_at->format('d F, Y'), $message);
         $message = str_replace('{{order_detail}}', $order_details, $message);
-        
-        try {
-            Mail::to($user->email)->send(new OrderSuccessfully($message, $subject));
-        } catch (\Exception $e) {
-            \Log::error('Failed to send order success email: ' . $e->getMessage());
-        }
+
+        return MailHelper::sendTo($user->email, new OrderSuccessfully($message, $subject));
     }
 
     /**
@@ -1108,45 +1104,39 @@ class CheckoutController extends Controller
     /**
      * Send order confirmation email
      */
-    private function sendOrderConfirmationEmail($order)
+    private function sendOrderConfirmationEmail($order): bool
     {
-        try {
-            $user = $order->user;
-            $setting = Setting::first();
-            
-            // Set mail configuration
-            MailHelper::setMailConfig();
-            
-            // Get email template
-            $template = EmailTemplate::where('id', 6)->first();
-            $subject = $template->subject;
-            $message = $template->description;
-            
-            // Replace template variables
-            $message = str_replace('{{user_name}}', $user->name, $message);
-            $message = str_replace('{{total_amount}}', $setting->currency_icon . $order->total_amount, $message);
-            $message = str_replace('{{payment_method}}', ucfirst(str_replace('_', ' ', $order->payment_method)), $message);
-            $message = str_replace('{{payment_status}}', $order->payment_status == 1 ? 'Paid' : 'Pending', $message);
-            $message = str_replace('{{order_status}}', 'Pending', $message);
-            $message = str_replace('{{order_date}}', $order->created_at->format('d F, Y'), $message);
-            
-            // Generate order details
-            $order_details = '';
-            foreach ($order->orderProducts as $orderProduct) {
-                $order_details .= $orderProduct->product_name . ' (Qty: ' . $orderProduct->qty . ') - ' . $setting->currency_icon . $orderProduct->unit_price . "\n";
-            }
-            
-            $message = str_replace('{{order_detail}}', $order_details, $message);
-            
-            // Send email
-            Mail::to($user->email)->send(new OrderSuccessfully($message, $subject));
-            
-            \Log::info('Order confirmation email sent successfully for order: ' . $order->order_id);
-            
-        } catch (\Exception $e) {
-            \Log::error('Failed to send order confirmation email: ' . $e->getMessage());
-            throw $e;
+        $user = $order->user;
+        $setting = Setting::first();
+
+        $template = EmailTemplate::where('id', 6)->first();
+        if (! $template) {
+            return false;
         }
+
+        $subject = $template->subject;
+        $message = $template->description;
+
+        $message = str_replace('{{user_name}}', $user->name, $message);
+        $message = str_replace('{{total_amount}}', $setting->currency_icon . $order->total_amount, $message);
+        $message = str_replace('{{payment_method}}', ucfirst(str_replace('_', ' ', $order->payment_method)), $message);
+        $message = str_replace('{{payment_status}}', $order->payment_status == 1 ? 'Paid' : 'Pending', $message);
+        $message = str_replace('{{order_status}}', 'Pending', $message);
+        $message = str_replace('{{order_date}}', $order->created_at->format('d F, Y'), $message);
+
+        $order_details = '';
+        foreach ($order->orderProducts as $orderProduct) {
+            $order_details .= $orderProduct->product_name . ' (Qty: ' . $orderProduct->qty . ') - ' . $setting->currency_icon . $orderProduct->unit_price . "\n";
+        }
+
+        $message = str_replace('{{order_detail}}', $order_details, $message);
+
+        $sent = MailHelper::sendTo($user->email, new OrderSuccessfully($message, $subject));
+        if ($sent) {
+            \Log::info('Order confirmation email sent successfully for order: ' . $order->order_id);
+        }
+
+        return $sent;
     }
 
     public function cashOnDelivery(Request $request)
@@ -1196,7 +1186,7 @@ class CheckoutController extends Controller
             $request->shipping_address_id
         );
 
-        $this->sendOrderSuccessMail(
+        $mailSent = $this->sendOrderSuccessMail(
             $user,
             $total['total'],
             'Cash on Delivery',
@@ -1206,6 +1196,9 @@ class CheckoutController extends Controller
         );
 
         $notification = trans('Order submitted successfully. Please wait for admin approval');
+        if (! $mailSent) {
+            $notification .= ' | '.MailHelper::notSentMessage();
+        }
         $order = $order_result['order'];
         $order_id = $order->order_id;
 
@@ -1428,7 +1421,7 @@ class CheckoutController extends Controller
                  $shipping_address_id
              );
 
-             $this->sendOrderSuccessMail(
+             $mailSent = $this->sendOrderSuccessMail(
                  $user,
                  $cartTotals['total_price'],
                  'Razorpay',
@@ -1439,7 +1432,12 @@ class CheckoutController extends Controller
 
              Session::forget(['coupon_code', 'shipping_method_id', 'billing_address_id', 'shipping_address_id']);
 
-             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', trans('Order placed successfully'));
+             $successMessage = trans('Order placed successfully');
+             if (! $mailSent) {
+                 $successMessage .= ' | '.MailHelper::notSentMessage();
+             }
+
+             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', $successMessage);
          } else {
              return redirect()->route('checkout')->with('error', trans('Payment failed'));
          }
@@ -1519,7 +1517,7 @@ class CheckoutController extends Controller
                  $shipping_address_id
              );
 
-             $this->sendOrderSuccessMail(
+             $mailSent = $this->sendOrderSuccessMail(
                  $user,
                  $cartTotals['total_price'],
                  'Flutterwave',
@@ -1529,6 +1527,10 @@ class CheckoutController extends Controller
              );
 
              Session::forget(['coupon_code', 'shipping_method_id', 'billing_address_id', 'shipping_address_id']);
+
+             if (! $mailSent) {
+                 MailHelper::flashNotSent();
+             }
 
              return response()->json(['status' => 'success', 'redirect_url' => route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])]);
          } else {
@@ -1573,7 +1575,7 @@ class CheckoutController extends Controller
                  $shipping_address_id
              );
 
-             $this->sendOrderSuccessMail(
+             $mailSent = $this->sendOrderSuccessMail(
                  $user,
                  $cartTotals['total_price'],
                  'PayPal',
@@ -1584,7 +1586,12 @@ class CheckoutController extends Controller
 
              Session::forget(['coupon_code', 'shipping_method_id', 'billing_address_id', 'shipping_address_id']);
 
-             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', trans('Order placed successfully'));
+             $successMessage = trans('Order placed successfully');
+             if (! $mailSent) {
+                 $successMessage .= ' | '.MailHelper::notSentMessage();
+             }
+
+             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', $successMessage);
          } else {
              return redirect()->route('checkout')->with('error', trans('Payment failed'));
          }
@@ -1664,7 +1671,7 @@ class CheckoutController extends Controller
                  $shipping_address_id
              );
 
-             $this->sendOrderSuccessMail(
+             $mailSent = $this->sendOrderSuccessMail(
                  $user,
                  $cartTotals['total_price'],
                  'Mollie',
@@ -1675,7 +1682,12 @@ class CheckoutController extends Controller
 
              Session::forget(['coupon_code', 'shipping_method_id', 'billing_address_id', 'shipping_address_id', 'mollie_payment_id']);
 
-             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', trans('Order placed successfully'));
+             $successMessage = trans('Order placed successfully');
+             if (! $mailSent) {
+                 $successMessage .= ' | '.MailHelper::notSentMessage();
+             }
+
+             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', $successMessage);
          } else {
              return redirect()->route('checkout')->with('error', trans('Payment failed'));
          }
@@ -1723,7 +1735,7 @@ class CheckoutController extends Controller
                  $shipping_address_id
              );
 
-             $this->sendOrderSuccessMail(
+             $mailSent = $this->sendOrderSuccessMail(
                  $user,
                  $cartTotals['total_price'],
                  'Instamojo',
@@ -1734,7 +1746,12 @@ class CheckoutController extends Controller
 
              Session::forget(['coupon_code', 'shipping_method_id', 'billing_address_id', 'shipping_address_id']);
 
-             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', trans('Order placed successfully'));
+             $successMessage = trans('Order placed successfully');
+             if (! $mailSent) {
+                 $successMessage .= ' | '.MailHelper::notSentMessage();
+             }
+
+             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', $successMessage);
          } else {
              return redirect()->route('checkout')->with('error', trans('Payment failed'));
          }
@@ -1780,7 +1797,7 @@ class CheckoutController extends Controller
                  $shipping_address_id
              );
 
-             $this->sendOrderSuccessMail(
+             $mailSent = $this->sendOrderSuccessMail(
                  $user,
                  $cartTotals['total_price'],
                  'Paystack',
@@ -1791,7 +1808,12 @@ class CheckoutController extends Controller
 
              Session::forget(['coupon_code', 'shipping_method_id', 'billing_address_id', 'shipping_address_id']);
 
-             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', trans('Order placed successfully'));
+             $successMessage = trans('Order placed successfully');
+             if (! $mailSent) {
+                 $successMessage .= ' | '.MailHelper::notSentMessage();
+             }
+
+             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', $successMessage);
          } else {
              return redirect()->route('checkout')->with('error', trans('Payment failed'));
          }
@@ -1832,7 +1854,7 @@ class CheckoutController extends Controller
                  $shipping_address_id
              );
 
-             $this->sendOrderSuccessMail(
+             $mailSent = $this->sendOrderSuccessMail(
                  $user,
                  $cartTotals['total_price'],
                  'SSLCommerz',
@@ -1843,7 +1865,12 @@ class CheckoutController extends Controller
 
              Session::forget(['coupon_code', 'shipping_method_id', 'billing_address_id', 'shipping_address_id']);
 
-             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', trans('Order placed successfully'));
+             $successMessage = trans('Order placed successfully');
+             if (! $mailSent) {
+                 $successMessage .= ' | '.MailHelper::notSentMessage();
+             }
+
+             return redirect()->route('order.success', ['order' => encodeOrderId($orderResult['order']->order_id)])->with('success', $successMessage);
          } else {
              return redirect()->route('checkout')->with('error', trans('Payment failed'));
          }
@@ -2151,12 +2178,17 @@ class CheckoutController extends Controller
         $payment_status,
         $order,
         $order_details
-    ) {
-        if (!$user) return; // Skip email for guest orders
+    ): bool {
+        if (!$user) {
+            return true; // Skip email for guest orders
+        }
 
         $setting = Setting::first();
-        MailHelper::setMailConfig();
         $template = EmailTemplate::where('id', 6)->first();
+        if (! $template) {
+            return false;
+        }
+
         $subject = $template->subject;
         $message = $template->description;
         $message = str_replace('{{user_name}}', $user->name, $message);
@@ -2167,9 +2199,11 @@ class CheckoutController extends Controller
         $message = str_replace('{{order_date}}', $order->created_at->format('d F, Y'), $message);
         $message = str_replace('{{order_detail}}', $order_details, $message);
 
-        Mail::to($user->email)->send(new \App\Mail\OrderSuccessfully($message, $subject));
+        $sent = MailHelper::sendTo($user->email, new \App\Mail\OrderSuccessfully($message, $subject));
 
         $this->sendOrderSuccessSms($user, $order);
+
+        return $sent;
     }
 
     private function sendOrderSuccessSms($user, $order)
@@ -2339,14 +2373,12 @@ class CheckoutController extends Controller
                     // Clear session
                     session()->forget('temp_order_id');
 
-                    // Send notification email (if method exists)
-                    try {
-                        $this->sendWebOrderSuccessEmail($order, $order->orderProducts);
-                    } catch (\Exception $e) {
-                        \Log::warning('Failed to send order success email: ' . $e->getMessage());
-                    }
+                    $mailSent = $this->sendWebOrderSuccessEmail($order, $order->orderProducts);
 
                     $notification = trans('Order submitted successfully. Please wait for admin approval');
+                    if (! $mailSent) {
+                        $notification .= ' | '.MailHelper::notSentMessage();
+                    }
                     
                     return redirect()->route('order.success', ['order' => encodeOrderId($order->order_id)])
                                    ->with('success', $notification);
@@ -2492,12 +2524,7 @@ class CheckoutController extends Controller
                 // Clear session
                 session()->forget('temp_order_id');
 
-                // Send success email
-                try {
-                    $this->sendWebOrderSuccessEmail($order, $order->orderProducts);
-                } catch (\Exception $e) {
-                    \Log::warning('Failed to send order success email: ' . $e->getMessage());
-                }
+                $mailSent = $this->sendWebOrderSuccessEmail($order, $order->orderProducts);
 
                 // For debugging, let's also return a simple success message
                 if (request()->has('debug')) {
@@ -2510,8 +2537,13 @@ class CheckoutController extends Controller
                     ]);
                 }
 
+                $successMessage = trans('Payment completed successfully');
+                if (! $mailSent) {
+                    $successMessage .= ' | '.MailHelper::notSentMessage();
+                }
+
                 return redirect()->route('order.success', ['order' => encodeOrderId($order->order_id)])
-                               ->with('success', trans('Payment completed successfully'));
+                               ->with('success', $successMessage);
             } else {
                 \Log::warning('Stripe charge failed', [
                     'charge_status' => $charge->status,

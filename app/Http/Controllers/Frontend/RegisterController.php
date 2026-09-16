@@ -81,16 +81,16 @@ class RegisterController extends Controller
         $user->phone = $request->phone ? $request->phone : '';
         $user->agree_policy = $request->agree ? 1 : 0;
         $user->password = Hash::make($request->password);
-        $user->status = 0;
+        // No email verification required — activate account immediately
+        $user->status = 1;
+        $user->email_verified = 1;
+        $user->email_verified_at = now();
         $user->save();
 
-        // Send verification email using Laravel's built-in system
-        $user->sendEmailVerificationNotification();
-
-        // Send SMS if enabled
+        // Optional welcome SMS only (never block registration on mail/SMS failure)
         $this->sendRegistrationSMS($user);
 
-        $notification = trans('Registration successful. Please check your email for verification.');
+        $notification = trans('Registration successful. You can login now.');
         $notification = array('messege' => $notification, 'alert-type' => 'success');
         return redirect()->route('login')->with($notification);
     }
@@ -121,7 +121,12 @@ class RegisterController extends Controller
                 return response()->json(['error' => $notification], 403);
             }
 
-            $user->sendEmailVerificationNotification();
+            try {
+                $user->sendEmailVerificationNotification();
+            } catch (\Throwable $e) {
+                report($e);
+                return response()->json(['error' => trans('Unable to send email right now')], 503);
+            }
 
             $notification = trans('Verification email sent successfully');
             return response()->json(['success' => $notification]);
@@ -206,9 +211,14 @@ class RegisterController extends Controller
         if ($request->user()->hasVerifiedEmail()) {
             return redirect()->route('home');
         }
-        
-        $request->user()->sendEmailVerificationNotification();
-        
+
+        try {
+            $request->user()->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            // Mail may be unavailable — do not fail with 500
+            report($e);
+        }
+
         return back()->with('resent', true);
     }
 }

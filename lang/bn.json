@@ -291,7 +291,10 @@
     "REVIEWS": "রিভিউ",
     "Rating": "রেটিং",
     "Recent Orders": "সাম্প্রতিক অর্ডার",
-    "Register": "রেজিস্টার",
+    "All system emails (orders, password reset, admin notifications) use these SMTP settings. Do not use localhost:1025 on live server — use your hosting SMTP or Gmail/SendGrid.": "সব সিস্টেম ইমেইল (অর্ডার, পাসওয়ার্ড রিসেট, অ্যাডমিন নোটিফিকেশন) এই SMTP সেটিংস ব্যবহার করে। লাইভ সার্ভারে localhost:1025 ব্যবহার করবেন না — হোস্টিং SMTP বা Gmail/SendGrid ব্যবহার করুন।",
+    "This host/port is for local testing only and will fail on production.": "এই হোস্ট/পোর্ট শুধু লোকাল টেস্টের জন্য — প্রোডাকশনে কাজ করবে না।",
+    "Registration successful. You can login now.": "রেজিস্ট্রেশন সফল হয়েছে। আপনি এখন লগইন করতে পারেন।",
+    "Register Successfully. You can login now.": "রেজিস্ট্রেশন সফল হয়েছে। আপনি এখন লগইন করতে পারেন।",
     "Register as Seller": "সেলার হিসেবে রেজিস্টার",
     "Related Products": "সম্পর্কিত পণ্য",
     "Remember Me": "আমাকে মনে রাখুন",
@@ -498,5 +501,6 @@
     "Premium organic dry fruits, nuts, spices and healthy foods — fresh, pure, and delivered to your door.": "প্রিমিয়াম অর্গানিক শুকনো ফল, বাদাম, মসলা ও স্বাস্থ্যকর খাবার — তাজা, খাঁটি এবং আপনার দোরগোড়ায় পৌঁছে দেওয়া।",
     "Returns and Refunds": "রিটার্ন ও রিফান্ড",
     "Shipping & Delivery": "শিপিং ও ডেলিভারি",
-    "Terms and Condition": "শর্তাবলী"
+    "Terms and Condition": "শর্তাবলী",
+    "Email could not be sent. Everything else completed successfully.": "ইমেইল পাঠানো যায়নি। অন্য সব কাজ সফল হয়েছে।"
 }

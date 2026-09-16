@@ -45,6 +45,9 @@ class EmailConfigurationController extends Controller
         $email->mail_encryption = $request->mail_encryption;
         $email->save();
 
+        // Apply immediately so next mail uses new SMTP
+        \App\Helpers\MailHelper::setMailConfig();
+
         $notification=  trans('admin_validation.Update Successfully');
         $notification = array('messege'=>$notification,'alert-type'=>'success');
         return redirect()->back()->with($notification);

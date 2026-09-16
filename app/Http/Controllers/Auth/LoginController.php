@@ -60,10 +60,6 @@ class LoginController extends Controller
         ];
         $user = User::where('email',$request->email)->first();
         if($user){
-            if($user->email_verified == 0){
-                $notification = trans('Please verify your acount. If you didn\'t get OTP, please resend your OTP and verify');
-                return response()->json(['notification' => $notification],402);
-            }
             if($user->status==1){
                 if(Hash::check($request->password,$user->password)){
 
@@ -129,15 +125,17 @@ class LoginController extends Controller
             $user->forget_password_token = random_int(100000, 999999);
             $user->save();
 
-            MailHelper::setMailConfig();
             $template = EmailTemplate::where('id',1)->first();
             $subject = $template->subject;
             $message = $template->description;
             $message = str_replace('{{name}}',$user->name,$message);
-            Mail::to($user->email)->send(new UserForgetPassword($message,$subject,$user));
+            $mailSent = MailHelper::sendTo($user->email, new UserForgetPassword($message,$subject,$user));
 
             $notification = trans('Reset password link send to your email.');
-            return response()->json(['notification' => $notification],200);
+            if (! $mailSent) {
+                $notification .= ' | '.MailHelper::notSentMessage();
+            }
+            return response()->json(['notification' => $notification, 'alert-type' => $mailSent ? 'success' : 'warning'],200);
 
         }else{
             $notification = trans('Email does not exist');

@@ -630,7 +630,6 @@ class HomeController extends Controller
             $contact->message = $request->message;
             $contact->save();
         }
-        MailHelper::setMailConfig();
         $template = EmailTemplate::where("id", 2)->first();
         $message = $template->description;
         $subject = $template->subject;
@@ -639,11 +638,21 @@ class HomeController extends Controller
         $message = str_replace("{{phone}}", $request->phone, $message);
         $message = str_replace("{{subject}}", $request->subject, $message);
         $message = str_replace("{{message}}", $request->message, $message);
-        Mail::to($setting->contact_email)->send(
+        $mailSent = MailHelper::sendTo(
+            $setting->contact_email,
             new ContactMessageInformation($message, $subject)
         );
 
         $notification = trans("Message send successfully");
+        if (! $mailSent) {
+            $notification .= ' | '.MailHelper::notSentMessage();
+
+            return redirect()->back()->with([
+                'messege' => $notification,
+                'alert-type' => 'warning',
+            ]);
+        }
+
         return redirect()->back()->with('success', $notification);
     }
 
@@ -1596,12 +1605,12 @@ class HomeController extends Controller
                 $subscriber->verified_token = random_int(100000, 999999);
                 $subscriber->save();
 
-                MailHelper::setMailConfig();
                 $template = EmailTemplate::where("id", 3)->first();
                 $message = $template->description;
                 $subject = $template->subject;
 
-                Mail::to($subscriber->email)->send(
+                $mailSent = MailHelper::sendTo(
+                    $subscriber->email,
                     new SubscriptionVerification(
                         $subscriber,
                         $message,
@@ -1609,10 +1618,16 @@ class HomeController extends Controller
                     )
                 );
 
+                $responseMessage = trans(
+                    "Subscription successfully, please verified your email"
+                );
+                if (! $mailSent) {
+                    $responseMessage .= ' | '.MailHelper::notSentMessage();
+                }
+
                 return response()->json([
-                    "message" => trans(
-                        "Subscription successfully, please verified your email"
-                    ),
+                    "message" => $responseMessage,
+                    "alert-type" => $mailSent ? "success" : "warning",
                 ]);
 
             } else {
