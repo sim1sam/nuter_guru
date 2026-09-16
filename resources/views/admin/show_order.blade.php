@@ -36,6 +36,7 @@
   .address-missing { color:#b45309; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
   .qty-edit { display:inline-flex; }
   .qty-print { display:none; }
+  .print-only-shipping { display:none !important; }
   @media print {
     @page { size: A4; margin: 12mm; }
     body { background:#fff !important; }
@@ -43,6 +44,7 @@
     .order-status, .print-area, .additional_info, .modal, .qty-edit, .action-btn,
     .delete-icon, .custom_click, #sidebar-wrapper { display:none !important; }
     .qty-print { display:inline !important; }
+    .print-only-shipping { display:flex !important; }
     .main-content, .section, .section-body, .invoice { padding:0 !important; margin:0 !important; width:100% !important; max-width:100% !important; }
     .inv-wrap { border:0; border-radius:0; padding:0; box-shadow:none; }
     .inv-table thead th { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -315,7 +317,23 @@
               <div class="inv-totals">
                 <div class="row-line"><span>{{__('admin.Subtotal')}}</span><span>{{ $setting->currency_icon }}{{ number_format((float)$sub_total, 2) }}</span></div>
                 <div class="row-line"><span>{{__('admin.Discount')}} (-)</span><span>{{ $setting->currency_icon }}{{ number_format((float)$order->coupon_coast, 2) }}</span></div>
-                <div class="row-line"><span>{{__('admin.Shipping')}}</span><span>{{ $setting->currency_icon }}{{ number_format((float)$order->shipping_cost, 2) }}</span></div>
+                <div class="row-line align-items-center print-area flex-wrap" style="gap:8px;">
+                  <span class="d-block w-100 mb-1"><strong>{{__('admin.Shipping')}}</strong> ({{ __('admin.Manual') }} {{ __('admin.Edit') }})</span>
+                  <form action="{{ route('admin.order-shipping.update', $order->id) }}" method="POST" class="d-flex align-items-center flex-wrap" style="gap:6px;margin:0;width:100%;">
+                    @csrf
+                    @method('PUT')
+                    <input type="text" name="shipping_method" class="form-control form-control-sm" style="min-width:140px;flex:1;" value="{{ $order->shipping_method }}" title="{{ __('admin.Shipping Method') }}" placeholder="{{ __('admin.Shipping Method') }}">
+                    <div class="input-group input-group-sm" style="width:150px;">
+                      <div class="input-group-prepend"><span class="input-group-text">{{ $setting->currency_icon }}</span></div>
+                      <input type="number" step="0.01" min="0" name="shipping_cost" class="form-control" value="{{ number_format((float)$order->shipping_cost, 2, '.', '') }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">{{ __('admin.Update') }}</button>
+                  </form>
+                </div>
+                <div class="row-line d-none print-only-shipping">
+                  <span>{{__('admin.Shipping')}} ({{ $order->shipping_method }})</span>
+                  <span>{{ $setting->currency_icon }}{{ number_format((float)$order->shipping_cost, 2) }}</span>
+                </div>
                 <div class="row-line grand"><span>{{__('admin.Total')}}</span><span>{{ $setting->currency_icon }}{{ number_format((float)$order->total_amount, 2) }}</span></div>
               </div>
             </div>

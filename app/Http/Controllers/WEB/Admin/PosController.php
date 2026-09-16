@@ -727,6 +727,7 @@ class PosController extends Controller
                 'address_line' => 'required|string|max:1000',
                 'delivery_area' => 'required|in:inside,outside',
                 'shipping_id' => 'required',
+                'shipping_cost' => 'nullable|numeric|min:0',
                 'payment_method' => 'required',
                 'order_status' => 'required',
             ], [
@@ -748,6 +749,7 @@ class PosController extends Controller
                 'address_line' => 'required|string|max:1000',
                 'delivery_area' => 'required|in:inside,outside',
                 'shipping_id' => 'required',
+                'shipping_cost' => 'nullable|numeric|min:0',
                 'payment_method' => 'required',
                 'order_status' => 'required',
             ], [
@@ -790,7 +792,17 @@ class PosController extends Controller
         }
         $shippingService = app(ShippingCalculationService::class);
         $resolved = $shippingService->resolveFee($shipping, $cartProducts);
-        $shipping_fee = $resolved !== null ? $resolved : 0;
+        $autoFee = $resolved !== null ? $resolved : 0;
+
+        // Admin can override with a manual shipping amount
+        if ($request->filled('shipping_cost') && $request->shipping_cost !== '') {
+            $shipping_fee = round((float) $request->shipping_cost, 2);
+            if ($shipping_fee < 0) {
+                $shipping_fee = 0;
+            }
+        } else {
+            $shipping_fee = $autoFee;
+        }
 
         $total_price = ($sub_total - $discount) + $shipping_fee + $tax;
 
@@ -1003,7 +1015,9 @@ class PosController extends Controller
              $cartProduct->delete();
          }
 
-        // POS orders do not send email
+        // Notify admin by email (customer email not sent for POS)
+        \App\Helpers\OrderMailHelper::notifyAdmin($order);
+
         session()->forget('pos_customer_id');
         $notification = trans('admin_validation.Order Created SuccesFully').($steadfastNote ?? '');
         $alertType = 'success';

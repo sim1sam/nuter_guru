@@ -796,7 +796,25 @@
                                 </option>
                             @endforeach
                         </select>
-                        <small class="text-muted">KG cart: first 1 KG full rate, then proportional (1.5 KG = 70+35)</small>
+                        <small class="text-muted d-block mt-1">KG cart: first 1 KG full rate, then proportional (1.5 KG = 70+35)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="posManualShippingCost">{{ __('admin.Shipping Amount') }} ({{ __('admin.Manual') }})</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">{{ currency_icon() }}</span>
+                            </div>
+                            <input type="number"
+                                   step="0.01"
+                                   min="0"
+                                   name="shipping_cost"
+                                   id="posManualShippingCost"
+                                   class="form-control"
+                                   placeholder="{{ __('admin.Auto from rule if empty') }}"
+                                   value="">
+                        </div>
+                        <small class="text-muted">{{ __('admin.Leave empty to calculate from shipping rule, or type a custom amount') }}</small>
                     </div>
 
                     <div class="form-group">
@@ -976,6 +994,18 @@
             e.preventDefault();
             posCartRequest($(this).attr('href'));
             $('#posClearCartModal').modal('hide');
+        });
+
+        $(document).on('change', '#posOrderShippingSelect', function () {
+            var rate = $(this).find('option:selected').data('rate');
+            var $cost = $('#posManualShippingCost');
+            if ($cost.length && (rate !== undefined && rate !== null && rate !== '') && !$cost.data('manual-edited')) {
+                $cost.val(parseFloat(rate).toFixed(2));
+            }
+        });
+
+        $(document).on('input', '#posManualShippingCost', function () {
+            $(this).data('manual-edited', true);
         });
 
         $(document).on('submit', '#posPromoWrap form', function (e) {

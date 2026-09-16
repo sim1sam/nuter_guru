@@ -885,6 +885,7 @@ Route::group(['as'=> 'admin.', 'prefix' => 'admin'],function (){
     Route::get('cash-on-delivery', [OrderController::class, 'cashOnDelivery'])->name('cash-on-delivery');
     Route::get('order-show/{id}', [OrderController::class, 'show'])->name('order-show');
     Route::put('order-address/{id}', [OrderController::class, 'updateOrderAddress'])->name('order-address.update');
+    Route::put('order-shipping/{id}', [OrderController::class, 'updateShippingCost'])->name('order-shipping.update');
     Route::delete('delete-order/{id}', [OrderController::class, 'destroy'])->name('delete-order');
     Route::put('update-order-status/{id}', [OrderController::class, 'updateOrderStatus'])->name('update-order-status');
 

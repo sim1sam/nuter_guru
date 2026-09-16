@@ -838,9 +838,11 @@ class CheckoutController extends Controller
      */
     public function sendWebOrderSuccessEmail($order, $order_details): bool
     {
+        \App\Helpers\OrderMailHelper::notifyAdmin($order, is_string($order_details) ? $order_details : null);
+
         $user = Auth::user();
         if (!$user) {
-            return true; // Skip email for guest orders for now
+            return true; // Guest: admin notified above; skip customer email
         }
 
         $setting = Setting::first();
@@ -1137,6 +1139,7 @@ class CheckoutController extends Controller
         $message = str_replace('{{order_detail}}', $order_details, $message);
 
         $sent = MailHelper::sendTo($user->email, new OrderSuccessfully($message, $subject));
+        \App\Helpers\OrderMailHelper::notifyAdmin($order, $order_details);
         if ($sent) {
             \Log::info('Order confirmation email sent successfully for order: ' . $order->order_id);
         }
@@ -2184,8 +2187,10 @@ class CheckoutController extends Controller
         $order,
         $order_details
     ): bool {
+        \App\Helpers\OrderMailHelper::notifyAdmin($order, is_string($order_details) ? $order_details : null);
+
         if (!$user) {
-            return true; // Skip email for guest orders
+            return true; // Guest: admin notified above
         }
 
         $setting = Setting::first();

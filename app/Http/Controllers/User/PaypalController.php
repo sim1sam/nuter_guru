@@ -648,6 +648,8 @@ class PaypalController extends Controller
 
         $this->sendOrderSuccessSms($user, $order);
 
+        \App\Helpers\OrderMailHelper::notifyAdmin($order, is_string($order_details) ? $order_details : null);
+
         return $sent;
     }
 

@@ -178,6 +178,31 @@ class OrderController extends Controller
         return redirect()->back()->with($notification);
     }
 
+    public function updateShippingCost(Request $request, $id)
+    {
+        $request->validate([
+            'shipping_cost' => 'required|numeric|min:0',
+            'shipping_method' => 'nullable|string|max:255',
+        ]);
+
+        $order = Order::findOrFail($id);
+        $oldShipping = (float) ($order->shipping_cost ?? 0);
+        $newShipping = round((float) $request->shipping_cost, 2);
+
+        $order->shipping_cost = $newShipping;
+        if ($request->filled('shipping_method')) {
+            $order->shipping_method = $request->shipping_method;
+        }
+
+        // Keep product subtotal & discount; only adjust shipping in grand total
+        $order->total_amount = round(((float) $order->total_amount - $oldShipping) + $newShipping, 2);
+        $order->save();
+
+        $notification = array('messege' => trans('admin.Shipping updated successfully'), 'alert-type' => 'success');
+
+        return redirect()->back()->with($notification);
+    }
+
     public function updateOrderStatus(Request $request , $id){
         $rules = [
             'order_status' => 'required',
