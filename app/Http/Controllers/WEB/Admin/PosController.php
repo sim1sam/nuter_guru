@@ -55,12 +55,12 @@ class PosController extends Controller
     public function Index()
     {
         Paginator::useBootstrap();
-        $data['brands'] = Brand::all();
-        $data['products'] = Product::with(['activeVariants', 'weightVariants' => function ($q) {
-            $q->where('weight_variants.status', 1);
-        }])->where(['vendor_id' => 0])->where(['status' => 1])->orderBy('id','desc')->paginate(18);
+        $data['brands'] = Brand::where('status', 1)->get();
+        $data['products'] = $this->posProductQuery()
+            ->orderBy('id', 'desc')
+            ->paginate(18);
         $data['setting'] = Setting::first();
-        $data['categories'] = Category::with('subCategories','products')->get();
+        $data['categories'] = $this->posActiveCategories();
         $cartData = $this->posCartViewData();
         $totals = $this->calculatePosTotals($cartData);
         $data['cart_products'] = $cartData['cart_products'];
@@ -80,12 +80,21 @@ class PosController extends Controller
     public function categoryIndex($id)
     {
         Paginator::useBootstrap();
-        $data['brands'] = Brand::all();
-        $data['products'] = Product::with(['activeVariants', 'weightVariants' => function ($q) {
-            $q->where('weight_variants.status', 1);
-        }])->where(['vendor_id' => 0])->where(['status' => 1])->where(['category_id' => $id])->orderBy('id','desc')->paginate(18);
+        $category = Category::where('id', $id)->where('status', 1)->first();
+        if (! $category) {
+            return redirect()->route('admin.pos.index')->with([
+                'messege' => trans('admin.Category is inactive or not found'),
+                'alert-type' => 'error',
+            ]);
+        }
+
+        $data['brands'] = Brand::where('status', 1)->get();
+        $data['products'] = $this->posProductQuery()
+            ->where('category_id', $category->id)
+            ->orderBy('id', 'desc')
+            ->paginate(18);
         $data['setting'] = Setting::first();
-        $data['categories'] = Category::with('subCategories','products')->get();
+        $data['categories'] = $this->posActiveCategories();
         $data['cart_products'] = ShoppingCart::where('user_id',Auth::guard('admin')->user()->id)->orderBy('id','desc')->get();
         $data['coupon'] = Coupon::where(['code' => 'fdfgdfg', 'status' => 1])->first();
         $data['shippings'] = Shipping::all();
@@ -100,20 +109,18 @@ class PosController extends Controller
     {
         $query = $request->input('query');
         Paginator::useBootstrap();
-        $productsQuery = Product::where('vendor_id', 0)
-        ->where('status', 1);
-            if (!empty($query)) {
+        $productsQuery = $this->posProductQuery();
+        if (!empty($query)) {
             $productsQuery->where(function ($queryBuilder) use ($query) {
-            $queryBuilder->where('name', 'like', '%' . $query . '%')
-                ->orWhere('short_name', 'like', '%' . $query . '%');
+                $queryBuilder->where('name', 'like', '%' . $query . '%')
+                    ->orWhere('short_name', 'like', '%' . $query . '%')
+                    ->orWhere('name_bn', 'like', '%' . $query . '%');
             });
-            }
-        $data['products'] = $productsQuery->with(['activeVariants', 'weightVariants' => function ($q) {
-            $q->where('weight_variants.status', 1);
-        }])->paginate(18);
-        $data['brands'] = Brand::all();
+        }
+        $data['products'] = $productsQuery->paginate(18);
+        $data['brands'] = Brand::where('status', 1)->get();
         $data['setting'] = Setting::first();
-        $data['categories'] = Category::with('subCategories','products')->get();
+        $data['categories'] = $this->posActiveCategories();
         $data['cart_products'] = ShoppingCart::where('user_id',Auth::guard('admin')->user()->id)->orderBy('id','desc')->get();
         $data['coupon'] = Coupon::where(['code' => 'fdfgdfg', 'status' => 1])->first();
         $data['shippings'] = Shipping::all();
@@ -122,6 +129,31 @@ class PosController extends Controller
         $data['state'] = CountryState::all();
         $data['couponValue'] = 'dfgdfg';
         return view('admin.pos.index', $this->withPosSharedData($data));
+    }
+
+    /**
+     * POS: only active products in active categories.
+     */
+    protected function posProductQuery()
+    {
+        return Product::with(['activeVariants', 'weightVariants' => function ($q) {
+            $q->where('weight_variants.status', 1);
+        }])
+            ->where('vendor_id', 0)
+            ->where('status', 1)
+            ->whereHas('category', function ($q) {
+                $q->where('status', 1);
+            });
+    }
+
+    protected function posActiveCategories()
+    {
+        return Category::with(['subCategories' => function ($q) {
+            $q->where('status', 1);
+        }])
+            ->where('status', 1)
+            ->orderBy('name')
+            ->get();
     }
 
     protected function withPosSharedData(array $data): array
@@ -284,10 +316,15 @@ class PosController extends Controller
 
         $product = Product::with(['weightVariants' => function ($q) {
             $q->where('weight_variants.status', 1);
-        }])->find($id);
+        }])
+            ->where('status', 1)
+            ->whereHas('category', function ($q) {
+                $q->where('status', 1);
+            })
+            ->find($id);
 
         if (! $product) {
-            return $this->posCartResult(trans('admin_validation.Sry Somthin Went To Wrong'), 'error');
+            return $this->posCartResult(trans('admin.Product is inactive or category inactive'), 'error');
         }
 
         // KG products with pack sizes must be added from Details (weight select)
@@ -347,10 +384,15 @@ class PosController extends Controller
 
         $product = Product::with(['weightVariants' => function ($q) {
             $q->where('weight_variants.status', 1);
-        }])->find($id);
+        }])
+            ->where('status', 1)
+            ->whereHas('category', function ($q) {
+                $q->where('status', 1);
+            })
+            ->find($id);
 
         if (! $product) {
-            $notification = array('messege' => trans('admin_validation.Sry Somthin Went To Wrong'), 'alert-type' => 'error');
+            $notification = array('messege' => trans('admin.Product is inactive or category inactive'), 'alert-type' => 'error');
             return redirect()->back()->with($notification);
         }
 
