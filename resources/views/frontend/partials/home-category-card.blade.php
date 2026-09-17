@@ -8,8 +8,10 @@
     $productCount = null;
     if (isset($category->products_count)) {
         $productCount = (int) $category->products_count;
-    } elseif ($category->relationLoaded('products')) {
+    } elseif (method_exists($category, 'relationLoaded') && $category->relationLoaded('products')) {
         $productCount = $category->products->count();
+    } elseif (isset($category->products) && (is_countable($category->products) || $category->products instanceof \Countable)) {
+        $productCount = count($category->products);
     }
 @endphp
 

@@ -3,9 +3,14 @@
         ? $product->offer_price
         : $product->price;
     $availableStock = ($product->qty ?? 0) - ($product->sold_qty ?? 0);
-    $hasVariants = $product->relationLoaded('activeVariants')
-        ? $product->activeVariants->isNotEmpty()
-        : $product->activeVariants()->exists();
+    $hasVariants = false;
+    if (method_exists($product, 'relationLoaded') && $product->relationLoaded('activeVariants')) {
+        $hasVariants = $product->activeVariants->isNotEmpty();
+    } elseif (method_exists($product, 'activeVariants')) {
+        $hasVariants = $product->activeVariants()->exists();
+    } elseif (isset($product->activeVariants)) {
+        $hasVariants = collect($product->activeVariants)->isNotEmpty();
+    }
     $style = $style ?? 'full';
     $btnClass = $btnClass ?? 'btn btn-primary product-add-btn add-to-cart';
 @endphp

@@ -6,10 +6,11 @@
     $extraClass = $extraClass ?? '';
     $cartStyle = $cartStyle ?? 'full';
 
-    $rating = (float) ($product->averageRating ?? ($product->relationLoaded('reviews') ? ($product->reviews->avg('rating') ?? 0) : 0));
+    $reviewsLoaded = method_exists($product, 'relationLoaded') && $product->relationLoaded('reviews');
+    $rating = (float) ($product->averageRating ?? ($reviewsLoaded ? ($product->reviews->avg('rating') ?? 0) : 0));
     $fullStars = floor($rating);
     $hasHalfStar = ($rating - $fullStars) >= 0.5;
-    $reviewCount = $product->reviews_count ?? ($product->relationLoaded('reviews') ? $product->reviews->count() : 0);
+    $reviewCount = $product->reviews_count ?? ($reviewsLoaded ? $product->reviews->count() : 0);
 
     $hasSale = $product->offer_price && $product->offer_price < $product->price;
     $discountPct = $hasSale ? round((($product->price - $product->offer_price) / $product->price) * 100) : 0;
