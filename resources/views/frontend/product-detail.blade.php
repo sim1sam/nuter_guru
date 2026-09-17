@@ -127,12 +127,7 @@
                             <span class="pd-section-label mb-0">{{ __('Select Weight') }} <span class="text-danger">*</span></span>
                         </div>
                         <div class="pd-variant-group" data-weight-group="1">
-                            <select class="form-select pd-variant-select weight-variant-select"
-                                    id="weightVariantSelect"
-                                    name="weight_variant"
-                                    aria-label="{{ __('Select Weight') }}"
-                                    required>
-                                <option value="" disabled>{{ __('Choose a weight option') }}</option>
+                            <div class="pd-variant-cards" role="radiogroup" aria-label="{{ __('Select Weight') }}">
                                 @foreach($kgWeightVariants as $wv)
                                 @php
                                     $pivot = $product->productWeightVariants->firstWhere('weight_variant_id', $wv->id);
@@ -140,18 +135,29 @@
                                     $regular = round((float) $product->price * (float) $wv->weight_in_kg, 2);
                                     $avail = $weightCalc->theoreticalAvailableUnits((float)$product->qty, $wv);
                                 @endphp
-                                <option value="{{ $wv->id }}"
-                                        data-name="{{ $wv->name }}"
-                                        data-price="{{ $sell }}"
-                                        data-regular="{{ $regular }}"
-                                        data-kg="{{ $wv->weight_in_kg }}"
-                                        data-available="{{ $avail }}"
-                                        {{ $loop->first ? 'selected' : '' }}>
-                                    {{ $wv->name }} — {{ $setting->currency_icon }}{{ number_format($sell, 2) }}
-                                </option>
+                                <label class="pd-variant-card">
+                                    <input class="weight-variant-option"
+                                           type="radio"
+                                           name="weight_variant"
+                                           value="{{ $wv->id }}"
+                                           data-name="{{ $wv->name }}"
+                                           data-price="{{ $sell }}"
+                                           data-regular="{{ $regular }}"
+                                           data-kg="{{ $wv->weight_in_kg }}"
+                                           data-available="{{ $avail }}"
+                                           {{ $loop->first ? 'checked' : '' }}
+                                           required>
+                                    <span class="pd-variant-card__body">
+                                        <span class="pd-variant-card__name">{{ $wv->name }}</span>
+                                        <span class="pd-variant-card__price">{{ $setting->currency_icon }}{{ number_format($sell, 2) }}</span>
+                                        @if($regular > $sell)
+                                            <span class="pd-variant-card__regular">{{ $setting->currency_icon }}{{ number_format($regular, 2) }}</span>
+                                        @endif
+                                        <span class="pd-variant-card__meta">{{ $avail }} {{ __('available') }}</span>
+                                    </span>
+                                </label>
                                 @endforeach
-                            </select>
-                            <small class="pd-variant-meta text-muted d-block mt-2" id="weightVariantMeta"></small>
+                            </div>
                         </div>
                     </div>
                     @elseif($productVariants->count() > 0)
@@ -166,28 +172,31 @@
                             $defaultItem = $activeItems->firstWhere('is_default', 1) ?: $activeItems->first();
                         @endphp
                         <div class="pd-variant-group variant-group" data-variant-id="{{ $variant->id }}">
-                            <label class="pd-section-label" for="variant_select_{{ $variant->id }}">{{ $variant->name }} <span class="text-danger">*</span></label>
-                            <select class="form-select pd-variant-select variant-select"
-                                    id="variant_select_{{ $variant->id }}"
-                                    name="variant_{{ $variant->id }}"
-                                    data-variant-id="{{ $variant->id }}"
-                                    aria-label="{{ $variant->name }}"
-                                    required>
-                                <option value="" disabled {{ !$defaultItem ? 'selected' : '' }}>{{ __('Choose') }} {{ $variant->name }}</option>
+                            <span class="pd-section-label">{{ $variant->name }} <span class="text-danger">*</span></span>
+                            <div class="pd-variant-cards" role="radiogroup" aria-label="{{ $variant->name }}">
                                 @foreach($activeItems as $item)
                                 @php
                                     $variantDisplayPrice = (float) $item->price > 0
                                         ? (float) $item->price
                                         : (float) $basePrice;
                                 @endphp
-                                <option value="{{ $item->id }}"
-                                        data-name="{{ $item->name }}"
-                                        data-price="{{ $item->price }}"
-                                        {{ $defaultItem && $defaultItem->id === $item->id ? 'selected' : '' }}>
-                                    {{ $item->name }} — {{ $setting->currency_icon }}{{ number_format($variantDisplayPrice, 2) }}
-                                </option>
+                                <label class="pd-variant-card">
+                                    <input class="variant-option"
+                                           type="radio"
+                                           name="variant_{{ $variant->id }}"
+                                           id="variant_{{ $item->id }}"
+                                           value="{{ $item->id }}"
+                                           data-name="{{ $item->name }}"
+                                           data-price="{{ $item->price }}"
+                                           {{ $defaultItem && $defaultItem->id === $item->id ? 'checked' : '' }}
+                                           required>
+                                    <span class="pd-variant-card__body">
+                                        <span class="pd-variant-card__name">{{ $item->name }}</span>
+                                        <span class="pd-variant-card__price">{{ $setting->currency_icon }}{{ number_format($variantDisplayPrice, 2) }}</span>
+                                    </span>
+                                </label>
                                 @endforeach
-                            </select>
+                            </div>
                         </div>
                         @endforeach
                     </div>
@@ -558,7 +567,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const buyNowBtn = document.getElementById('buyNow');
     const wishlistButtons = document.querySelectorAll('#addToWishlist');
     const basePrice = {{ $basePrice }};
-    const availableLabel = @json(__('available'));
 
     thumbnails.forEach(function (thumb) {
         thumb.addEventListener('click', function () {
@@ -590,28 +598,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function selectedWeightOption() {
-        const sel = document.getElementById('weightVariantSelect');
-        if (!sel || !sel.value) {
-            return null;
-        }
-        return sel.options[sel.selectedIndex];
+        return document.querySelector('.weight-variant-option:checked');
     }
 
     function updateWeightMeta() {
         const opt = selectedWeightOption();
-        const meta = document.getElementById('weightVariantMeta');
         const originalEl = document.getElementById('detailOriginalPrice');
         const savingsEl = document.getElementById('detailSavings');
         if (!opt) {
-            if (meta) meta.textContent = '';
             return;
         }
-        const avail = opt.dataset.available || '0';
         const regular = parseFloat(opt.dataset.regular || 0);
         const sell = parseFloat(opt.dataset.price || 0);
-        if (meta) {
-            meta.textContent = avail + ' ' + availableLabel;
-        }
         if (originalEl && savingsEl) {
             if (regular > sell && sell > 0) {
                 originalEl.style.display = '';
@@ -625,8 +623,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    document.querySelectorAll('.weight-variant-select, .variant-select').forEach(function (select) {
-        select.addEventListener('change', function () {
+    document.querySelectorAll('.weight-variant-option, .variant-option').forEach(function (option) {
+        option.addEventListener('change', function () {
             updatePrice();
             updateWeightMeta();
         });
@@ -644,10 +642,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let variantTotal = 0;
         let hasVariantPrice = false;
 
-        document.querySelectorAll('.variant-select').forEach(function (sel) {
-            if (!sel.value) return;
-            const opt = sel.options[sel.selectedIndex];
-            const price = parseFloat(opt.dataset.price || 0);
+        document.querySelectorAll('.variant-option:checked').forEach(function (variant) {
+            const price = parseFloat(variant.dataset.price || 0);
             if (price > 0) {
                 variantTotal += price;
                 hasVariantPrice = true;
@@ -684,11 +680,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function validateVariantSelection() {
-        const weightSelect = document.getElementById('weightVariantSelect');
-        if (weightSelect) {
-            if (!weightSelect.value) {
+        const weightGroups = document.querySelectorAll('[data-weight-group]');
+        if (weightGroups.length > 0) {
+            if (!document.querySelector('.weight-variant-option:checked')) {
                 showNotification(@json(__('Please select all required product options before proceeding.')), 'danger');
-                weightSelect.focus();
+                const box = document.getElementById('pdWeightVariants');
+                if (box) {
+                    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    box.classList.add('pd-variants--attention');
+                    setTimeout(function () { box.classList.remove('pd-variants--attention'); }, 1200);
+                }
                 return false;
             }
             return true;
@@ -699,14 +700,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         }
 
-        let allSelected = true;
-        document.querySelectorAll('.variant-select').forEach(function (sel) {
-            if (!sel.value) {
-                allSelected = false;
-            }
-        });
-
-        if (!allSelected) {
+        const selectedVariants = document.querySelectorAll('.variant-option:checked');
+        if (selectedVariants.length < variantGroups.length) {
             showNotification(@json(__('Please select all required product options before proceeding.')), 'danger');
             const box = document.getElementById('pdVariants');
             if (box) {
@@ -722,19 +717,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function collectSelectedVariants() {
         const selectedVariants = [];
-        document.querySelectorAll('.variant-select').forEach(function (sel) {
-            if (!sel.value) return;
+        document.querySelectorAll('.variant-option:checked').forEach(function (variant) {
             selectedVariants.push({
-                variant_id: sel.dataset.variantId,
-                variant_item_id: sel.value
+                variant_id: variant.name.replace('variant_', ''),
+                variant_item_id: variant.value
             });
         });
         return selectedVariants;
     }
 
     function selectedWeightVariantId() {
-        const sel = document.getElementById('weightVariantSelect');
-        return sel && sel.value ? sel.value : null;
+        const el = document.querySelector('.weight-variant-option:checked');
+        return el ? el.value : null;
     }
 
     if (addToCartBtn && quantityInput) {

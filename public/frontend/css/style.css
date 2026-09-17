@@ -1074,6 +1074,77 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 1rem;
 }
 
+.pd-variant-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+
+.pd-variant-card {
+    position: relative;
+    margin: 0;
+    cursor: pointer;
+    display: block;
+}
+
+.pd-variant-card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pd-variant-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-height: 92px;
+    padding: 0.85rem 0.9rem;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-color, #e5e5e5);
+    background: #fff;
+    color: var(--text-dark, #2c2c2c);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.pd-variant-card__name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.pd-variant-card__price {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--organic-orange, #D1642D);
+}
+
+.pd-variant-card__regular {
+    font-size: 0.78rem;
+    color: #9ca3af;
+    text-decoration: line-through;
+}
+
+.pd-variant-card__meta {
+    margin-top: auto;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.pd-variant-card:hover .pd-variant-card__body {
+    border-color: var(--organic-green, #2D6A4F);
+    transform: translateY(-1px);
+}
+
+.pd-variant-card input:checked + .pd-variant-card__body {
+    border-color: var(--organic-green, #2D6A4F);
+    background: #f3faf5;
+    box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.18);
+}
+
+.pd-variant-card input:checked + .pd-variant-card__body .pd-variant-card__name {
+    color: var(--organic-green, #2D6A4F);
+}
+
 .pd-variant-select {
     max-width: 420px;
     width: 100%;
@@ -1148,6 +1219,12 @@ h1, h2, h3, h4, h5, h6 {
     border-color: var(--primary-color);
     color: #fff;
     box-shadow: 0 4px 14px rgba(var(--primary-rgb), 0.35);
+}
+
+@media (max-width: 575.98px) {
+    .pd-variant-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .pd-variants {
