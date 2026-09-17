@@ -133,7 +133,7 @@ class ProductCategoryController extends Controller
         $category->status = $request->status;
         $category->save();
 
-        $this->deactivateProductsIfCategoryInactive($category);
+        $this->syncProductsWithCategoryStatus($category);
 
         $notification = trans('admin_validation.Update Successfully');
         $notification = array('messege'=>$notification,'alert-type'=>'success');
@@ -161,35 +161,41 @@ class ProductCategoryController extends Controller
         if($category->status==1){
             $category->status=0;
             $category->save();
-            $this->deactivateProductsIfCategoryInactive($category);
+            $this->syncProductsWithCategoryStatus($category);
             $message = trans('admin_validation.Inactive Successfully');
         }else{
             $category->status=1;
             $category->save();
+            $this->syncProductsWithCategoryStatus($category);
             $message= trans('admin_validation.Active Successfully');
         }
         return response()->json($message);
     }
 
     /**
-     * When a category is inactive, hide all products under it on the storefront.
+     * Mirror category status onto all products in that category.
+     * Active category → products active; inactive category → products inactive.
      */
-    protected function deactivateProductsIfCategoryInactive(Category $category): void
+    protected function syncProductsWithCategoryStatus(Category $category): void
     {
-        if ((int) $category->status !== 0) {
-            return;
-        }
+        $productStatus = (int) $category->status === 1 ? 1 : 0;
 
-        Product::where('category_id', $category->id)->update(['status' => 0]);
+        Product::where('category_id', $category->id)->update(['status' => $productStatus]);
     }
 
     /**
-     * Keep products aligned with already-inactive categories.
+     * Align all products with their category status.
      */
     public static function syncInactiveCategoryProducts(): int
     {
-        return Product::whereHas('category', function ($q) {
+        $deactivated = Product::whereHas('category', function ($q) {
             $q->where('status', 0);
-        })->where('status', 1)->update(['status' => 0]);
+        })->where('status', '!=', 0)->update(['status' => 0]);
+
+        $activated = Product::whereHas('category', function ($q) {
+            $q->where('status', 1);
+        })->where('status', '!=', 1)->update(['status' => 1]);
+
+        return (int) $deactivated + (int) $activated;
     }
 }
