@@ -95,6 +95,18 @@ class Product extends Model
         return $this->hasMany(ProductReview::class)->where('status', 1);
     }
 
+    /**
+     * Active product under an active category (storefront).
+     */
+    public function scopeVisibleOnStore($query)
+    {
+        return $query->where($this->getTable().'.status', 1)
+            ->where('approve_by_admin', 1)
+            ->whereHas('category', function ($q) {
+                $q->where('status', 1);
+            });
+    }
+
     public function category_name(){
         return $this->belongsTo(Category::class,'category_id','id');
     }

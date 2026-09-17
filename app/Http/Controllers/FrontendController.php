@@ -82,8 +82,7 @@ class FrontendController extends Controller
             
         // Top / Best Selling Products
         $products = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
-            ->where('status', 1)
-            ->where('approve_by_admin', 1)
+            ->visibleOnStore()
             ->where(function ($q) {
                 $q->where('is_top', 1)->orWhere('is_best', 1);
             })
@@ -93,8 +92,7 @@ class FrontendController extends Controller
 
         if ($products->isEmpty()) {
             $products = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
-                ->where('status', 1)
-                ->where('approve_by_admin', 1)
+                ->visibleOnStore()
                 ->latest()
                 ->take(10)
                 ->get();
@@ -102,17 +100,15 @@ class FrontendController extends Controller
             
         // Featured Products
         $featuredProducts = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
-            ->where('status', 1)
+            ->visibleOnStore()
             ->where('is_featured', 1)
-            ->where('approve_by_admin', 1)
             ->latest()
             ->take(10)
             ->get();
 
         if ($featuredProducts->isEmpty()) {
             $featuredProducts = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
-                ->where('status', 1)
-                ->where('approve_by_admin', 1)
+                ->visibleOnStore()
                 ->latest()
                 ->take(10)
                 ->get();
@@ -120,17 +116,15 @@ class FrontendController extends Controller
             
         // New Arrival Products
         $newArrivalProducts = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
-            ->where('status', 1)
-            ->where('approve_by_admin', 1)
+            ->visibleOnStore()
             ->latest()
             ->take(12)
             ->get();
             
         // Best Products
         $bestProducts = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
-            ->where('status', 1)
+            ->visibleOnStore()
             ->where('is_best', 1)
-            ->where('approve_by_admin', 1)
             ->latest()
             ->take(10)
             ->get();
@@ -148,7 +142,7 @@ class FrontendController extends Controller
             $flashSaleProducts = FlashSaleProduct::with(['product.category', 'product.brand', 'product.activeVariants'])
                 ->where('status', 1)
                 ->whereHas('product', function($query) {
-                    $query->where('status', 1)->where('approve_by_admin', 1);
+                    $query->visibleOnStore();
                 })
                 ->get();
         }
@@ -197,8 +191,7 @@ class FrontendController extends Controller
     public function products(Request $request)
     {
         $query = Product::with(['category', 'brand', 'reviews', 'activeVariants'])
-            ->where('status', 1)
-            ->where('approve_by_admin', 1);
+            ->visibleOnStore();
             
         // Category filter - handle both slug and ID for backward compatibility
         if ($request->has('category') && $request->category) {
@@ -306,7 +299,7 @@ class FrontendController extends Controller
                     // Use FlashSaleProduct directly to fetch product IDs of active items
                     $flashSaleProductIds = FlashSaleProduct::where('status', 1)
                         ->whereHas('product', function($q) {
-                            $q->where('status', 1)->where('approve_by_admin', 1);
+                            $q->visibleOnStore();
                         })
                         ->pluck('product_id');
 
@@ -349,7 +342,7 @@ class FrontendController extends Controller
         $setting = Setting::first();
 
         $priceRangeMeta = $this->resolvePriceRangeMeta(
-            Product::where('status', 1)->where('approve_by_admin', 1)
+            Product::visibleOnStore()
         );
 
         return view('frontend.products', compact(
@@ -368,8 +361,7 @@ class FrontendController extends Controller
         
         // Get product by slug with relationships
         $product = Product::where('slug', $slug)
-            ->where('status', 1)
-            ->where('approve_by_admin', 1)
+            ->visibleOnStore()
             ->with([
                 'category', 
                 'brand', 
@@ -395,8 +387,7 @@ class FrontendController extends Controller
         // Get related products from same category
         $relatedProducts = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
-            ->where('status', 1)
-            ->where('approve_by_admin', 1)
+            ->visibleOnStore()
             ->with(['category', 'brand', 'reviews', 'activeVariants'])
             ->limit(4)
             ->get()
@@ -420,8 +411,7 @@ class FrontendController extends Controller
     {
         $productId = (int) $id;
         $product = Product::where('id', $productId)
-            ->where('status', 1)
-            ->where('approve_by_admin', 1)
+            ->visibleOnStore()
             ->first();
 
         if (! $product) {
@@ -443,8 +433,7 @@ class FrontendController extends Controller
     public function getRecommendedProducts()
     {
         // Get random featured or popular products for cart recommendations
-        $recommendedProducts = Product::where('status', 1)
-            ->where('approve_by_admin', 1)
+        $recommendedProducts = Product::visibleOnStore()
             ->where(function($query) {
                 $query->where('is_featured', 1)
                       ->orWhere('is_top', 1)
@@ -478,8 +467,7 @@ class FrontendController extends Controller
         $prefix = $query . '%';
 
         $products = Product::query()
-            ->where('status', 1)
-            ->where('approve_by_admin', 1)
+            ->visibleOnStore()
             ->where(function ($q) use ($like) {
                 $q->where('name', 'LIKE', $like)
                     ->orWhere('short_description', 'LIKE', $like)
@@ -519,11 +507,10 @@ class FrontendController extends Controller
     {
         $category = Category::with(['subCategories' => function ($query) {
             $query->where('status', 1)->with('products');
-        }])->where('slug', $slug)->firstOrFail();
+        }])->where('slug', $slug)->where('status', 1)->firstOrFail();
 
         $query = Product::where('category_id', $category->id)
-            ->where('status', 1)
-            ->where('approve_by_admin', 1)
+            ->visibleOnStore()
             ->with(['category', 'brand', 'reviews', 'activeVariants']);
 
         if (request()->filled('sub_category')) {
@@ -591,9 +578,7 @@ class FrontendController extends Controller
 
         $brands = Brand::where('status', 1)
             ->whereHas('products', function ($q) use ($category) {
-                $q->where('category_id', $category->id)
-                    ->where('status', 1)
-                    ->where('approve_by_admin', 1);
+                $q->where('category_id', $category->id)->visibleOnStore();
             })
             ->orderBy('name')
             ->get();
@@ -609,9 +594,7 @@ class FrontendController extends Controller
             ->all();
 
         $priceRangeMeta = $this->resolvePriceRangeMeta(
-            Product::where('category_id', $category->id)
-                ->where('status', 1)
-                ->where('approve_by_admin', 1)
+            Product::where('category_id', $category->id)->visibleOnStore()
         );
 
         return view('frontend.category', compact(
@@ -629,14 +612,14 @@ class FrontendController extends Controller
         $brand = Brand::where('slug', $slug)->firstOrFail();
         
         // Get categories that have products from this brand
-        $brandCategories = Category::whereHas('products', function($query) use ($brand) {
-            $query->where('brand_id', $brand->id)->where('status', 1);
-        })->with('products')->get();
+        $brandCategories = Category::where('status', 1)
+            ->whereHas('products', function($query) use ($brand) {
+                $query->where('brand_id', $brand->id)->visibleOnStore();
+            })->with('products')->get();
         
         // Build query for products
         $query = Product::where('brand_id', $brand->id)
-            ->where('status', 1)
-            ->where('approve_by_admin', 1)
+            ->visibleOnStore()
             ->with(['category', 'brand', 'reviews', 'activeVariants']);
         
         $this->applyEffectivePriceFilter(
@@ -676,9 +659,7 @@ class FrontendController extends Controller
         $setting = Setting::first();
 
         $priceRangeMeta = $this->resolvePriceRangeMeta(
-            Product::where('brand_id', $brand->id)
-                ->where('status', 1)
-                ->where('approve_by_admin', 1)
+            Product::where('brand_id', $brand->id)->visibleOnStore()
         );
 
         return view('frontend.brand', compact(

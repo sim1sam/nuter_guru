@@ -4,6 +4,7 @@ namespace App\Http\Controllers\WEB\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\PopularCategory;
 use App\Models\FeaturedCategory;
 use App\Models\MegaMenuSubCategory;
@@ -21,6 +22,9 @@ class ProductCategoryController extends Controller
 
     public function index()
     {
+        // Hide products that still belong to inactive categories
+        self::syncInactiveCategoryProducts();
+
         $categories = Category::with('subCategories','products')->get();
 
 
@@ -129,6 +133,8 @@ class ProductCategoryController extends Controller
         $category->status = $request->status;
         $category->save();
 
+        $this->deactivateProductsIfCategoryInactive($category);
+
         $notification = trans('admin_validation.Update Successfully');
         $notification = array('messege'=>$notification,'alert-type'=>'success');
         return redirect()->route('admin.product-category.index')->with($notification);
@@ -155,6 +161,7 @@ class ProductCategoryController extends Controller
         if($category->status==1){
             $category->status=0;
             $category->save();
+            $this->deactivateProductsIfCategoryInactive($category);
             $message = trans('admin_validation.Inactive Successfully');
         }else{
             $category->status=1;
@@ -162,5 +169,27 @@ class ProductCategoryController extends Controller
             $message= trans('admin_validation.Active Successfully');
         }
         return response()->json($message);
+    }
+
+    /**
+     * When a category is inactive, hide all products under it on the storefront.
+     */
+    protected function deactivateProductsIfCategoryInactive(Category $category): void
+    {
+        if ((int) $category->status !== 0) {
+            return;
+        }
+
+        Product::where('category_id', $category->id)->update(['status' => 0]);
+    }
+
+    /**
+     * Keep products aligned with already-inactive categories.
+     */
+    public static function syncInactiveCategoryProducts(): int
+    {
+        return Product::whereHas('category', function ($q) {
+            $q->where('status', 0);
+        })->where('status', 1)->update(['status' => 0]);
     }
 }
