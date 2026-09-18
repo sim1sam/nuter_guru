@@ -1745,7 +1745,7 @@
                     <div class="mb-3">
                         <i class="fas fa-shipping-fast" style="font-size: 2.5rem; color: var(--button-color, var(--accent-green));"></i>
                     </div>
-                    <h6 class="fw-semibold mb-2" style="color: #333; font-size: 0.95rem;">Free UK Shipping</h6>
+                    <h6 class="fw-semibold mb-2" style="color: #333; font-size: 0.95rem;">{{ __('All Bangladesh') }}</h6>
                     {{-- <p class="text-muted mb-0" style="font-size: 0.85rem; line-height: 1.4;">Free shipping on all orders</p> --}}
                 </div>
             </div>

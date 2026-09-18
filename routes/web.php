@@ -168,6 +168,7 @@ Route::group(['middleware' => ['maintainance']], function () {
     Route::get('/category/{slug}', [App\Http\Controllers\FrontendController::class, 'category'])->name('category');
     Route::get('/brand/{slug}', [App\Http\Controllers\FrontendController::class, 'brand'])->name('brand');
     Route::get('/about', [App\Http\Controllers\FrontendController::class, 'about'])->name('about');
+    Route::redirect('/our-story', '/about')->name('our-story');
     Route::get('/contact', [App\Http\Controllers\FrontendController::class, 'contact'])->name('contact');
     Route::post('/send-contact-message', [HomeController::class, 'sendContactMessage'])->name('send-contact-message');
     Route::get('/blog', [App\Http\Controllers\FrontendController::class, 'blog'])->name('blog');
@@ -177,7 +178,6 @@ Route::group(['middleware' => ['maintainance']], function () {
     Route::get('/terms-conditions', [App\Http\Controllers\FrontendController::class, 'termsConditions'])->name('terms.conditions');
     Route::get('/privacy-policy', [App\Http\Controllers\FrontendController::class, 'privacyPolicy'])->name('privacy.policy');
     Route::get('/tracking-order', [App\Http\Controllers\FrontendController::class, 'trackOrder'])->name('tracking.order');
-    Route::view('/our-story', 'frontend.our-story')->name('our-story');
 
 // Frontend Customer Authentication Routes
 Route::group(['middleware' => 'guest'], function () {

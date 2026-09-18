@@ -50,9 +50,9 @@
                 <span>{{ __('Login') }}</span>
             </a>
             @endauth
-            <a href="{{ route('our-story') }}" class="mobile-app-menu__tile {{ request()->routeIs('our-story') ? 'is-active' : '' }}">
+            <a href="{{ route('about') }}" class="mobile-app-menu__tile {{ request()->routeIs('about', 'our-story') ? 'is-active' : '' }}">
                 <span class="mobile-app-menu__tile-icon"><i class="fas fa-book-open"></i></span>
-                <span>{{ __('Story') }}</span>
+                <span>{{ __('Our Story') }}</span>
             </a>
             @auth
             <a href="{{ route('orders') }}" class="mobile-app-menu__tile {{ request()->routeIs('orders', 'orders.show', 'user.orders', 'user.orders.show') ? 'is-active' : '' }}">

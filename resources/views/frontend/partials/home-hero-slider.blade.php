@@ -46,7 +46,7 @@
                                             <p class="home-hero__desc">{{ slider_text($slider, 'title_two') ?: __('Premium organic dry fruits, nuts and healthy foods — pure and fresh.') }}</p>
                                             <div class="home-hero__actions">
                                                 <a href="{{ $shopUrl }}" class="home-hero__btn home-hero__btn--primary">{{ __('Shop Now') }}</a>
-                                                <a href="{{ route('our-story') }}" class="home-hero__btn home-hero__btn--ghost">{{ __('Learn More') }}</a>
+                                                <a href="{{ route('about') }}" class="home-hero__btn home-hero__btn--ghost">{{ __('Learn More') }}</a>
                                             </div>
                                         </div>
                                     </div>
@@ -75,7 +75,7 @@
                             <p class="home-hero__desc">{{ __('Premium organic dry fruits, nuts and healthy foods — pure and fresh.') }}</p>
                             <div class="home-hero__actions">
                                 <a href="{{ route('products') }}" class="home-hero__btn home-hero__btn--primary">{{ __('Shop Now') }}</a>
-                                <a href="{{ route('our-story') }}" class="home-hero__btn home-hero__btn--ghost">{{ __('Learn More') }}</a>
+                                <a href="{{ route('about') }}" class="home-hero__btn home-hero__btn--ghost">{{ __('Learn More') }}</a>
                             </div>
                         </div>
                     </div>

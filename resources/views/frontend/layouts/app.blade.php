@@ -82,6 +82,13 @@
     <link rel="manifest" href="{{ route('pwa.manifest') }}">
     <meta name="mobile-web-app-capable" content="yes">
     <script>
+        // Capture install prompt ASAP (must run before deferred pwa-install.js)
+        window.__pwaDeferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault();
+            window.__pwaDeferredPrompt = e;
+            window.dispatchEvent(new CustomEvent('pwa-installable'));
+        });
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
@@ -1053,7 +1060,7 @@
                             </li>
                         @endif
                         <li>
-                            <a class="nav-link {{ request()->routeIs('our-story') ? 'active' : '' }}" href="{{ route('our-story') }}">{{ __('About Us') }}</a>
+                            <a class="nav-link {{ request()->routeIs('about', 'our-story') ? 'active' : '' }}" href="{{ route('about') }}">{{ __('Our Story') }}</a>
                         </li>
                         @if(\Illuminate\Support\Facades\Route::has('contact'))
                             <li>
@@ -1104,7 +1111,13 @@
                         <ul class="list-unstyled">
                             @if($footerLinks1->count() > 0)
                                 @foreach($footerLinks1 as $link)
-                                    <li><a href="{{ $link->link }}" class="text-muted text-decoration-none">{{ __($link->title) }}</a></li>
+                                    @php
+                                        $footerHref = $link->link;
+                                        if (preg_match('#(about|our-story)#i', (string) $link->title) || preg_match('#/(about|our-story)(/|$)#i', (string) $link->link)) {
+                                            $footerHref = route('about');
+                                        }
+                                    @endphp
+                                    <li><a href="{{ $footerHref }}" class="text-muted text-decoration-none">{{ __($link->title) }}</a></li>
                                 @endforeach
                             @else
                                 <li><a href="{{ route('home') }}" class="text-muted text-decoration-none">{{ __('Home') }}</a></li>

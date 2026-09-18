@@ -3,7 +3,6 @@
 
     var STORAGE_KEY = 'pwa_install_dismissed_until';
     var DISMISS_DAYS = 7;
-    var deferredPrompt = null;
     var popup = document.getElementById('pwaInstallPopup');
     if (!popup) {
         return;
@@ -13,6 +12,16 @@
     var dismissBtn = document.getElementById('pwaInstallDismiss');
     var howTo = document.getElementById('pwaInstallHowTo');
     var labelEl = popup.querySelector('.pwa-install__label');
+    var card = popup.querySelector('.pwa-install__card');
+    var installing = false;
+
+    function getPrompt() {
+        return window.__pwaDeferredPrompt || null;
+    }
+
+    function setPrompt(event) {
+        window.__pwaDeferredPrompt = event || null;
+    }
 
     function isMobile() {
         return window.matchMedia('(max-width: 991.98px)').matches;
@@ -67,28 +76,15 @@
             return;
         }
 
-        if (deferredPrompt) {
-            installBtn.textContent = 'Install';
-            installBtn.disabled = false;
-            if (labelEl) {
-                labelEl.textContent = "Install Nut'er Guru BD";
-            }
-            if (howTo) {
-                howTo.hidden = true;
-            }
-            return;
+        installBtn.disabled = false;
+        installBtn.textContent = 'Install';
+
+        if (labelEl) {
+            labelEl.textContent = "Install Nut'er Guru BD";
         }
 
-        if (isIos()) {
-            installBtn.textContent = 'How to';
-            if (labelEl) {
-                labelEl.textContent = 'Add Nut\'er Guru BD to Home Screen';
-            }
-        } else {
-            installBtn.textContent = 'How to';
-            if (labelEl) {
-                labelEl.textContent = "Install Nut'er Guru BD";
-            }
+        if (howTo) {
+            howTo.hidden = true;
         }
     }
 
@@ -99,68 +95,114 @@
 
         if (isIos()) {
             howTo.innerHTML =
-                '<strong>iPhone / iPad:</strong> Tap Share <span aria-hidden="true">□↑</span> then <em>Add to Home Screen</em>.';
+                '<strong>iPhone:</strong> Tap Share → <em>Add to Home Screen</em>.';
         } else {
             howTo.innerHTML =
-                '<strong>Android:</strong> Browser menu ⋮ → <em>Install app</em> / <em>Add to Home screen</em>.';
+                '<strong>Android:</strong> Menu ⋮ → <em>Install app</em>.';
         }
         howTo.hidden = false;
     }
 
-    function registerServiceWorker() {
-        if (!('serviceWorker' in navigator)) {
-            return Promise.resolve(null);
-        }
+    function waitForPrompt(timeoutMs) {
+        return new Promise(function (resolve) {
+            var existing = getPrompt();
+            if (existing) {
+                resolve(existing);
+                return;
+            }
 
-        return navigator.serviceWorker
-            .register('/sw.js', { scope: '/' })
-            .then(function (reg) {
-                if (reg && reg.update) {
-                    reg.update().catch(function () {});
+            var done = false;
+            var timer = setTimeout(function () {
+                if (done) {
+                    return;
                 }
-                return reg;
-            })
-            .catch(function () {
-                return null;
-            });
+                done = true;
+                window.removeEventListener('pwa-installable', onReady);
+                resolve(getPrompt());
+            }, timeoutMs);
+
+            function onReady() {
+                if (done) {
+                    return;
+                }
+                done = true;
+                clearTimeout(timer);
+                window.removeEventListener('pwa-installable', onReady);
+                resolve(getPrompt());
+            }
+
+            window.addEventListener('pwa-installable', onReady);
+        });
     }
 
-    // Listen ASAP so we don't miss beforeinstallprompt
-    window.addEventListener('beforeinstallprompt', function (e) {
-        e.preventDefault();
-        deferredPrompt = e;
+    function triggerNativeInstall() {
+        if (installing) {
+            return Promise.resolve(false);
+        }
+
+        installing = true;
+        if (installBtn) {
+            installBtn.disabled = true;
+            installBtn.textContent = 'Installing...';
+        }
+
+        return waitForPrompt(2500).then(function (promptEvent) {
+            if (!promptEvent || typeof promptEvent.prompt !== 'function') {
+                installing = false;
+                if (installBtn) {
+                    installBtn.disabled = false;
+                    installBtn.textContent = 'Install';
+                }
+                showHowTo();
+                return false;
+            }
+
+            return promptEvent.prompt().then(function () {
+                return promptEvent.userChoice;
+            }).then(function () {
+                setPrompt(null);
+                installing = false;
+                dismissPopup();
+                return true;
+            }).catch(function () {
+                installing = false;
+                setPrompt(null);
+                if (installBtn) {
+                    installBtn.disabled = false;
+                    installBtn.textContent = 'Install';
+                }
+                showHowTo();
+                return false;
+            });
+        });
+    }
+
+    window.addEventListener('pwa-installable', function () {
         showPopup();
     });
 
     window.addEventListener('appinstalled', function () {
-        deferredPrompt = null;
+        setPrompt(null);
         dismissPopup();
     });
 
-    registerServiceWorker();
+    function onInstallClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerNativeInstall();
+    }
 
     if (installBtn) {
-        installBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
+        installBtn.addEventListener('click', onInstallClick);
+    }
 
-            if (deferredPrompt) {
-                installBtn.disabled = true;
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice
-                    .then(function () {
-                        deferredPrompt = null;
-                        dismissPopup();
-                    })
-                    .catch(function () {
-                        installBtn.disabled = false;
-                        showHowTo();
-                    });
+    // Whole card tap installs (except close)
+    if (card) {
+        card.addEventListener('click', function (e) {
+            if (e.target.closest('#pwaInstallDismiss')) {
                 return;
             }
-
-            // No native prompt available (iOS / criteria not met yet)
-            showHowTo();
+            onInstallClick(e);
         });
     }
 
@@ -183,13 +225,13 @@
             return;
         }
 
-        // Wait for engagement / SW; show when installable OR show how-to on mobile
+        // Show as soon as installable; otherwise remind on mobile
         setTimeout(function () {
-            if (deferredPrompt) {
+            if (getPrompt()) {
                 showPopup();
             } else if (isMobile()) {
                 showPopup();
             }
-        }, 1800);
+        }, 1200);
     });
 })();
