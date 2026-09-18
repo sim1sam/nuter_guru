@@ -234,16 +234,47 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: center;
     border: none;
     background: transparent;
-    color: var(--organic-text);
+    color: var(--organic-text, #2c2c2c);
     font-size: 1.2rem;
     padding: 0;
     cursor: pointer;
     transition: color 0.2s ease;
 }
 
+.organic-search-toggle .organic-icon {
+    display: block;
+    width: 22px;
+    height: 22px;
+}
+
 .organic-search-toggle:hover,
 .organic-search-toggle.is-active {
-    color: var(--accent-green);
+    color: var(--accent-green, var(--primary-color, #5B7C5A));
+}
+
+.organic-menu-toggle {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--organic-text, #2c2c2c);
+}
+
+.organic-menu-toggle__icon {
+    width: 22px;
+    height: 16px;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.organic-menu-toggle__icon > span {
+    display: block;
+    height: 2px;
+    width: 100%;
+    border-radius: 2px;
+    background: currentColor;
 }
 
 /* Live product search suggestions */
@@ -391,6 +422,7 @@ body:has(.organic-header) .main-content {
     position: sticky;
     top: 0;
     z-index: 1040;
+    background: var(--navbar-bg-color, #ffffff);
 }
 
 /* ========== PRODUCT CARDS ========== */
@@ -2037,7 +2069,7 @@ body:has(.organic-header) .main-content {
     }
 
     .organic-header.is-search-open .organic-search-col {
-        display: block;
+        display: block !important;
     }
 
     .organic-header__top .organic-search {
@@ -2046,8 +2078,34 @@ body:has(.organic-header) .main-content {
         width: 100%;
     }
 
+    .organic-header__top .organic-search__input {
+        font-size: 16px !important;
+    }
+
     .organic-header__actions {
         gap: 0.35rem !important;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    .organic-lang__full {
+        display: none;
+    }
+
+    .organic-lang__short {
+        display: inline;
+    }
+
+    .organic-lang__btn {
+        min-width: 36px;
+        height: 28px;
+        padding: 0 8px;
+        font-size: 11px;
+    }
+
+    .organic-search-toggle {
+        flex-shrink: 0;
+        z-index: 2;
     }
 
     .organic-nav__list {
@@ -2431,6 +2489,14 @@ body:has(.organic-header) .main-content {
     color: var(--organic-muted, #6B6B6B);
     text-decoration: none !important;
     transition: background 0.2s, color 0.2s;
+}
+
+.organic-lang__short {
+    display: none;
+}
+
+.organic-lang__full {
+    display: inline;
 }
 
 .organic-lang__btn:hover {

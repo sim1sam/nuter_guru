@@ -11,9 +11,11 @@
 
     var installBtn = document.getElementById('pwaInstallBtn');
     var dismissBtn = document.getElementById('pwaInstallDismiss');
+    var howTo = document.getElementById('pwaInstallHowTo');
+    var labelEl = popup.querySelector('.pwa-install__label');
 
     function isMobile() {
-        return window.matchMedia('(max-width: 767.98px)').matches;
+        return window.matchMedia('(max-width: 991.98px)').matches;
     }
 
     function isStandalone() {
@@ -21,6 +23,11 @@
             window.matchMedia('(display-mode: standalone)').matches ||
             window.navigator.standalone === true
         );
+    }
+
+    function isIos() {
+        var ua = window.navigator.userAgent || '';
+        return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
 
     function isDismissed() {
@@ -52,8 +59,73 @@
 
         popup.classList.add('is-visible');
         popup.setAttribute('aria-hidden', 'false');
+        updateInstallUi();
     }
 
+    function updateInstallUi() {
+        if (!installBtn) {
+            return;
+        }
+
+        if (deferredPrompt) {
+            installBtn.textContent = 'Install';
+            installBtn.disabled = false;
+            if (labelEl) {
+                labelEl.textContent = "Install Nut'er Guru BD";
+            }
+            if (howTo) {
+                howTo.hidden = true;
+            }
+            return;
+        }
+
+        if (isIos()) {
+            installBtn.textContent = 'How to';
+            if (labelEl) {
+                labelEl.textContent = 'Add Nut\'er Guru BD to Home Screen';
+            }
+        } else {
+            installBtn.textContent = 'How to';
+            if (labelEl) {
+                labelEl.textContent = "Install Nut'er Guru BD";
+            }
+        }
+    }
+
+    function showHowTo() {
+        if (!howTo) {
+            return;
+        }
+
+        if (isIos()) {
+            howTo.innerHTML =
+                '<strong>iPhone / iPad:</strong> Tap Share <span aria-hidden="true">□↑</span> then <em>Add to Home Screen</em>.';
+        } else {
+            howTo.innerHTML =
+                '<strong>Android:</strong> Browser menu ⋮ → <em>Install app</em> / <em>Add to Home screen</em>.';
+        }
+        howTo.hidden = false;
+    }
+
+    function registerServiceWorker() {
+        if (!('serviceWorker' in navigator)) {
+            return Promise.resolve(null);
+        }
+
+        return navigator.serviceWorker
+            .register('/sw.js', { scope: '/' })
+            .then(function (reg) {
+                if (reg && reg.update) {
+                    reg.update().catch(function () {});
+                }
+                return reg;
+            })
+            .catch(function () {
+                return null;
+            });
+    }
+
+    // Listen ASAP so we don't miss beforeinstallprompt
     window.addEventListener('beforeinstallprompt', function (e) {
         e.preventDefault();
         deferredPrompt = e;
@@ -65,30 +137,39 @@
         dismissPopup();
     });
 
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-            navigator.serviceWorker
-                .register('/sw.js', { scope: '/' })
-                .catch(function () {
-                    /* SW registration failed */
-                });
-        });
-    }
+    registerServiceWorker();
 
     if (installBtn) {
-        installBtn.addEventListener('click', function () {
+        installBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
             if (deferredPrompt) {
+                installBtn.disabled = true;
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.finally(function () {
-                    deferredPrompt = null;
-                    dismissPopup();
-                });
+                deferredPrompt.userChoice
+                    .then(function () {
+                        deferredPrompt = null;
+                        dismissPopup();
+                    })
+                    .catch(function () {
+                        installBtn.disabled = false;
+                        showHowTo();
+                    });
+                return;
             }
+
+            // No native prompt available (iOS / criteria not met yet)
+            showHowTo();
         });
     }
 
     if (dismissBtn) {
-        dismissBtn.addEventListener('click', dismissPopup);
+        dismissBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dismissPopup();
+        });
     }
 
     popup.addEventListener('click', function (e) {
@@ -102,10 +183,13 @@
             return;
         }
 
+        // Wait for engagement / SW; show when installable OR show how-to on mobile
         setTimeout(function () {
-            if (deferredPrompt || isMobile()) {
+            if (deferredPrompt) {
+                showPopup();
+            } else if (isMobile()) {
                 showPopup();
             }
-        }, 2500);
+        }, 1800);
     });
 })();

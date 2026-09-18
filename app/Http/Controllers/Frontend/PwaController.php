@@ -16,76 +16,60 @@ class PwaController extends Controller
         $seo = SeoSetting::first();
         $theme = ThemeHelper::variables($setting);
 
-        $appName = $seo?->seo_title ?? config('app.name', 'Nuter Guru');
-        $shortName = mb_strlen($appName) > 12 ? mb_substr($appName, 0, 12) : $appName;
-        $description = $seo?->seo_description ?? 'Shop online with Nuter Guru — fast, easy, and secure.';
-
-        $icons = $this->buildIcons($setting);
+        $appName = "Nut'er Guru BD";
+        $shortName = "Nut'er Guru";
+        $description = $seo?->seo_description
+            ?? "Shop pure dry foods, nuts and spices at Nut'er Guru BD.";
 
         return response()->json([
+            'id' => '/',
             'name' => $appName,
             'short_name' => $shortName,
             'description' => $description,
-            'start_url' => url('/'),
-            'scope' => url('/'),
+            'lang' => app()->getLocale() ?: 'bn',
+            'dir' => 'ltr',
+            'start_url' => '/',
+            'scope' => '/',
             'display' => 'standalone',
             'orientation' => 'portrait-primary',
-            'background_color' => $theme['background'],
-            'theme_color' => $theme['primary'],
+            'background_color' => '#000000',
+            'theme_color' => $theme['primary'] ?? '#F58220',
             'categories' => ['shopping', 'lifestyle'],
-            'icons' => $icons,
+            'icons' => $this->buildIcons(),
         ], 200, [
             'Content-Type' => 'application/manifest+json',
-            'Cache-Control' => 'public, max-age=3600',
+            'Cache-Control' => 'no-cache, must-revalidate',
         ]);
     }
 
-    private function buildIcons(?Setting $setting): array
+    private function buildIcons(): array
     {
         $icons = [];
-        $logo = $setting?->logo ?? null;
-
-        if ($logo && $this->isPublicImage($logo)) {
-            $logoUrl = asset($logo);
-            foreach ([192, 512] as $size) {
-                $icons[] = [
-                    'src' => $logoUrl,
-                    'sizes' => "{$size}x{$size}",
-                    'type' => $this->mimeFromPath($logo),
-                    'purpose' => 'any',
-                ];
-            }
-        }
 
         foreach ([192, 512] as $size) {
+            $relative = "frontend/pwa/icon-{$size}.png";
+            $full = public_path($relative);
+            if (! is_file($full)) {
+                continue;
+            }
+
+            // Root-relative path so the install icon works regardless of APP_URL
+            $src = '/' . ltrim($relative, '/');
+
             $icons[] = [
-                'src' => asset("frontend/pwa/icon-{$size}.png"),
+                'src' => $src,
                 'sizes' => "{$size}x{$size}",
                 'type' => 'image/png',
-                'purpose' => 'any maskable',
+                'purpose' => 'any',
+            ];
+            $icons[] = [
+                'src' => $src,
+                'sizes' => "{$size}x{$size}",
+                'type' => 'image/png',
+                'purpose' => 'maskable',
             ];
         }
 
         return $icons;
-    }
-
-    private function isPublicImage(string $path): bool
-    {
-        $fullPath = public_path($path);
-
-        return is_file($fullPath) && (bool) @getimagesize($fullPath);
-    }
-
-    private function mimeFromPath(string $path): string
-    {
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-
-        return match ($ext) {
-            'png' => 'image/png',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            'svg' => 'image/svg+xml',
-            default => 'image/jpeg',
-        };
     }
 }

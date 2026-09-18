@@ -845,6 +845,29 @@ class FrontendController extends Controller
         $privacyPolicy = TermsAndCondition::first();
         return view('frontend.privacy-policy', compact('privacyPolicy'));
     }
+
+    public function trackOrder(Request $request)
+    {
+        $order = null;
+        $searched = false;
+        $orderId = trim((string) $request->query('order_id', ''));
+
+        if ($orderId !== '') {
+            $searched = true;
+            $normalizedId = ltrim($orderId, "# \t\n\r\0\x0B");
+
+            $order = Order::with(['orderProducts.product'])
+                ->where(function ($query) use ($normalizedId, $orderId) {
+                    $query->where('order_id', $normalizedId)
+                        ->orWhere('order_id', $orderId);
+                })
+                ->first();
+        }
+
+        $setting = Setting::first();
+
+        return view('frontend.track-order', compact('order', 'orderId', 'searched', 'setting'));
+    }
     
     public function orderDetails(Request $request, $order_id)
     {

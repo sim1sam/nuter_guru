@@ -12,7 +12,8 @@
 
     body.mobile-app-mode {
         padding-top: calc(var(--mobile-header-height) + env(safe-area-inset-top, 0px)) !important;
-        padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px) + 12px) !important;
+        /* Bottom spacing is handled by .footer so copyright clears the sticky nav */
+        padding-bottom: 0 !important;
     }
 
     /* Organic header is in document flow (sticky), not fixed — no body offset */
@@ -194,13 +195,27 @@
         align-items: flex-start;
     }
 
-    /* Slim footer on mobile app mode */
-    body.mobile-app-mode .footer .container.py-5 {
-        display: none;
+    /* Keep footer readable above fixed bottom nav — always show all footer columns */
+    body.mobile-app-mode .footer .container.py-5,
+    body.mobile-app-mode .footer .container {
+        display: block !important;
+    }
+
+    body.mobile-app-mode .footer .row > [class*="col-"] {
+        display: block !important;
+        width: 100%;
+        max-width: 100%;
+        flex: 0 0 100%;
+        margin-bottom: 1.25rem;
+    }
+
+    body.mobile-app-mode .footer,
+    .footer {
+        padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px) + 20px) !important;
     }
 
     body.mobile-app-mode .footer-bottom {
-        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: 1rem !important;
         text-align: center;
     }
 
@@ -210,6 +225,35 @@
 
     body.mobile-app-mode .footer-bottom .payment-methods {
         margin-top: 0.35rem;
+    }
+
+    /* PWA / standalone: keep header search + language usable */
+    @media (display-mode: standalone) {
+        .organic-header {
+            padding-top: env(safe-area-inset-top, 0px);
+            background: var(--navbar-bg-color, #ffffff);
+        }
+
+        .organic-header__actions {
+            flex-wrap: nowrap !important;
+            max-width: 100%;
+        }
+
+        .organic-header.is-search-open .organic-search-col {
+            display: block !important;
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+        }
+
+        .organic-search__form {
+            width: 100%;
+        }
+
+        .organic-search__input {
+            min-width: 0;
+            font-size: 16px !important; /* prevent iOS zoom */
+        }
     }
 
     /* WhatsApp above bottom nav */
@@ -660,6 +704,18 @@
         background: transparent;
         position: relative;
         transition: color 0.2s ease;
+    }
+
+    .mobile-tab__icon {
+        width: 22px;
+        height: 22px;
+        display: block;
+        flex-shrink: 0;
+    }
+
+    .mobile-tab i {
+        font-size: 1.15rem;
+        line-height: 1;
     }
 
     .mobile-tab i {

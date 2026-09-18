@@ -70,9 +70,9 @@
         <div class="mobile-app-menu__section">
             @php $currentLocale = app()->getLocale(); @endphp
             <div class="organic-lang organic-lang--mobile" role="group" aria-label="{{ __('Language') }}">
-                <a href="{{ route('locale.switch', 'bn') }}"
+                <a href="{{ route('locale.switch', ['locale' => 'bn', 'redirect' => request()->getRequestUri()]) }}"
                    class="organic-lang__btn {{ $currentLocale === 'bn' ? 'is-active' : '' }}">বাংলা</a>
-                <a href="{{ route('locale.switch', 'en') }}"
+                <a href="{{ route('locale.switch', ['locale' => 'en', 'redirect' => request()->getRequestUri()]) }}"
                    class="organic-lang__btn {{ $currentLocale === 'en' ? 'is-active' : '' }}">EN</a>
             </div>
         </div>

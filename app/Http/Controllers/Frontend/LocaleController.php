@@ -15,7 +15,30 @@ class LocaleController extends Controller
         }
 
         session(['locale' => $locale]);
+        session()->save();
 
-        return redirect()->back();
+        $redirect = $request->query('redirect');
+        if (
+            is_string($redirect)
+            && $redirect !== ''
+            && str_starts_with($redirect, '/')
+            && ! str_starts_with($redirect, '//')
+        ) {
+            return redirect()->to($redirect);
+        }
+
+        $previous = url()->previous();
+        $fallback = url('/');
+
+        // Avoid redirect loops back to the locale switch URL (common in PWA / missing referrer)
+        if (
+            ! $previous
+            || $previous === $request->fullUrl()
+            || str_contains($previous, '/locale/')
+        ) {
+            return redirect()->to($fallback);
+        }
+
+        return redirect()->to($previous);
     }
 }

@@ -80,7 +80,7 @@ class CheckoutController extends Controller
                 ->get();
                 
             foreach ($cartItems as $item) {
-                $price = product_unit_price($item->product, $item->variants);
+                $price = cart_item_unit_price($item, $item->product);
                 $subtotal += $price * $item->qty;
                 $totalQty += $item->qty;
             }
@@ -91,7 +91,7 @@ class CheckoutController extends Controller
                 $product = Product::find($item['product_id']);
                 if ($product) {
                     $quantity = $item['quantity'] ?? 1;
-                    $price = product_unit_price($product, $item['variants'] ?? []);
+                    $price = cart_item_unit_price($item, $product);
                     $subtotal += $price * $quantity;
                     $totalQty += $quantity;
                     $cartItems[] = array_merge($item, ['product' => $product, 'qty' => $quantity]);
@@ -188,16 +188,29 @@ class CheckoutController extends Controller
                             ];
                         }
 
+                        $unitPrice = cart_item_unit_price($item, $item->product);
+
+                        if ($item->variant_name_snapshot) {
+                            $variants = [[
+                                'name' => $item->variant_name_snapshot,
+                                'variant_name' => 'Weight',
+                                'variant_value' => $item->variant_name_snapshot,
+                                'price' => $unitPrice,
+                            ]];
+                        }
+
                         return [
                             'id' => $item->id,
                             'product_id' => $item->product_id,
                             'product_name' => product_name($item->product) ?: 'Unknown Product',
                             'product_image' => $item->product->thumb_image ?? '',
-                            'product_price' => product_unit_price($item->product, $item->variants),
+                            'product_price' => $unitPrice,
+                            'unit_price' => $unitPrice,
                             'quantity' => $item->qty,
                             'variants' => $variants,
                             'product' => $item->product,
                             'weight_variant_id' => $item->weight_variant_id,
+                            'variant_name_snapshot' => $item->variant_name_snapshot,
                             'base_quantity' => $item->base_quantity,
                             'unit_weight_kg' => $item->unit_weight_kg,
                         ];
@@ -224,16 +237,29 @@ class CheckoutController extends Controller
                             ];
                         }
 
+                        if (! empty($item['variant_name_snapshot'])) {
+                            $variants = [[
+                                'name' => $item['variant_name_snapshot'],
+                                'variant_name' => 'Weight',
+                                'variant_value' => $item['variant_name_snapshot'],
+                                'price' => cart_item_unit_price($item, $product),
+                            ]];
+                        }
+
+                        $unitPrice = cart_item_unit_price($item, $product);
+
                         $cartItems[] = [
                             'id' => (string) $key,
                             'product_id' => $item['product_id'],
                             'product_name' => product_name($product),
                             'product_image' => $product->thumb_image,
-                            'product_price' => product_unit_price($product, $rawVariants),
+                            'product_price' => $unitPrice,
+                            'unit_price' => $unitPrice,
                             'quantity' => $item['quantity'] ?? 1,
                             'variants' => $variants,
                             'product' => $product,
                             'weight_variant_id' => $item['weight_variant_id'] ?? null,
+                            'variant_name_snapshot' => $item['variant_name_snapshot'] ?? null,
                             'base_quantity' => $item['base_quantity'] ?? null,
                             'unit_weight_kg' => $item['unit_weight_kg'] ?? null,
                         ];
@@ -657,9 +683,7 @@ class CheckoutController extends Controller
             $variantNameSnapshot = is_object($cartItem) ? ($cartItem->variant_name_snapshot ?? null) : ($cartItem['variant_name_snapshot'] ?? null);
             $unitWeightKg = is_object($cartItem) ? ($cartItem->unit_weight_kg ?? null) : ($cartItem['unit_weight_kg'] ?? null);
 
-            $price = $unitPriceStored !== null
-                ? (float) $unitPriceStored
-                : product_unit_price($product, $variants);
+            $price = cart_item_unit_price($cartItem, $product);
 
             // Check for flash sale
             $isFlashSale = FlashSaleProduct::where([
@@ -920,8 +944,10 @@ class CheckoutController extends Controller
                     'product' => $product,
                     'variants' => collect($item['variants'] ?? []),
                     'weight_variant_id' => $item['weight_variant_id'] ?? null,
+                    'unit_price' => $item['unit_price'] ?? null,
                     'base_quantity' => $item['base_quantity'] ?? null,
                     'unit_weight_kg' => $item['unit_weight_kg'] ?? null,
+                    'variant_name_snapshot' => $item['variant_name_snapshot'] ?? null,
                 ];
             }
         }
@@ -939,8 +965,7 @@ class CheckoutController extends Controller
         // Calculate subtotal
         $subtotal = 0;
         foreach ($cartItems as $item) {
-            $variants = $item->variants ?? null;
-            $itemPrice = product_unit_price($item->product, $variants);
+            $itemPrice = cart_item_unit_price($item, $item->product ?? null);
             $subtotal += $itemPrice * $item->qty;
         }
         
@@ -1917,8 +1942,10 @@ class CheckoutController extends Controller
                         'product' => $product,
                         'variants' => collect($item['variants'] ?? []),
                         'weight_variant_id' => $item['weight_variant_id'] ?? null,
+                        'unit_price' => $item['unit_price'] ?? null,
                         'base_quantity' => $item['base_quantity'] ?? null,
                         'unit_weight_kg' => $item['unit_weight_kg'] ?? null,
+                        'variant_name_snapshot' => $item['variant_name_snapshot'] ?? null,
                     ];
                     $cartProducts->push($cartItem);
                 }
@@ -1932,7 +1959,7 @@ class CheckoutController extends Controller
             $product = $cartProduct->product
                 ?? Product::select('id', 'price', 'offer_price', 'weight', 'unit_type')->find($cartProduct->product_id);
 
-            $price = product_unit_price($product, $cartProduct->variants ?? []);
+            $price = cart_item_unit_price($cartProduct, $product);
 
             // Check flash sale
             $isFlashSale = FlashSaleProduct::where([
@@ -2068,9 +2095,7 @@ class CheckoutController extends Controller
             $product = Product::select('id', 'price', 'offer_price', 'weight', 'vendor_id', 'qty', 'name', 'name_bn', 'cost_price', 'unit_type', 'selling_price_mode')
                 ->find($cartProduct->product_id);
 
-            $price = $cartProduct->unit_price !== null
-                ? (float) $cartProduct->unit_price
-                : product_unit_price($product, $cartProduct->variants ?? []);
+            $price = cart_item_unit_price($cartProduct, $product);
 
             // Check flash sale
             $isFlashSale = FlashSaleProduct::where([

@@ -1,42 +1,83 @@
 <?php
 
+/**
+ * Generate square PWA icons from the site logo.
+ * Run: php scripts/generate-pwa-icons.php
+ */
+
 $dir = __DIR__ . '/../public/frontend/pwa';
 if (!is_dir($dir)) {
     mkdir($dir, 0755, true);
 }
 
-foreach ([192, 512] as $size) {
-    $img = imagecreatetruecolor($size, $size);
-    $bg = imagecolorallocate($img, 139, 123, 168);
-    $white = imagecolorallocate($img, 255, 255, 255);
-    imagefilledrectangle($img, 0, 0, $size, $size, $bg);
+$logoCandidates = [
+    __DIR__ . '/../public/uploads/website-images/logo-nuter-guru.png',
+];
 
-    $text = 'DJ';
-    $fontSize = (int) ($size * 0.22);
-    $fontFile = __DIR__ . '/../public/backend/fontawesome/webfonts/fa-solid-900.ttf';
-    if (file_exists($fontFile)) {
-        $bbox = imagettfbbox($fontSize, 0, $fontFile, $text);
-        $textWidth = abs($bbox[2] - $bbox[0]);
-        $textHeight = abs($bbox[7] - $bbox[1]);
-        imagettftext(
-            $img,
-            $fontSize,
-            0,
-            (int) (($size - $textWidth) / 2),
-            (int) (($size + $textHeight) / 2),
-            $white,
-            $fontFile,
-            $text
-        );
-    } else {
-        $font = 5;
-        $tw = imagefontwidth($font) * strlen($text);
-        $th = imagefontheight($font);
-        imagestring($img, $font, (int) (($size - $tw) / 2), (int) (($size - $th) / 2), $text, $white);
+// Prefer current logo from settings when available via a simple DB-less path scan
+$uploadDir = __DIR__ . '/../public/uploads/website-images';
+if (is_dir($uploadDir)) {
+    foreach (glob($uploadDir . '/logo*.{png,jpg,jpeg,webp}', GLOB_BRACE) ?: [] as $file) {
+        array_unshift($logoCandidates, $file);
     }
-
-    imagepng($img, $dir . '/icon-' . $size . '.png');
-    imagedestroy($img);
 }
 
-echo "PWA icons generated in {$dir}\n";
+$logoPath = null;
+foreach ($logoCandidates as $candidate) {
+    if (is_file($candidate) && @getimagesize($candidate)) {
+        $logoPath = $candidate;
+        break;
+    }
+}
+
+function loadImage(string $path)
+{
+    $info = @getimagesize($path);
+    if (!$info) {
+        return null;
+    }
+
+    return match ($info[2]) {
+        IMAGETYPE_PNG => @imagecreatefrompng($path),
+        IMAGETYPE_JPEG => @imagecreatefromjpeg($path),
+        IMAGETYPE_WEBP => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($path) : null,
+        default => null,
+    };
+}
+
+foreach ([192, 512] as $size) {
+    $canvas = imagecreatetruecolor($size, $size);
+    imagealphablending($canvas, false);
+    imagesavealpha($canvas, true);
+
+    // Black background to match brand logo plate
+    $bg = imagecolorallocate($canvas, 0, 0, 0);
+    imagefilledrectangle($canvas, 0, 0, $size, $size, $bg);
+    imagealphablending($canvas, true);
+
+    if ($logoPath) {
+        $src = loadImage($logoPath);
+        if ($src) {
+            $srcW = imagesx($src);
+            $srcH = imagesy($src);
+            $padding = (int) ($size * 0.08);
+            $maxW = $size - ($padding * 2);
+            $maxH = $size - ($padding * 2);
+            $scale = min($maxW / $srcW, $maxH / $srcH);
+            $dstW = max(1, (int) round($srcW * $scale));
+            $dstH = max(1, (int) round($srcH * $scale));
+            $dstX = (int) (($size - $dstW) / 2);
+            $dstY = (int) (($size - $dstH) / 2);
+
+            imagecopyresampled($canvas, $src, $dstX, $dstY, 0, 0, $dstW, $dstH, $srcW, $srcH);
+            imagedestroy($src);
+        }
+    }
+
+    $out = $dir . '/icon-' . $size . '.png';
+    imagepng($canvas, $out, 6);
+    imagedestroy($canvas);
+    echo "Wrote {$out}\n";
+}
+
+echo $logoPath ? "Source logo: {$logoPath}\n" : "No logo found; solid icons written.\n";

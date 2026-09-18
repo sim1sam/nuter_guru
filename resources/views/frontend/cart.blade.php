@@ -299,9 +299,8 @@ class ShoppingCart {
 
     updateSummary() {
         const subtotal = this.cart.reduce((sum, item) => {
-            const product = item.product || item;
             const quantity = item.qty || item.quantity || 1;
-            const price = parseFloat(product.offer_price || product.price || 0);
+            const price = parseFloat(item.unit_price ?? item.line_total / quantity ?? item.product?.offer_price ?? item.product?.price ?? 0);
             return sum + (price * quantity);
         }, 0);
 

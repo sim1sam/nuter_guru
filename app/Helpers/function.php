@@ -200,7 +200,7 @@ function product_unit_price($product, $variants = null): float
     if ($product) {
         $offer = is_array($product) ? ($product['offer_price'] ?? null) : ($product->offer_price ?? null);
         $price = is_array($product) ? ($product['price'] ?? 0) : ($product->price ?? 0);
-        $base = ($offer !== null && $offer !== '') ? (float) $offer : (float) $price;
+        $base = ($offer !== null && $offer !== '' && (float) $offer > 0) ? (float) $offer : (float) $price;
     }
 
     if (! $variants) {
@@ -239,4 +239,49 @@ function product_unit_price($product, $variants = null): float
     }
 
     return $hasVariantPrice ? $variantTotal : $base;
+}
+
+/**
+ * Cart/order line unit price: prefer stored pack price, else recalculate weight pack, else product price.
+ */
+function cart_item_unit_price($cartItem, $product = null): float
+{
+    $product = $product
+        ?? (is_object($cartItem) ? ($cartItem->product ?? null) : ($cartItem['product'] ?? null));
+
+    $stored = is_object($cartItem)
+        ? ($cartItem->unit_price ?? null)
+        : ($cartItem['unit_price'] ?? null);
+
+    if ($stored !== null && $stored !== '') {
+        return round((float) $stored, 2);
+    }
+
+    $weightVariantId = is_object($cartItem)
+        ? ($cartItem->weight_variant_id ?? null)
+        : ($cartItem['weight_variant_id'] ?? null);
+
+    if ($product && $weightVariantId && method_exists($product, 'isKg') && $product->isKg()) {
+        $weightVariant = null;
+        if (is_object($cartItem) && ! empty($cartItem->weightVariant)) {
+            $weightVariant = $cartItem->weightVariant;
+        } else {
+            $weightVariant = \App\Models\WeightVariant::find($weightVariantId);
+        }
+
+        if ($weightVariant) {
+            $pivot = \App\Models\ProductWeightVariant::where('product_id', $product->id)
+                ->where('weight_variant_id', $weightVariantId)
+                ->first();
+
+            return app(\App\Services\Inventory\WeightCalculationService::class)
+                ->variantSellingPrice($product, $weightVariant, $pivot);
+        }
+    }
+
+    $variants = is_object($cartItem)
+        ? ($cartItem->variants ?? null)
+        : ($cartItem['variants'] ?? null);
+
+    return product_unit_price($product, $variants);
 }

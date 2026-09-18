@@ -18,8 +18,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="format-detection" content="telephone=no">
     <meta name="theme-color" content="{{ theme_variables($setting)['primary'] }}">
+    <meta name="application-name" content="Nut'er Guru BD">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Nut'er Guru BD">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>@yield('title', isset($seoSetting) ? $seoSetting->seo_title : config('app.name', 'Nuter Guru'))</title>
     <meta name="description" content="@yield('meta_description', isset($seoSetting) ? $seoSetting->seo_description : 'Shop premium organic dry fruits, nuts, spices and healthy foods at Nuter Guru.')">
     <meta name="keywords" content="@yield('meta_keywords', isset($seoSetting) ? $seoSetting->seo_keywords : 'organic food, dry fruits, nuts, spices, healthy snacks, Nuter Guru')">
@@ -74,17 +76,24 @@
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{ $setting && $setting->favicon ? asset($setting->favicon) : asset('frontend/images/favicon.ico') }}">
-    <link rel="apple-touch-icon" href="{{ $setting && $setting->logo ? asset($setting->logo) : asset('frontend/pwa/icon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('frontend/pwa/icon-192.png') }}?v={{ @filemtime(public_path('frontend/pwa/icon-192.png')) ?: time() }}">
 
     <!-- PWA -->
     <link rel="manifest" href="{{ route('pwa.manifest') }}">
     <meta name="mobile-web-app-capable" content="yes">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
+            });
+        }
+    </script>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Font Awesome (self-hosted for PWA reliability) -->
+    <link rel="stylesheet" href="{{ asset('frontend/css/fontawesome.min.css') }}?v={{ @filemtime(public_path('frontend/css/fontawesome.min.css')) ?: 1 }}">
     
     <!-- Google Fonts — organic storefront (Bengali + Latin) -->
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -930,7 +939,10 @@
                                            aria-autocomplete="list"
                                            aria-controls="organicSearchSuggestions">
                                     <button type="submit" class="organic-search__btn" aria-label="{{ __('Search') }}">
-                                        <i class="fas fa-search"></i>
+                                        <svg class="organic-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="11" cy="11" r="7"></circle>
+                                            <path d="M20 20l-3.5-3.5"></path>
+                                        </svg>
                                     </button>
                                 </form>
                                 <div class="search-suggestions js-search-suggestions" id="organicSearchSuggestions" hidden></div>
@@ -941,11 +953,11 @@
                             <div class="d-flex align-items-center justify-content-end gap-2 gap-md-3 organic-header__actions">
                                 @php $currentLocale = app()->getLocale(); @endphp
                                 <div class="organic-lang" role="group" aria-label="{{ __('Language') }}">
-                                    <a href="{{ route('locale.switch', 'bn') }}"
+                                    <a href="{{ route('locale.switch', ['locale' => 'bn', 'redirect' => request()->getRequestUri()]) }}"
                                        class="organic-lang__btn {{ $currentLocale === 'bn' ? 'is-active' : '' }}"
                                        hreflang="bn"
-                                       lang="bn">বাংলা</a>
-                                    <a href="{{ route('locale.switch', 'en') }}"
+                                       lang="bn"><span class="organic-lang__full">বাংলা</span><span class="organic-lang__short">BN</span></a>
+                                    <a href="{{ route('locale.switch', ['locale' => 'en', 'redirect' => request()->getRequestUri()]) }}"
                                        class="organic-lang__btn {{ $currentLocale === 'en' ? 'is-active' : '' }}"
                                        hreflang="en"
                                        lang="en">EN</a>
@@ -957,7 +969,10 @@
                                         aria-label="{{ __('Search') }}"
                                         aria-expanded="false"
                                         aria-controls="organicSearchBar">
-                                    <i class="fas fa-search"></i>
+                                    <svg class="organic-icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="7"></circle>
+                                        <path d="M20 20l-3.5-3.5"></path>
+                                    </svg>
                                 </button>
 
                                 <a href="{{ route('cart') }}" class="organic-cart wsus__cart_icon js-open-cart-drawer d-none d-lg-inline-flex" aria-label="{{ __('Cart') }}">
@@ -970,13 +985,15 @@
                                     </span>
                                 </a>
 
-                                <button class="navbar-toggler d-lg-none border-0 p-0"
+                                <button class="navbar-toggler organic-menu-toggle d-lg-none border-0 p-0"
                                         type="button"
                                         data-bs-toggle="offcanvas"
                                         data-bs-target="#mobileMenu"
                                         aria-controls="mobileMenu"
                                         aria-label="{{ __('Toggle navigation') }}">
-                                    <span class="navbar-toggler-icon"><span></span></span>
+                                    <span class="organic-menu-toggle__icon" aria-hidden="true">
+                                        <span></span><span></span><span></span>
+                                    </span>
                                 </button>
 
                                 <div class="organic-auth d-none d-lg-flex align-items-center">

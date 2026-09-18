@@ -1334,7 +1334,7 @@ class Checkout {
 
         orderItemsContainer.innerHTML = this.cart.map(item => {
             const variants = item.variants || [];
-            let itemPrice = parseFloat(item.product_price || (item.product && (item.product.offer_price || item.product.price)) || 0);
+            let itemPrice = parseFloat(item.unit_price || item.product_price || (item.product && (item.product.offer_price || item.product.price)) || 0);
             const variantPrices = variants
                 .map(function (v) { return parseFloat(v.variant_price || v.price || 0); })
                 .filter(function (p) { return p > 0; });
@@ -1621,7 +1621,7 @@ class Checkout {
         
         const subtotal = this.cart.reduce(function(sum, item) {
             const variants = item.variants || [];
-            let itemPrice = parseFloat(item.product_price || (item.product && (item.product.offer_price || item.product.price)) || 0);
+            let itemPrice = parseFloat(item.unit_price || item.product_price || (item.product && (item.product.offer_price || item.product.price)) || 0);
             const variantPrices = variants
                 .map(function (v) { return parseFloat(v.variant_price || v.price || 0); })
                 .filter(function (p) { return p > 0; });

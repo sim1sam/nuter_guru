@@ -356,9 +356,7 @@ class CartController extends Controller
                                 'price' => (float) ($item->unit_price ?? 0),
                             ]];
                         }
-                        $unitPrice = $item->unit_price !== null
-                            ? (float) $item->unit_price
-                            : product_unit_price($item->product, $item->variants);
+                        $unitPrice = cart_item_unit_price($item, $item->product);
 
                         return [
                             'id' => $item->id,
@@ -391,9 +389,7 @@ class CartController extends Controller
                                 'price' => (float) ($item['unit_price'] ?? 0),
                             ]];
                         }
-                        $unitPrice = isset($item['unit_price']) && $item['unit_price'] !== null
-                            ? (float) $item['unit_price']
-                            : product_unit_price($product, $item['variants'] ?? []);
+                        $unitPrice = cart_item_unit_price($item, $product);
                         $qty = (float) ($item['quantity'] ?? 1);
                         $cartItems->push([
                             'id' => (string) $itemId,
@@ -700,11 +696,7 @@ class CartController extends Controller
                     continue;
                 }
 
-                if ($item->unit_price !== null) {
-                    $total += (float) $item->unit_price * (float) $item->qty;
-                } else {
-                    $total += $this->calculateLineTotal($item->product, (float) $item->qty, $item->variants);
-                }
+                $total += cart_item_unit_price($item, $item->product) * (float) $item->qty;
             }
 
             return round($total, 2);
@@ -718,22 +710,7 @@ class CartController extends Controller
                 continue;
             }
 
-            if (isset($item['unit_price']) && $item['unit_price'] !== null) {
-                $total += (float) $item['unit_price'] * (float) ($item['quantity'] ?? 1);
-                continue;
-            }
-
-            $variantItems = collect($item['variants'] ?? [])
-                ->map(function ($variant) {
-                    if (! isset($variant['variant_item_id'])) {
-                        return null;
-                    }
-
-                    return ProductVariantItem::find($variant['variant_item_id']);
-                })
-                ->filter();
-
-            $total += $this->calculateLineTotal($product, (float) ($item['quantity'] ?? 1), $variantItems);
+            $total += cart_item_unit_price($item, $product) * (float) ($item['quantity'] ?? 1);
         }
 
         return round($total, 2);
