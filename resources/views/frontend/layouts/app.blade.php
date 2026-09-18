@@ -82,7 +82,7 @@
     <link rel="manifest" href="{{ route('pwa.manifest') }}">
     <meta name="mobile-web-app-capable" content="yes">
     <script>
-        // Capture install prompt ASAP (must run before deferred pwa-install.js)
+        // Capture install prompt ASAP + register SW early so Android can install
         window.__pwaDeferredPrompt = null;
         window.addEventListener('beforeinstallprompt', function (e) {
             e.preventDefault();
@@ -90,9 +90,7 @@
             window.dispatchEvent(new CustomEvent('pwa-installable'));
         });
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function () {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
-            });
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
         }
     </script>
     

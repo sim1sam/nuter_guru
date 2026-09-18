@@ -1725,7 +1725,7 @@
         <div class="row">
             <div class="col-lg-8 mx-auto text-center">
                 <h2 class="mb-4 fade-in">{{ __('Stay Updated') }}</h2>
-                <p class="lead mb-4 fade-in">{{ __('Get exclusive offers on organic dry fruits, nuts and healthy foods — plus 10% off your first order.') }}</p>
+                <p class="lead mb-4 fade-in">{{ __('Get exclusive offers on organic dry fruits, nuts and healthy foods — enjoy a discount offer.') }}</p>
                 <form class="newsletter-form fade-in">
                     <div class="input-group">
                         <input type="email" class="form-control" placeholder="{{ __('Enter your email address') }}" required>
@@ -1834,7 +1834,7 @@ document.querySelector('.newsletter-form').addEventListener('submit', function(e
     
     if (email) {
         // Here you would typically send the email to your backend
-        showNotification('Thank you for subscribing! Enjoy 10% off your first order.', 'success');
+        showNotification('{{ __('Thank you for subscribing! Enjoy a discount offer on your order.') }}', 'success');
         this.reset();
     }
 });

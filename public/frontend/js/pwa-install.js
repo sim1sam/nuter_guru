@@ -1,8 +1,8 @@
 (function () {
     'use strict';
 
-    var STORAGE_KEY = 'pwa_install_dismissed_until';
-    var DISMISS_DAYS = 7;
+    var STORAGE_KEY = 'pwa_install_dismissed_until_v2';
+    var DISMISS_DAYS = 3;
     var popup = document.getElementById('pwaInstallPopup');
     if (!popup) {
         return;
@@ -23,20 +23,11 @@
         window.__pwaDeferredPrompt = event || null;
     }
 
-    function isMobile() {
-        return window.matchMedia('(max-width: 991.98px)').matches;
-    }
-
     function isStandalone() {
         return (
             window.matchMedia('(display-mode: standalone)').matches ||
             window.navigator.standalone === true
         );
-    }
-
-    function isIos() {
-        var ua = window.navigator.userAgent || '';
-        return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
 
     function isDismissed() {
@@ -48,9 +39,12 @@
         }
     }
 
-    function dismissPopup() {
+    function dismissPopup(persist) {
         popup.classList.remove('is-visible');
         popup.setAttribute('aria-hidden', 'true');
+        if (persist === false) {
+            return;
+        }
         try {
             localStorage.setItem(
                 STORAGE_KEY,
@@ -62,82 +56,39 @@
     }
 
     function showPopup() {
-        if (isStandalone() || isDismissed()) {
+        // Only show when native Android/Chrome install is actually available
+        if (isStandalone() || isDismissed() || !getPrompt()) {
             return;
-        }
-
-        popup.classList.add('is-visible');
-        popup.setAttribute('aria-hidden', 'false');
-        updateInstallUi();
-    }
-
-    function updateInstallUi() {
-        if (!installBtn) {
-            return;
-        }
-
-        installBtn.disabled = false;
-        installBtn.textContent = 'Install';
-
-        if (labelEl) {
-            labelEl.textContent = "Install Nut'er Guru BD";
         }
 
         if (howTo) {
             howTo.hidden = true;
+            howTo.innerHTML = '';
         }
+        if (labelEl) {
+            labelEl.textContent = "Install Nut'er Guru BD";
+        }
+        if (installBtn) {
+            installBtn.disabled = false;
+            installBtn.textContent = 'Install';
+        }
+
+        popup.classList.add('is-visible');
+        popup.setAttribute('aria-hidden', 'false');
     }
 
-    function showHowTo() {
-        if (!howTo) {
+    /**
+     * Must call prompt() directly inside the click handler (same user gesture).
+     * Do not await / setTimeout before prompt() or Chrome will block install.
+     */
+    function triggerNativeInstall() {
+        var promptEvent = getPrompt();
+        if (!promptEvent || typeof promptEvent.prompt !== 'function') {
+            dismissPopup(false);
             return;
         }
-
-        if (isIos()) {
-            howTo.innerHTML =
-                '<strong>iPhone:</strong> Tap Share → <em>Add to Home Screen</em>.';
-        } else {
-            howTo.innerHTML =
-                '<strong>Android:</strong> Menu ⋮ → <em>Install app</em>.';
-        }
-        howTo.hidden = false;
-    }
-
-    function waitForPrompt(timeoutMs) {
-        return new Promise(function (resolve) {
-            var existing = getPrompt();
-            if (existing) {
-                resolve(existing);
-                return;
-            }
-
-            var done = false;
-            var timer = setTimeout(function () {
-                if (done) {
-                    return;
-                }
-                done = true;
-                window.removeEventListener('pwa-installable', onReady);
-                resolve(getPrompt());
-            }, timeoutMs);
-
-            function onReady() {
-                if (done) {
-                    return;
-                }
-                done = true;
-                clearTimeout(timer);
-                window.removeEventListener('pwa-installable', onReady);
-                resolve(getPrompt());
-            }
-
-            window.addEventListener('pwa-installable', onReady);
-        });
-    }
-
-    function triggerNativeInstall() {
         if (installing) {
-            return Promise.resolve(false);
+            return;
         }
 
         installing = true;
@@ -146,45 +97,43 @@
             installBtn.textContent = 'Installing...';
         }
 
-        return waitForPrompt(2500).then(function (promptEvent) {
-            if (!promptEvent || typeof promptEvent.prompt !== 'function') {
-                installing = false;
-                if (installBtn) {
-                    installBtn.disabled = false;
-                    installBtn.textContent = 'Install';
-                }
-                showHowTo();
-                return false;
+        try {
+            promptEvent.prompt();
+        } catch (err) {
+            installing = false;
+            if (installBtn) {
+                installBtn.disabled = false;
+                installBtn.textContent = 'Install';
             }
+            return;
+        }
 
-            return promptEvent.prompt().then(function () {
-                return promptEvent.userChoice;
-            }).then(function () {
+        var choice = promptEvent.userChoice;
+        if (choice && typeof choice.then === 'function') {
+            choice.then(function (result) {
                 setPrompt(null);
                 installing = false;
-                dismissPopup();
-                return true;
-            }).catch(function () {
-                installing = false;
-                setPrompt(null);
-                if (installBtn) {
-                    installBtn.disabled = false;
-                    installBtn.textContent = 'Install';
+                if (result && result.outcome === 'accepted') {
+                    dismissPopup(true);
+                } else {
+                    // User cancelled native dialog — hide popup, allow later
+                    dismissPopup(false);
+                    if (installBtn) {
+                        installBtn.disabled = false;
+                        installBtn.textContent = 'Install';
+                    }
                 }
-                showHowTo();
-                return false;
+            }).catch(function () {
+                setPrompt(null);
+                installing = false;
+                dismissPopup(false);
             });
-        });
+        } else {
+            setPrompt(null);
+            installing = false;
+            dismissPopup(true);
+        }
     }
-
-    window.addEventListener('pwa-installable', function () {
-        showPopup();
-    });
-
-    window.addEventListener('appinstalled', function () {
-        setPrompt(null);
-        dismissPopup();
-    });
 
     function onInstallClick(e) {
         e.preventDefault();
@@ -192,11 +141,29 @@
         triggerNativeInstall();
     }
 
+    // When Chrome says the app is installable, show our Install button
+    window.addEventListener('pwa-installable', showPopup);
+
+    // If prompt was captured before this script loaded
+    if (getPrompt()) {
+        showPopup();
+    }
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        setPrompt(e);
+        showPopup();
+    });
+
+    window.addEventListener('appinstalled', function () {
+        setPrompt(null);
+        dismissPopup(true);
+    });
+
     if (installBtn) {
         installBtn.addEventListener('click', onInstallClick);
     }
 
-    // Whole card tap installs (except close)
     if (card) {
         card.addEventListener('click', function (e) {
             if (e.target.closest('#pwaInstallDismiss')) {
@@ -210,28 +177,13 @@
         dismissBtn.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            dismissPopup();
+            dismissPopup(true);
         });
     }
 
     popup.addEventListener('click', function (e) {
         if (e.target === popup) {
-            dismissPopup();
+            dismissPopup(true);
         }
-    });
-
-    window.addEventListener('load', function () {
-        if (isStandalone() || isDismissed()) {
-            return;
-        }
-
-        // Show as soon as installable; otherwise remind on mobile
-        setTimeout(function () {
-            if (getPrompt()) {
-                showPopup();
-            } else if (isMobile()) {
-                showPopup();
-            }
-        }, 1200);
     });
 })();

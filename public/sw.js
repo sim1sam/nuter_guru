@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ecom-pwa-v4';
+const CACHE_VERSION = 'ecom-pwa-v5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PRECACHE_URLS = [
     '/',
