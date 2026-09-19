@@ -920,8 +920,8 @@
         <div class="organic-header" id="organicHeader">
             <div class="organic-header__top">
                 <div class="container">
-                    <div class="row align-items-center g-3">
-                        <div class="col col-lg-3">
+                    <div class="row align-items-center g-2 g-xl-3 organic-header__row">
+                        <div class="col-auto organic-logo-col">
                             <a class="organic-logo" href="{{ route('home') }}">
                                 @if($setting && $setting->logo)
                                     <img src="{{ asset($setting->logo) }}" alt="{{ config('app.name', 'Nuter Guru') }}" class="img-fluid logo-img">
@@ -932,7 +932,7 @@
                             </a>
                         </div>
 
-                        <div class="col-12 col-lg-6 organic-search-col">
+                        <div class="col organic-search-col">
                             <div class="organic-search" id="organicSearchBar">
                                 <form action="{{ route('products') }}" method="GET" class="organic-search__form">
                                     <input type="text"
@@ -954,8 +954,8 @@
                             </div>
                         </div>
 
-                        <div class="col-auto col-lg-3 ms-auto ms-lg-0">
-                            <div class="d-flex align-items-center justify-content-end gap-2 gap-md-3 organic-header__actions">
+                        <div class="col-auto organic-actions-col">
+                            <div class="d-flex align-items-center justify-content-end organic-header__actions">
                                 @php $currentLocale = app()->getLocale(); @endphp
                                 <div class="organic-lang" role="group" aria-label="{{ __('Language') }}">
                                     <a href="{{ route('locale.switch', ['locale' => 'bn', 'redirect' => request()->getRequestUri()]) }}"
@@ -985,7 +985,7 @@
                                         <i class="fas fa-shopping-bag"></i>
                                         <span class="cart-count badge d-none">0</span>
                                     </span>
-                                    <span class="organic-cart__total d-none d-md-inline">
+                                    <span class="organic-cart__total d-none d-xl-inline">
                                         <span class="cart-total-amount">0</span>{{ $setting->currency_icon ?? '৳' }}
                                     </span>
                                 </a>
@@ -1006,7 +1006,7 @@
                                         <div class="dropdown">
                                             <a href="#" class="organic-auth__user dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                                 <i class="fas fa-user-circle"></i>
-                                                <span>{{ __('Account') }}</span>
+                                                <span class="d-none d-xl-inline">{{ __('Account') }}</span>
                                             </a>
                                             <ul class="dropdown-menu dropdown-menu-end">
                                                 <li><a class="dropdown-item" href="{{ route('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>{{ __('Dashboard') }}</a></li>

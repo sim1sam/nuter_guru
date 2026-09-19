@@ -237,6 +237,13 @@
         .organic-header__actions {
             flex-wrap: nowrap !important;
             max-width: 100%;
+            gap: 0.25rem !important;
+        }
+
+        .organic-lang {
+            display: inline-flex !important;
+            visibility: visible !important;
+            flex-shrink: 0;
         }
 
         .organic-header.is-search-open .organic-search-col {
